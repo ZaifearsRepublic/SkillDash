@@ -1,78 +1,113 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { NextRequest, NextResponse } from "next/server";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
-// Initialize the Google Generative AI client with your API key
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
+// Ensure the API key is available
+const API_KEY = process.env.GOOGLE_API_KEY;
+if (!API_KEY) {
+    throw new Error("GOOGLE_API_KEY environment variable not set");
+}
 
-// The main system instruction that guides the AI's behavior
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+// System instruction to guide the AI's behavior
 const systemInstruction = `
-You are 'SkillBot', an expert career counselor for university students in Bangladesh. Your goal is to identify a student's core skills, strengths, and interests through a friendly, conversational quiz.
+You are 'SkillDashAI', an expert career counselor for university students in Bangladesh. Your goal is to identify a student's core skills and interests through a friendly, encouraging chat.
 
-Here are your instructions:
-1.  Your first message is already provided. Start asking questions from your second turn.
-2.  Ask one engaging, open-ended question at a time. The questions should be situational puzzles or choice-based scenarios related to problem-solving, creativity, teamwork, technical aptitude, etc.
-3.  Keep the conversation going for about 4-5 questions from the user to get a good understanding of them.
-4.  Your tone should be friendly, encouraging, and slightly gamified. Use emojis where appropriate! 😊
-5.  Analyze the user's responses to identify patterns and infer their skills.
-6.  Once you have enough information (after 4-5 user replies), you MUST end the conversation. 
-7.  To end the conversation, you MUST respond with a valid JSON object only, with no other text before or after it. The JSON object must have this exact structure: 
-    {
-      "isComplete": true,
-      "summary": "<A brief 2-3 sentence summary of the user's profile>",
-      "topSkills": ["<Skill 1>", "<Skill 2>", "<Skill 3>"],
-      "suggestedCourses": [
-        {"title": "<Course Title 1>", "description": "<Brief course description>"},
-        {"title": "<Course Title 2>", "description": "<Brief course description>"}
-      ],
-      "nextStep": "<'resume' or 'jobs'>"
-    }
-8.  If the conversation is NOT complete, just provide the next question as a plain string. Do not respond in JSON format until the end.
-9.  The 'nextStep' should be 'resume' if the user needs to polish their CV, and 'jobs' if they seem ready to apply.
+Your personality:
+- You are warm, positive, and insightful.
+- You speak in a modern, conversational way, like a helpful mentor.
+- You understand the context of Bangladeshi students (e.g., university life, part-time jobs, local culture).
+
+Conversation flow:
+1. Your first message is a greeting and an opening question, which is hardcoded in the frontend.
+2. Ask one engaging, open-ended question at a time to understand the user's experiences, passions, and what they enjoy.
+3. Keep the conversation going for about 4-5 questions to gather enough information. Dig deeper into their answers with follow-up questions.
+4. After you have enough information, you MUST respond with a JSON object that follows a specific schema to end the conversation. Your response should start with "COMPLETE:" followed immediately by the JSON object.
+
+Example Questions to ask:
+- "That sounds interesting! What part of that did you enjoy the most?"
+- "If you had a free weekend to learn anything new, what would you choose and why?"
+- "What's a problem you've solved that made you feel smart?"
+- "Tell me about a time you worked in a team. What role did you naturally take on?"
+
+Final JSON output structure:
+When you have gathered enough information, your final response MUST be a JSON object prefixed with "COMPLETE:".
+The JSON object must have this exact structure:
+{
+  "summary": "A brief, encouraging paragraph summarizing the user's strengths.",
+  "topSkills": ["Skill 1", "Skill 2", "Skill 3", "Skill 4"],
+  "suggestedCourses": [
+    { "title": "Course Title 1", "description": "A short, compelling reason why this course fits them." },
+    { "title": "Course Title 2", "description": "A short, compelling reason why this course fits them." }
+  ],
+  "nextStep": "resume" or "jobs" // Choose 'resume' if they seem academic/need experience, 'jobs' if they seem skilled/ready.
+}
+Do not add any text before or after the JSON object.
 `;
 
-export async function POST(req: NextRequest) {
-  try {
-    const { messages } = await req.json();
-
-    if (!messages) {
-      return NextResponse.json(
-        { error: "No messages provided" },
-        { status: 400 }
-      );
-    }
-    
-    // Set up the model with the system instruction
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-preview-05-20",
-      systemInstruction: systemInstruction,
-    });
-    
-    // Construct chat history for the model
-    const chat = model.startChat({
-        history: messages.slice(0, -1).map((msg: { role: 'user' | 'assistant', content: string }) => ({
-            role: msg.role === 'assistant' ? 'model' : msg.role,
-            parts: [{ text: msg.content }],
-        })),
-    });
-
-    const lastMessage = messages[messages.length - 1].content;
-    const result = await chat.sendMessage(lastMessage);
-    const responseText = result.response.text();
-
-    // Try to parse the response as JSON. If it works, the quiz is complete.
+export async function POST(req: Request) {
     try {
-        const jsonResponse = JSON.parse(responseText);
-        return NextResponse.json(jsonResponse);
-    } catch (e) {
-        // If it's not JSON, it's just the next question in the conversation
-        return NextResponse.json({ reply: responseText, isComplete: false });
-    }
+        const { messages } = await req.json();
 
-  } catch (error) {
-    console.error("Error in discover-chat API:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
-  }
+        // Check if messages are provided
+        if (!messages) {
+            return new Response(JSON.stringify({ error: 'Messages are required' }), { status: 400 });
+        }
+
+        const model = genAI.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            systemInstruction: systemInstruction,
+        });
+
+        // Construct the history for the model
+        const history = messages.slice(0, -1).map((msg: { role: string; content: string }) => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content }],
+        }));
+
+        const latestUserMessage = messages[messages.length - 1].content;
+
+        const chat = model.startChat({
+            history: history,
+            generationConfig: {
+                maxOutputTokens: 1000,
+                temperature: 0.9,
+            },
+            // Safety settings to reduce the chance of blocking harmless content
+            safetySettings: [
+                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+            ],
+        });
+
+        const result = await chat.sendMessage(latestUserMessage);
+        const responseText = result.response.text();
+
+        // Check if the model has decided to end the conversation
+        if (responseText.startsWith("COMPLETE:")) {
+            const jsonString = responseText.substring("COMPLETE:".length);
+            try {
+                const suggestions = JSON.parse(jsonString);
+                return new Response(JSON.stringify({ isComplete: true, ...suggestions }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                });
+            } catch (e) {
+                // If JSON parsing fails, it's an error on the model's part.
+                return new Response(JSON.stringify({ error: 'Failed to parse final suggestions' }), { status: 500 });
+            }
+        } else {
+            // Continue the conversation
+            return new Response(JSON.stringify({ isComplete: false, reply: responseText }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
+    } catch (error) {
+        console.error('Error in discover-chat API:', error);
+        return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+    }
 }
+
