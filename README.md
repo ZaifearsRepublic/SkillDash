@@ -73,7 +73,7 @@ We transform career preparation into an engaging, gamified journey—helping you
 ## 🎯 About
 
 A project for the [**GP AI Future Maker**](https://gpfuturemakers.com/) competition.  
-Empowering Bangladesh's youth—**from classroom to career!**
+Empowering Bangladesh's youth from classroom to career!
 
 ---
 
