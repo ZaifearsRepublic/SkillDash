@@ -12,14 +12,14 @@ export default function SkillDashHome() {
   , []);
 
   const howItWorksSteps = [
-    { icon: <FaSearch />, title: "Discover", description: "Our smart AI quiz finds your hidden talents and interests in minutes." },
-    { icon: <FaGamepad />, title: "Play & Assess", description: "Complete fun, gamified 'Skill Quests' that simulate real-world tasks." },
-    { icon: <FaChartLine />, title: "Grow", description: "Level up with personalized micro-courses and projects from GP Academy." },
-    { icon: <FaBriefcase />, title: "Get Hired", description: "Unlock a curated job board and connect with top employers." },
+    { icon: <FaSearch />, title: "AI Skill Quest", description: "Our smart AI quiz discovers your hidden talents and interests in minutes." },
+    { icon: <FaGamepad />, title: "Learn & Grow", description: "Level up with personalized Skill Courses and AI-powered learning paths." },
+    { icon: <FaRobot />, title: "AI Resume Feedback", description: "Get instant, AI-driven feedback to make your resume stand out to employers." },
+    { icon: <FaBriefcase />, title: "Get Hired", description: "Unlock a curated board for part-time jobs and freelance gigs." },
   ];
   
   const keyFeatures = [
-    { icon: <FaGamepad />, name: "Skill Quests & Badges" },
+    { icon: <FaGamepad />, name: "Gamified Skill Quests" },
     { icon: <FaRobot />, name: "AI-Powered Coach" },
     { icon: <FaFileAlt />, name: "Smart Resume Builder" },
   ];
@@ -94,7 +94,7 @@ export default function SkillDashHome() {
               SkillDash
             </h1>
             <p className="max-w-3xl mx-auto text-lg sm:text-xl text-gray-600 dark:text-gray-400 mb-8">
-              The gamified platform for Bangladesh's youth to discover, grow, and showcase their real-world skills.
+              The AI-Powered platform for Bangladesh's youth to discover, grow, and showcase their real-world skills.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-2xl sm:text-3xl font-semibold mb-10">
@@ -117,14 +117,14 @@ export default function SkillDashHome() {
                   className="flex items-center justify-center px-8 py-4 bg-gradient-to-r from-blue-600 via-purple-500 to-indigo-600 text-white rounded-full font-semibold text-lg shadow-lg gap-3 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl focus:outline-none active:scale-100 active:shadow group-hover:shadow-purple-500/30"
               >
                   <FaPlay className="text-xl group-hover:animate-pulse" />
-                  <span className="tracking-wide">Find Your Skill</span>
+                  <span className="tracking-wide">Start Your AI Skill Quest</span>
               </button>
             </Link>
           </section>
           
           {/* --- How It Works Section --- */}
           <section className="mb-24 sm:mb-32">
-             <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12">Your Journey to Employability</h2>
+             <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12">Your AI-Powered Journey to Employability</h2>
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {howItWorksSteps.map(step => (
                     <div key={step.title} className="group bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 text-center hover:bg-white dark:hover:bg-gray-900 hover:border-blue-500/50 transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl">
@@ -138,30 +138,16 @@ export default function SkillDashHome() {
              </div>
           </section>
           
-          {/* --- GP Integration & Key Features Section --- */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="bg-gray-100 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-center text-blue-600 dark:text-blue-400">Powered by Grameenphone</h2>
-              <Image 
-                src="https://placehold.co/120x60/1f2937/FFFFFF?text=GP" 
-                alt="Grameenphone Logo" 
-                width={120} 
-                height={60} 
-                className="mx-auto my-6 rounded-md" 
-                unoptimized
-              />
-              <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed text-center">
-                SkillDash integrates with the GP ecosystem, connecting you to GP Academy courses and exclusive job opportunities from GP's trusted network of partners.
-              </p>
-            </div>
-            
-            <div className="space-y-6">
+          {/* --- Key Features Section --- */}
+          <section className="text-center">
+             <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12">Core Features Powered by AI</h2>
+            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
                {keyFeatures.map(feature => (
-                 <div key={feature.name} className="flex items-center gap-6 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:border-transparent hover:ring-2 hover:ring-blue-500">
+                 <div key={feature.name} className="flex flex-col items-center gap-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:border-transparent hover:ring-2 hover:ring-blue-500">
                     <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center text-blue-500 dark:text-blue-400 text-3xl flex-shrink-0">
                         {feature.icon}
                     </div>
-                    <span className="font-semibold text-xl">{feature.name}</span>
+                    <span className="font-semibold text-xl text-center">{feature.name}</span>
                  </div>
                ))}
             </div>
