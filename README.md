@@ -1,106 +1,79 @@
 <div align="center">
-<img src="https://www.google.com/search?q=https://raw.githubusercontent.com/zaifears/SkillDash/main/public/skilldash-logo.png" alt="SkillDash Logo" width="140" />
-<h1 style="border-bottom: none;">SkillDash</h1>
-<p><strong>The AI-Powered Skill Platform for Bangladesh’s Future Leaders</strong></p>
-<p>
-<a href="https://www.google.com/search?q=https://github.com/zaifears/SkillDash/blob/main/LICENSE">
-<img src="https://www.google.com/search?q=https://img.shields.io/github/license/zaifears/skilldash%3Fstyle%3Dfor-the-badge%26color%3Dblue" alt="License">
-</a>
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/Next.js-14-black%3Fstyle%3Dfor-the-badge%26logo%3Dnextdotjs" alt="Next.js">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/Tailwind_CSS-3-blue%3Fstyle%3Dfor-the-badge%26logo%3Dtailwindcss%26color%3D38BDF8" alt="Tailwind CSS">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/Gemini_API-Google-blueviolet%3Fstyle%3Dfor-the-badge%26logo%3Dgoogle-gemini" alt="Gemini API">
-</p>
+  <img src="public/skilldash-logo.png" alt="SkillDash Logo" width="120" />
+  <h1>SkillDash</h1>
+  <strong>The AI-Powered Skill Platform for Bangladesh’s Youth</strong>
+  <br/><br/>
+  <img src="https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=nextdotjs" alt="Next.js"/>
+  <img src="https://img.shields.io/badge/Tailwind_CSS-3-blue?style=for-the-badge&logo=tailwindcss" alt="Tailwind CSS"/>
+  <img src="https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript" alt="TypeScript"/>
+  <img src="https://img.shields.io/github/license/zaifearsrepublic/skilldash?style=for-the-badge" alt="License"/>
 </div>
 
-SkillDash is a revolutionary, all-in-one web platform designed to bridge the critical skill gap for university and college students in Bangladesh. We transform career preparation from a daunting task into an engaging, gamified journey, helping students discover their innate talents, learn in-demand skills, and connect directly to real-world job opportunities.
+---
 
-✨ Core Features
-🔍 AI Skill Quest
-Description: An interactive chat with our AI, SkillDashAI, that uses fun, situational questions to discover your hidden talents and strengths.
+SkillDash is an **all-in-one, AI-powered platform** to bridge the skill gap for university and college students in Bangladesh.  
+We transform career preparation into an engaging, gamified journey—helping you convert academic knowledge into real skills and connecting you directly to economic opportunities.
 
-Solves: "I don't know what my skills are."
+---
 
-🎮 Gamified Learning
-Description: Personalized learning pathways and "Skill Courses" suggested by the AI to turn your potential into certified, job-ready proficiency.
+## ✨ Core Features
 
-Solves: "How do I learn practical new skills?"
+| Feature               | Description |
+|-----------------------|-------------|
+| 🔍 **AI Skill Quest** | A fun, interactive chat with our SkillBot AI analyzes your interests/aptitudes and reveals hidden talents. Answers the question: *"What am I good at?"* |
+| 🎓 **Learn New Skills** | Get access to curated learning pathways and career courses tailored to your Skill Quest results. Build the job-ready skills employers need. |
+| 📄 **AI Resume Feedback** | Receive instant, actionable resume feedback from our AI Coach, tailored for specific job openings. |
+| 💼 **Find Opportunities** | Unlock exclusive access to a curated portal of part-time jobs and freelance gigs. Gain real-world experience and build your professional network. |
 
-🤖 AI Career Tools
-Description: Get instant resume feedback from our AI Coach and build a dynamic "SkillDash Resume" that showcases your verified abilities.
+---
 
-Solves: "Is my resume good enough for employers?"
+## 🛠️ Tech Stack
 
-💼 Opportunity Board
-Description: Unlock exclusive access to a curated job and freelance board with internships and part-time roles from our trusted partner companies.
+- **Framework:** [Next.js](https://nextjs.org/)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **AI:** Google Gemini
+- **Deployment:** Vercel
 
-Solves: "Where can I find a part-time job?"
+---
 
-🛠️ Tech Stack
-Framework: Next.js (React)
+## 🚀 Getting Started
 
-Language: TypeScript
+### **Prerequisites**
 
-Styling: Tailwind CSS
+- [Node.js](https://nodejs.org/)
+- [pnpm](https://pnpm.io/) (Install: `npm install -g pnpm`)
 
-AI & NLP: Google Gemini API
+### **Setup**
 
-Deployment: Vercel
+1. **Clone the repository:**
+    ```
+    git clone https://github.com/zaifearsrepublic/skilldash.git
+    ```
 
-🚀 Getting Started
-To get a local copy up and running, follow these simple steps.
+2. **Navigate into the project:**
+    ```
+    cd SkillDash
+    ```
 
-Prerequisites
-First, ensure you have Node.js and pnpm installed on your system.
+3. **Install dependencies:**
+    ```
+    pnpm install
+    ```
 
-# Install pnpm globally if you haven't already
-npm install -g pnpm
+4. **Run the development server:**
+    ```
+    pnpm dev
+    ```
 
-Installation & Setup
-Clone the Repository
+5. **Open [http://localhost:3000](http://localhost:3000) in your browser.**
 
-git clone [https://github.com/zaifears/SkillDash.git](https://github.com/zaifears/SkillDash.git)
+---
 
-Navigate into the Project Directory
+## 🎯 About
 
-cd SkillDash
+A project for the [**GP AI Future Maker**](https://gpfuturemakers.com/) competition.  
+Empowering Bangladesh's youth—**from classroom to career!**
 
-Install Dependencies
+---
 
-pnpm install
-
-Set Up Environment Variables
-
-Create a new file in the root of your project named .env.local.
-
-Add your Google Gemini API Key to this file. See the section below for details.
-
-GOOGLE_API_KEY="YOUR_GEMINI_API_KEY_HERE"
-
-Run the Development Server
-
-pnpm dev
-
-Open http://localhost:3000 in your browser to see the result!
-
-🔑 Environment Variables
-To run this project, you will need to add the following environment variable to your .env.local file:
-
-GOOGLE_API_KEY: Your API key from Google AI Studio.
-
-Where to get it:
-
-Go to Google AI Studio.
-
-Sign in and create a new project if you haven't already.
-
-Generate your API key.
-
-Important: Remember to also go to the Google Cloud Console and enable the "Vertex AI API" for your project.
-
-📄 License
-This project is distributed under the MIT License. See LICENSE for more information.
-
-<div align="center">
-<p>A project for the Grameenphone Futuremakers Competition.</p>
-<p>Designed with ❤️ for the future leaders of Bangladesh.</p>
-</div>
