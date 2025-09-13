@@ -78,7 +78,7 @@ export default function SkillDashHome() {
               <div className="outline-container relative w-full h-full">
                 <div className="absolute inset-0 bg-gray-800 dark:bg-white" style={{ clipPath: 'url(#blob-shape)' }}>
                    <Image
-                      src="https://placehold.co/160x160/7c3aed/ffffff?text=SD"
+                      src="/skilldash-logo.png"
                       alt="SkillDash Logo"
                       width={160}
                       height={160}
@@ -142,7 +142,14 @@ export default function SkillDashHome() {
           <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="bg-gray-100 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
               <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-center text-blue-600 dark:text-blue-400">Powered by Grameenphone</h2>
-              <Image src="https://placehold.co/120x60/000000/FFFFFF?text=GP" alt="Grameenphone Logo" width={120} height={60} className="mx-auto my-6" />
+              <Image 
+                src="https://placehold.co/120x60/1f2937/FFFFFF?text=GP" 
+                alt="Grameenphone Logo" 
+                width={120} 
+                height={60} 
+                className="mx-auto my-6 rounded-md" 
+                unoptimized
+              />
               <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed text-center">
                 SkillDash integrates with the GP ecosystem, connecting you to GP Academy courses and exclusive job opportunities from GP's trusted network of partners.
               </p>
