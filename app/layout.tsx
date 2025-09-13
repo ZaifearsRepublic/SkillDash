@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { GeistSans } from 'geist/font/sans';
 import "./globals.css";
-import Navbar from "@/components/Navbar"; // <-- Import the Navbar
+import Navbar from "@/components/Navbar"; // This path will now work correctly
 
 export const metadata: Metadata = {
   title: "SkillDash",
@@ -16,11 +16,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${GeistSans.className} antialiased bg-white dark:bg-black`}>
-        <Navbar /> {/* <-- Add the Navbar here */}
-        <main className="pt-16"> {/* <-- Add padding to push content down */}
+        <Navbar />
+        <main className="pt-16">
           {children}
         </main>
       </body>
     </html>
   );
 }
+
