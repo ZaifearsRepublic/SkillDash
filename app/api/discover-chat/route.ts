@@ -21,7 +21,7 @@ Conversation flow:
 1. Your first message is a greeting and an opening question, which is hardcoded in the frontend.
 2. Ask one engaging, open-ended question at a time to understand the user's experiences, passions, and what they enjoy.
 3. Keep the conversation going for about 4-5 questions to gather enough information. Dig deeper into their answers with follow-up questions.
-4. After you have enough information, you MUST respond with a JSON object that follows a specific schema to end the conversation. Your response should start with "COMPLETE:" followed immediately by the JSON object.
+4. After you have enough information, you MUST respond with a JSON object that follows a specific schema to end the conversation. Your response must contain "COMPLETE:" followed immediately by the JSON object.
 
 Example Questions to ask:
 - "That sounds interesting! What part of that did you enjoy the most?"
@@ -30,7 +30,7 @@ Example Questions to ask:
 - "Tell me about a time you worked in a team. What role did you naturally take on?"
 
 Final JSON output structure:
-When you have gathered enough information, your final response MUST be a JSON object prefixed with "COMPLETE:".
+When you have gathered enough information, your final response MUST contain a JSON object prefixed with "COMPLETE:".
 The JSON object must have this exact structure:
 {
   "summary": "A brief, encouraging paragraph summarizing the user's strengths.",
@@ -41,7 +41,7 @@ The JSON object must have this exact structure:
   ],
   "nextStep": "resume" or "jobs" // Choose 'resume' if they seem academic/need experience, 'jobs' if they seem skilled/ready.
 }
-Do not add any text before or after the JSON object.
+Do not add any text before or after the JSON object within the "COMPLETE:" block.
 `;
 
 export async function POST(req: Request) {
@@ -61,7 +61,6 @@ export async function POST(req: Request) {
         // Take all messages except the most recent one (from the user) to form the history
         let conversationHistory = messages.slice(0, -1);
 
-        // *** FIX APPLIED HERE ***
         // The API requires the history to start with a 'user' role.
         // We remove the initial 'assistant' greeting if it's the first message in the history.
         if (conversationHistory.length > 0 && conversationHistory[0].role === 'assistant') {
@@ -81,7 +80,6 @@ export async function POST(req: Request) {
                 maxOutputTokens: 1000,
                 temperature: 0.9,
             },
-            // Safety settings to reduce the chance of blocking harmless content
             safetySettings: [
                 { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
                 { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
@@ -93,9 +91,13 @@ export async function POST(req: Request) {
         const result = await chat.sendMessage(latestUserMessage);
         const responseText = result.response.text();
 
-        // Check if the model has decided to end the conversation
-        if (responseText.startsWith("COMPLETE:")) {
-            const jsonString = responseText.substring("COMPLETE:".length);
+        // *** FIX APPLIED HERE: Look for the COMPLETE marker anywhere in the string ***
+        const completeMarker = "COMPLETE:";
+        const completeIndex = responseText.indexOf(completeMarker);
+
+        if (completeIndex !== -1) {
+            // The marker was found, so the conversation is over.
+            const jsonString = responseText.substring(completeIndex + completeMarker.length);
             try {
                 const suggestions = JSON.parse(jsonString);
                 return new Response(JSON.stringify({ isComplete: true, ...suggestions }), {
@@ -104,10 +106,11 @@ export async function POST(req: Request) {
                 });
             } catch (e) {
                 // If JSON parsing fails, it's an error on the model's part.
+                console.error("Failed to parse JSON from AI response:", e);
                 return new Response(JSON.stringify({ error: 'Failed to parse final suggestions' }), { status: 500 });
             }
         } else {
-            // Continue the conversation
+            // The marker was not found, so continue the conversation.
             return new Response(JSON.stringify({ isComplete: false, reply: responseText }), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' },
