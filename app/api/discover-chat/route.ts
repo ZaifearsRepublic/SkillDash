@@ -58,8 +58,17 @@ export async function POST(req: Request) {
             systemInstruction: systemInstruction,
         });
 
-        // Construct the history for the model
-        const history = messages.slice(0, -1).map((msg: { role: string; content: string }) => ({
+        // Take all messages except the most recent one (from the user) to form the history
+        let conversationHistory = messages.slice(0, -1);
+
+        // *** FIX APPLIED HERE ***
+        // The API requires the history to start with a 'user' role.
+        // We remove the initial 'assistant' greeting if it's the first message in the history.
+        if (conversationHistory.length > 0 && conversationHistory[0].role === 'assistant') {
+            conversationHistory.shift(); // Removes the first element
+        }
+
+        const history = conversationHistory.map((msg: { role: string; content: string }) => ({
             role: msg.role === 'assistant' ? 'model' : 'user',
             parts: [{ text: msg.content }],
         }));
