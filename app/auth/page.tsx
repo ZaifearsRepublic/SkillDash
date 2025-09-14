@@ -36,6 +36,7 @@ export default function AuthPage() {
     useEffect(() => {
         const handleEmailLinkSignIn = async () => {
             if (isSignInWithEmailLink(auth, window.location.href)) {
+                setMessage('Verifying your sign-in link, please wait...');
                 let storedEmail = window.localStorage.getItem('emailForSignIn');
                 if (!storedEmail) {
                     storedEmail = window.prompt('Please provide your email for confirmation');
@@ -47,10 +48,14 @@ export default function AuthPage() {
                         window.localStorage.removeItem('emailForSignIn');
                         router.push('/profile');
                     } catch (err) {
-                        setError('Failed to sign in with email link. The link may be expired.');
+                        setError('Failed to sign in. The link may have expired or been used already.');
+                        setMessage('');
                     } finally {
                         setIsLoading(false);
                     }
+                } else {
+                     setError('Email not found. Please try signing up again.');
+                     setMessage('');
                 }
             }
         };
@@ -66,7 +71,7 @@ export default function AuthPage() {
         try {
             await sendSignInLinkToEmail(auth, email, actionCodeSettings);
             window.localStorage.setItem('emailForSignIn', email);
-            setMessage(`A sign-in link has been sent to ${email}! Check your inbox.`);
+            setMessage(`A sign-in link has been sent to ${email}! Check your inbox to complete your registration.`);
         } catch (err: any) {
             setError(err.message || 'Failed to send sign-in link.');
         } finally {
@@ -116,6 +121,7 @@ export default function AuthPage() {
     
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (isLoading) return;
         if (mode === 'login') handleLogin();
         else if (mode === 'signup') handleSignup();
     };
