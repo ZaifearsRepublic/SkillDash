@@ -68,11 +68,19 @@ const modelsToTry = [
   "llama-3.1-8b-instant"
 ];
 
-// Function to try Groq API first with model fallback
-async function tryGroqAPI(prompt: string, industryPreference: string, hasJobDescription: boolean): Promise<{ success: boolean; content?: string; error?: string }> {
+// --- API Call Functions ---
+
+// Main function to try Groq API with model fallback
+async function tryGroqAPI(messages: {role: string, content: string}[], industryPreference: string, hasJobDescription: boolean): Promise<{ success: boolean; content?: string; error?: string }> {
   if (!GROQ_API_KEY) {
     return { success: false, error: 'Groq API key not configured' };
   }
+
+  const systemMessage = { 
+    role: "system", 
+    content: createSystemInstruction(industryPreference, hasJobDescription) 
+  };
+  const messagesForApi = [systemMessage, ...messages];
 
   for (const model of modelsToTry) {
     try {
@@ -84,81 +92,59 @@ async function tryGroqAPI(prompt: string, industryPreference: string, hasJobDesc
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${GROQ_API_KEY}`
         },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { 
-              role: "system", 
-              content: createSystemInstruction(industryPreference, hasJobDescription) 
-            },
-            { role: "user", content: prompt }
-          ],
-          max_tokens: 2000,
-          temperature: 0.7,
-        }),
-        signal: AbortSignal.timeout(30000), // 30 second timeout
+        body: JSON.stringify({ model, messages: messagesForApi }),
+        signal: AbortSignal.timeout(30000),
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.warn(`Groq API with model ${model} failed (${response.status}):`, errorText);
-        // Don't return yet, let the loop try the next model
-        continue;
+        console.warn(`Groq API with model ${model} failed (${response.status})`);
+        continue; // Try the next model
       }
 
       const data = await response.json();
-      
       if (!data.choices?.[0]?.message?.content) {
-        console.warn(`Invalid Groq response structure from model ${model}:`, data);
-        continue;
+        console.warn(`Invalid Groq response from model ${model}`);
+        continue; // Try the next model
       }
 
       console.log(`✅ Groq API successful with model: ${model}`);
       return { success: true, content: data.choices[0].message.content };
 
     } catch (error: any) {
-      console.warn(`Groq API error with model ${model}:`, error);
-      // Let the loop try the next model
+      console.warn(`Groq API error with model ${model}:`, error.name);
     }
   }
 
   return { success: false, error: 'all_groq_models_failed' };
 }
 
-// Function to use Google Gemini as fallback
-async function useGeminiAPI(prompt: string, messages: any[], isInitialAnalysis: boolean, industryPreference: string, hasJobDescription: boolean): Promise<string> {
+// Function to use Google Gemini as the final fallback
+async function useGeminiAPI(messages: {role: string, content: string}[], industryPreference: string, hasJobDescription: boolean): Promise<string> {
   console.log('🔄 Falling back to Google Gemini...');
   
   const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",
     systemInstruction: createSystemInstruction(industryPreference, hasJobDescription),
-    generationConfig: {
-      maxOutputTokens: 2000,
-      temperature: 0.7,
-    },
     safetySettings: [
-      { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-      { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
     ],
   });
 
-  let result;
-
-  if (isInitialAnalysis) {
-    result = await model.generateContent(prompt);
-  } else {
-    const history = messages.slice(0, -1).map((msg: any) => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: typeof msg.content === 'string' ? msg.content : 'User message with custom component' }] 
-    }));
-    const chat = model.startChat({ history });
-    const latestMessage = messages[messages.length - 1]?.content || '';
-    result = await chat.sendMessage(latestMessage as string);
-  }
+  const history = messages.slice(0, -1).map(msg => ({
+    role: msg.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: msg.content }]
+  }));
+  
+  const chat = model.startChat({ history });
+  const latestMessage = messages[messages.length - 1]?.content || '';
+  const result = await chat.sendMessage(latestMessage);
 
   console.log('✅ Google Gemini successful');
   return result.response.text();
 }
+
+
+// --- Main API Route Handler ---
 
 export async function POST(req: NextRequest) {
   let usedProvider = 'unknown';
@@ -173,51 +159,32 @@ export async function POST(req: NextRequest) {
       jobDescription = null 
     } = body;
 
-    let currentResumeText = '';
-    let isInitialAnalysis = false;
+    let apiMessages: { role: string; content: string }[] = [];
+    const isInitialAnalysis = !!resumeText;
 
-    if (resumeText) {
-      isInitialAnalysis = true;
-      currentResumeText = resumeText.trim();
-      
-      if (currentResumeText.length < 50) {
-        return NextResponse.json({ 
-          error: 'Resume text is too short. Please provide a complete resume.' 
-        }, { status: 400 });
-      }
-    } else if (messages && messages.length > 0) {
-      const firstMessage = messages.find((msg: any) => 
-        msg.role === 'user' && msg.content && typeof msg.content === 'string' && msg.content.length > 100
-      );
-      
-      if (firstMessage) {
-        currentResumeText = firstMessage.content as string;
-      } else {
-        return NextResponse.json({ 
-          error: 'No resume found in conversation history.' 
-        }, { status: 400 });
-      }
-    } else {
-      return NextResponse.json({ 
-        error: 'No resume content provided.' 
-      }, { status: 400 });
-    }
-
-    // Prepare the prompt
-    let prompt;
     if (isInitialAnalysis) {
-      prompt = `Please analyze this resume for a student interested in the ${industryPreference} industry.\n\n**Resume Content:**\n${currentResumeText}`;
+      // For the first analysis, create a single user message with all context
+      let prompt = `Please analyze this resume for a student interested in the ${industryPreference} industry.\n\n**Resume Content:**\n${resumeText}`;
       if (jobDescription) {
         prompt += `\n\n**Target Job Description:**\n${jobDescription}`;
       }
+      apiMessages = [{ role: 'user', content: prompt }];
     } else {
-      prompt = messages[messages.length - 1]?.content || '';
+      // For follow-ups, use the entire message history from the client
+      apiMessages = messages.map((msg: any) => ({
+        role: msg.role,
+        content: typeof msg.content === 'string' ? msg.content : 'User sent a complex message.' // Sanitize content
+      })).filter(msg => msg.role === 'user' || msg.role === 'assistant');
+    }
+
+    if (apiMessages.length === 0) {
+      return NextResponse.json({ error: 'No content provided for analysis.' }, { status: 400 });
     }
 
     let feedback = '';
 
-    // Strategy 1: Try Groq first with internal model fallback
-    const groqResult = await tryGroqAPI(prompt, industryPreference, !!jobDescription);
+    // Strategy 1: Try Groq first
+    const groqResult = await tryGroqAPI(apiMessages, industryPreference, !!jobDescription);
     
     if (groqResult.success && groqResult.content) {
       feedback = groqResult.content;
@@ -225,41 +192,23 @@ export async function POST(req: NextRequest) {
     } else {
       // Strategy 2: Fallback to Google Gemini
       fallbackReason = groqResult.error || 'unknown_error';
-      console.log(`Groq failed (${fallbackReason}), using Gemini fallback...`);
-      
-      feedback = await useGeminiAPI(prompt, messages, isInitialAnalysis, industryPreference, !!jobDescription);
+      const geminiMessages = apiMessages.map(m => ({...m, role: m.role === 'assistant' ? 'model' : 'user'}));
+      feedback = await useGeminiAPI(geminiMessages, industryPreference, !!jobDescription);
       usedProvider = 'gemini';
     }
 
     const providerInfo = usedProvider === 'groq' 
       ? 'Powered by Groq AI' 
-      : fallbackReason === 'rate_limit' 
-        ? 'Powered by Google Gemini (Groq at capacity)'
-        : 'Powered by Google Gemini';
-
-    console.log(`✅ Response generated using ${usedProvider}${fallbackReason ? ` (fallback reason: ${fallbackReason})` : ''}`);
+      : `Powered by Google Gemini (Groq fallback: ${fallbackReason})`;
 
     return NextResponse.json({ 
       feedback,
-      isInitialAnalysis,
-      provider: usedProvider,
-      fallbackReason: fallbackReason || null,
-      providerInfo,
+      isInitialAnalysis
     });
 
   } catch (error: any) {
-    console.error(`Resume feedback error (provider: ${usedProvider}):`, error);
-    
-    let errorMessage = 'An unexpected error occurred while analyzing your resume.';
-    if (error.message?.includes('API key')) {
-      errorMessage = 'AI service configuration error. Please contact support.';
-    } else if (error.message?.includes('quota') || error.message?.includes('limit')) {
-      errorMessage = 'AI service rate limit reached. Please try again in a few minutes.';
-    } else if (error.message?.includes('safety')) {
-      errorMessage = 'Content blocked by safety filters. Please ensure your resume contains appropriate professional content.';
-    }
-    
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    console.error(`Resume feedback error:`, error);
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 }
 
