@@ -12,15 +12,16 @@ interface Message {
 interface SkillSuggestions {
   summary: string;
   topSkills: string[];
+  skillsToDevelop: string[];
   suggestedCourses: { title: string; description: string }[];
   nextStep: 'resume' | 'jobs';
 }
 
 // Updated BotIcon to use the specified image
 const BotIcon = () => (
-    <img 
-        src="/discover/discover-ai.png" 
-        alt="SkillDash AI Avatar" 
+    <img
+        src="/discover/discover-ai.png"
+        alt="SkillDash AI Avatar"
         className="w-10 h-10 rounded-full shadow-md object-cover"
     />
 );
@@ -42,6 +43,7 @@ export default function DiscoverPage() {
   const [suggestions, setSuggestions] = useState<SkillSuggestions | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const userInputRef = useRef<HTMLInputElement>(null);
 
   // Function to automatically scroll to the latest message
   const scrollToBottom = () => {
@@ -51,13 +53,21 @@ export default function DiscoverPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+  
+  // Autofocus the input after the bot responds
+  useEffect(() => {
+    if (!isLoading && !suggestions) {
+      userInputRef.current?.focus();
+    }
+  }, [isLoading, suggestions]);
+
 
   // Start the conversation when the component loads
   useEffect(() => {
     setMessages([
       {
         role: 'assistant',
-        content: "Hi there! I'm SkillDashAI. I'm here to help you discover your hidden talents through a few fun questions. Ready to start your Skill Quest? Let's begin! What's a project or activity (inside or outside of school) that you felt really proud of?"
+        content: "Hi there! I'm SkillDashAI. Let's start your Skill Quest. If you had a completely free weekend to work on any project you wanted, what would you build or create?"
       }
     ]);
   }, []);
@@ -81,7 +91,7 @@ export default function DiscoverPage() {
 
       if (!response.ok) throw new Error('API request failed');
       const data = await response.json();
-      
+
       let finalBotMessage: Message;
       if (data.isComplete) {
         setSuggestions(data);
@@ -106,15 +116,26 @@ export default function DiscoverPage() {
   // Modern UI for displaying the final skill suggestions
   const SuggestionsCard = ({ data }: { data: SkillSuggestions }) => (
     <div className="bg-white/70 dark:bg-gray-800/50 backdrop-blur-lg rounded-2xl shadow-lg p-6 mt-6 border border-black/5 animate-fade-in">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Your Skill Quest Results!</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Skill Discover AI has finished its job!</h2>
         <p className="text-gray-600 dark:text-gray-300 mb-6">{data.summary}</p>
-        
+
         <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mt-4 mb-3">Your Top Skills</h3>
         <div className="flex flex-wrap gap-2 mb-6">
             {data.topSkills.map(skill => (
                 <span key={skill} className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 text-sm font-medium px-3 py-1.5 rounded-full">{skill}</span>
             ))}
         </div>
+
+        {data.skillsToDevelop && data.skillsToDevelop.length > 0 && (
+            <>
+                <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mt-6 mb-3">Skills to Develop</h3>
+                <div className="flex flex-wrap gap-2 mb-6">
+                    {data.skillsToDevelop.map(skill => (
+                        <span key={skill} className="bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 text-sm font-medium px-3 py-1.5 rounded-full">{skill}</span>
+                    ))}
+                </div>
+            </>
+        )}
 
         <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mt-4 mb-3">Recommended Courses</h3>
         <div className="space-y-3 mb-6">
@@ -127,15 +148,20 @@ export default function DiscoverPage() {
         </div>
 
         <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mt-4 mb-3">Your Next Step</h3>
-        {data.nextStep === 'resume' ? (
-            <a href="/resume-feedback" className="w-full text-center bg-gradient-to-r from-green-500 to-teal-600 text-white font-bold py-3 px-4 rounded-lg hover:shadow-xl transition-all transform hover:scale-[1.02] shadow-md">
-                Go to AI Resume Feedback
+        <div className="flex flex-col sm:flex-row gap-4 mt-4">
+             <a href="/learn-skill" className="w-full text-center bg-gradient-to-r from-purple-500 to-violet-600 text-white font-bold py-3 px-4 rounded-lg hover:shadow-xl transition-all transform hover:scale-[1.02] shadow-md flex-1">
+                Learn Skills
             </a>
-        ) : (
-            <a href="/opportunities" className="w-full text-center bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-3 px-4 rounded-lg hover:shadow-xl transition-all transform hover:scale-[1.02] shadow-md">
-                Explore Jobs & Gigs
-            </a>
-        )}
+            {data.nextStep === 'resume' ? (
+                <a href="/resume-feedback" className="w-full text-center bg-gradient-to-r from-green-500 to-teal-600 text-white font-bold py-3 px-4 rounded-lg hover:shadow-xl transition-all transform hover:scale-[1.02] shadow-md flex-1">
+                    Go to AI Resume Feedback
+                </a>
+            ) : (
+                <a href="/opportunities" className="w-full text-center bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-3 px-4 rounded-lg hover:shadow-xl transition-all transform hover:scale-[1.02] shadow-md flex-1">
+                    Explore Jobs & Gigs
+                </a>
+            )}
+        </div>
     </div>
   );
 
@@ -150,7 +176,7 @@ export default function DiscoverPage() {
         animation: fade-in 0.5s ease-out forwards;
       }
     `}</style>
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-black font-sans antialiased">
+    <div className="flex flex-col h-[calc(100vh-5rem)] bg-gray-50 dark:bg-black font-sans antialiased">
       <header className="bg-white/80 dark:bg-black/50 backdrop-blur-lg border-b border-black/5 p-4 sticky top-0 z-10">
         <h1 className="text-2xl font-bold text-center text-gray-800 dark:text-white">SkillDash <span className="font-light bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">Discover</span></h1>
         <p className="text-center text-sm text-gray-500 dark:text-gray-400">Your Personal AI Career Guide</p>
@@ -187,6 +213,7 @@ export default function DiscoverPage() {
         <div className="max-w-3xl mx-auto">
           <form onSubmit={handleSubmit} className="flex items-center space-x-3">
             <input
+              ref={userInputRef}
               type="text"
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
@@ -210,3 +237,4 @@ export default function DiscoverPage() {
     </>
   );
 }
+
