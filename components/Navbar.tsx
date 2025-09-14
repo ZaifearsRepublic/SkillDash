@@ -38,13 +38,13 @@ export default function Navbar() {
   ];
 
   const HamburgerIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
     </svg>
   );
   
   const CloseIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
     </svg>
   );
@@ -52,34 +52,34 @@ export default function Navbar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20"> {/* Increased height */}
           {/* Logo and Site Name */}
-          <a href="/" className="flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-white">
+          <a href="/" className="flex items-center gap-3 text-2xl font-bold text-gray-800 dark:text-white"> {/* Increased size and gap */}
             <img
               src="/skilldash-logo.png"
               alt="SkillDash Logo"
-              width="32"
-              height="32"
-              className="h-8 w-8"
+              width="40"
+              height="40"
+              className="h-10 w-10" // Increased size
             />
             <span>SkillDash</span>
           </a>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-2">
+          <nav className="hidden md:flex items-center gap-3"> {/* Increased gap */}
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <a
                   key={link.name}
                   href={link.href}
-                  className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex items-center px-4 py-3 text-base font-medium rounded-md transition-colors ${ // Increased padding and font size
                     isActive
                       ? 'bg-blue-600 text-white'
                       : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
-                  {link.icon && <img src={link.icon} alt="" className="w-4 h-4 mr-1.5" />}
+                  {link.icon && <img src={link.icon} alt="" className="w-5 h-5 mr-2" />} {/* Increased icon size */}
                   {link.name}
                 </a>
               );
@@ -102,12 +102,12 @@ export default function Navbar() {
       {/* Mobile Menu */}
       <div
         className={`
-          md:hidden absolute top-16 left-0 w-full h-screen bg-white dark:bg-black 
+          md:hidden absolute top-20 left-0 w-full h-screen bg-white dark:bg-black 
           transition-all duration-300 ease-in-out transform
           ${isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}
         `}
       >
-        <nav className="flex flex-col p-4 gap-2">
+        <nav className="flex flex-col p-4 gap-4"> {/* Increased gap */}
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -115,7 +115,7 @@ export default function Navbar() {
                 key={link.name}
                 href={link.href}
                 onClick={() => setIsMenuOpen(false)}
-                className={`flex items-center justify-center px-4 py-3 text-lg font-medium rounded-md text-center ${
+                className={`flex items-center justify-center px-4 py-4 text-lg font-medium rounded-md text-center ${ // Increased padding
                   isActive
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'

@@ -26,11 +26,14 @@ export default function LearnSkillPage() {
 
         {/* GP Academy Feature Card */}
         <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 sm:p-12 text-center transform transition-transform duration-300 hover:scale-[1.02] hover:shadow-xl">
-            <img 
-                src="/learn-skill/gp-academy-logo.png" 
-                alt="GP Academy Logo" 
-                className="h-12 sm:h-16 mx-auto mb-6"
-            />
+            {/* Logo Wrapper with white background */}
+            <div className="inline-block p-6 bg-white rounded-2xl mx-auto mb-8 shadow-md">
+                <img 
+                    src="/learn-skill/gp-academy-logo.png" 
+                    alt="GP Academy Logo" 
+                    className="h-16 sm:h-20"
+                />
+            </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-4">Our Top Recommendation</h2>
             <p className="max-w-xl mx-auto text-gray-600 dark:text-gray-400 mb-8">
                 Grameenphone Academy offers a wide range of courses focused on future-ready skills, from digital marketing to cybersecurity. It's the perfect place to turn your potential into proficiency.

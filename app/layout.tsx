@@ -22,7 +22,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} antialiased bg-white dark:bg-black`}>
         <Navbar />
-        <main className="pt-16">
+        <main className="pt-20"> {/* Changed from pt-16 to pt-20 */}
           {children}
         </main>
       </body>
