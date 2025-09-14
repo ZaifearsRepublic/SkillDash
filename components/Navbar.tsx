@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import AuthStatus from '@/components/AuthStatus';
 
 export default function Navbar() {
   const [pathname, setPathname] = useState('');
@@ -84,10 +85,12 @@ export default function Navbar() {
                 </a>
               );
             })}
+             <AuthStatus />
           </nav>
           
           {/* Hamburger Menu Button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center gap-2">
+            <AuthStatus />
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
