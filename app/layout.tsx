@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { GeistSans } from 'geist/font/sans';
+import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar"; // This path will now work correctly
+import Navbar from "@/components/Navbar";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "SkillDash",
@@ -15,7 +17,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${GeistSans.className} antialiased bg-white dark:bg-black`}>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      </head>
+      <body className={`${inter.className} antialiased bg-white dark:bg-black`}>
         <Navbar />
         <main className="pt-16">
           {children}
@@ -24,4 +29,3 @@ export default function RootLayout({
     </html>
   );
 }
-
