@@ -203,7 +203,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ 
       feedback,
-      isInitialAnalysis
+      isInitialAnalysis,
+      providerInfo // Now sending this to the frontend
     });
 
   } catch (error: any) {
