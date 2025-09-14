@@ -1,4 +1,4 @@
-import { initializeApp, getApps } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -10,20 +10,17 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-let app;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-}
+// Initialize Firebase correctly to avoid re-initialization
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
 // Action code settings for email link authentication
 const actionCodeSettings = {
-  // URL you want to redirect back to. The domain (www.example.com) for this
-  // URL must be whitelisted in the Firebase Console.
-  url: 'http://localhost:3000/profile', // We will redirect to profile page after sign in
+  // This URL is where the user will be redirected after clicking the email link.
+  // It must be the page that contains the logic to handle the sign-in.
+  url: 'http://localhost:3000/auth', 
   // This must be true.
   handleCodeInApp: true,
 };

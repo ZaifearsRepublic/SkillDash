@@ -11,7 +11,6 @@ import {
 import { auth, googleProvider, actionCodeSettings } from '../../lib/firebase';
 import { useRouter } from 'next/navigation';
 
-type AuthMode = 'login' | 'signup';
 
 const GoogleIcon = () => (
     <svg className="w-5 h-5" viewBox="0 0 48 48">
@@ -24,9 +23,7 @@ const GoogleIcon = () => (
 
 
 export default function AuthPage() {
-    const [mode, setMode] = useState<AuthMode>('login');
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
@@ -63,7 +60,7 @@ export default function AuthPage() {
     }, [router]);
 
 
-    const handleSignup = async () => {
+    const handleEmailSignIn = async () => {
         setIsLoading(true);
         setError('');
         setMessage('');
@@ -71,7 +68,7 @@ export default function AuthPage() {
         try {
             await sendSignInLinkToEmail(auth, email, actionCodeSettings);
             window.localStorage.setItem('emailForSignIn', email);
-            setMessage(`A sign-in link has been sent to ${email}! Check your inbox to complete your registration.`);
+            setMessage(`A sign-in link has been sent to ${email}! Check your inbox to sign in.`);
         } catch (err: any) {
             setError(err.message || 'Failed to send sign-in link.');
         } finally {
@@ -79,32 +76,6 @@ export default function AuthPage() {
         }
     };
     
-    const handleLogin = async () => {
-        setIsLoading(true);
-        setError('');
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            router.push('/profile');
-        } catch (err: any) {
-             switch (err.code) {
-                case 'auth/user-not-found':
-                    setError('No account found with this email.');
-                    break;
-                case 'auth/wrong-password':
-                    setError('Incorrect password. Please try again.');
-                    break;
-                case 'auth/invalid-credential':
-                     setError('Invalid credentials. Please check your email and password.');
-                     break;
-                default:
-                    setError('Failed to log in. Please try again.');
-                    break;
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
      const handleGoogleSignIn = async () => {
         setIsLoading(true);
         setError('');
@@ -122,14 +93,7 @@ export default function AuthPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (isLoading) return;
-        if (mode === 'login') handleLogin();
-        else if (mode === 'signup') handleSignup();
-    };
-
-    const toggleMode = () => {
-        setMode(mode === 'login' ? 'signup' : 'login');
-        setError('');
-        setMessage('');
+        handleEmailSignIn();
     };
 
     return (
@@ -138,68 +102,50 @@ export default function AuthPage() {
                 <div className="text-center mb-8">
                     <img src="/skilldash-logo.png" alt="SkillDash Logo" className="w-16 h-16 mx-auto mb-4" />
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
-                        {mode === 'login' && 'Welcome Back'}
-                        {mode === 'signup' && 'Create Your Account'}
+                        Sign In or Sign Up
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400">
-                        {mode === 'login' && 'Log in to continue your journey.'}
-                        {mode === 'signup' && 'Sign up with a magic link sent to your email.'}
+                        Enter your email for a password-free magic link.
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
                         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
-                    {mode === 'login' && (
-                        <div>
-                            <label htmlFor="password"className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
-                            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                        </div>
-                    )}
 
-                    {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-                    {message && <p className="text-green-500 text-sm text-center">{message}</p>}
+                    {error && <p className="text-red-500 text-sm text-center pt-2">{error}</p>}
+                    {message && <p className="text-green-500 text-sm text-center pt-2">{message}</p>}
                     
                     <button type="submit" disabled={isLoading} className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold py-3 rounded-lg hover:shadow-xl transition-all disabled:opacity-50">
-                        {isLoading ? 'Processing...' : (mode === 'login' ? 'Log In' : 'Send Magic Link')}
+                        {isLoading ? 'Sending...' : 'Send Magic Link'}
                     </button>
                 </form>
 
-                <>
-                    <div className="relative my-6">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-gray-300 dark:border-gray-700" />
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                            <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
-                                OR
-                            </span>
-                        </div>
+                <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300 dark:border-gray-700" />
                     </div>
-
-                    <div>
-                        <button
-                            type="button"
-                            onClick={handleGoogleSignIn}
-                            disabled={isLoading}
-                            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
-                        >
-                            <GoogleIcon />
-                            Sign in with Google
-                        </button>
+                    <div className="relative flex justify-center text-sm">
+                        <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
+                            OR
+                        </span>
                     </div>
+                </div>
 
-                    <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-                        {mode === 'login' ? "Don't have an account?" : "Already have an account?"}{' '}
-                        <button onClick={toggleMode} className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
-                            {mode === 'login' ? 'Sign up' : 'Log in'}
-                        </button>
-                    </p>
-                </>
+                <div>
+                    <button
+                        type="button"
+                        onClick={handleGoogleSignIn}
+                        disabled={isLoading}
+                        className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                    >
+                        <GoogleIcon />
+                        Sign in with Google
+                    </button>
+                </div>
             </div>
         </div>
     );
 }
-
