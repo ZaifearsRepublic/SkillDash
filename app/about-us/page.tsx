@@ -29,6 +29,12 @@ const teamMembers = [
 ];
 
 export default function AboutUsPage() {
+    const cardGradients = [
+        "from-blue-50 to-purple-100 dark:from-slate-900 dark:to-slate-800",
+        "from-pink-50 to-blue-100 dark:from-slate-900 dark:to-slate-800",
+        "from-violet-50 to-sky-100 dark:from-slate-900 dark:to-slate-800"
+    ];
+
   return (
     <div className="min-h-screen bg-white dark:bg-black text-gray-800 dark:text-gray-200 py-12 sm:py-24 px-4">
       <div className="max-w-7xl mx-auto">
@@ -50,27 +56,22 @@ export default function AboutUsPage() {
           </h2>
         </section>
 
-        {/* Team Members Section (colorful cards, not b&w) */}
+        {/* Team Members Section */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12 mb-16 md:mb-24">
           {teamMembers.map((member, idx) => (
             <div
               key={member.name}
-              className={`group relative flex flex-col items-center text-center p-8 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 border-0 bg-gradient-to-br ${
-                [
-                  "from-blue-50 via-purple-100 to-blue-200",
-                  "from-pink-50 via-purple-100 to-blue-100",
-                  "from-violet-50 via-sky-100 to-purple-100"
-                ][idx % 3]
+              className={`group relative flex flex-col items-center text-center p-8 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-200/50 dark:border-gray-800 bg-gradient-to-br ${
+                cardGradients[idx % 3]
               }`}
             >
-              <div className="relative w-32 h-32 mb-6 rounded-full overflow-hidden shadow-lg border-4 border-white dark:border-gray-800 transform group-hover:scale-110 transition-transform duration-300">
+              <div className="relative w-32 h-32 mb-6 rounded-full overflow-hidden shadow-lg border-4 border-white dark:border-gray-700 transform group-hover:scale-110 transition-transform duration-300">
                 <img
                   src={member.imageUrl}
                   alt={`Profile picture of ${member.name}`}
                   width={128}
                   height={128}
                   className="w-full h-full object-cover"
-                  style={{ filter: "none" }} // no grayscale
                 />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{member.name}</h2>

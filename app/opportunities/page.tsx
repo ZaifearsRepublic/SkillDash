@@ -1,24 +1,57 @@
 import React from 'react';
 
-// A simple inline SVG to replace the react-icons dependency
-const BriefcaseIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+const SearchIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
     </svg>
 );
 
+const UserPlusIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M18 11v6m-3-3h6" />
+    </svg>
+);
+
+
 export default function OpportunitiesPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-black text-center px-4">
-      <div className="w-24 h-24 p-6 flex items-center justify-center bg-yellow-100 dark:bg-yellow-900/50 rounded-2xl mb-6 text-yellow-500">
-        <BriefcaseIcon />
+    <div className="min-h-screen bg-white dark:bg-black flex flex-col items-center justify-center text-center p-4">
+      <div className="max-w-4xl w-full">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter mb-4 bg-gradient-to-r from-blue-500 via-purple-400 to-pink-500 bg-clip-text text-transparent">
+          Unlock Your Next Opportunity
+        </h1>
+        <p className="max-w-2xl mx-auto text-lg text-gray-600 dark:text-gray-400 mb-12">
+          Are you looking for your next role, or searching for the perfect candidate? Select your path below to get started.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* I am seeking a job card */}
+          <a
+            href="/opportunities/job-seeker"
+            className="group relative flex flex-col items-center justify-center p-12 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
+          >
+            <div className="mb-4">
+              <SearchIcon />
+            </div>
+            <h2 className="text-3xl font-bold mb-2">I am seeking a job</h2>
+            <p className="text-white/80">Find part-time roles, internships, and freelance gigs tailored to your skills.</p>
+             <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-white/10 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500" />
+          </a>
+
+          {/* I am hiring card */}
+          <a
+            href="/opportunities/hiring"
+            className="group relative flex flex-col items-center justify-center p-12 bg-gray-100 dark:bg-gray-900/50 text-gray-800 dark:text-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200 dark:border-gray-800 hover:border-blue-500"
+          >
+            <div className="mb-4 text-gray-500 dark:text-gray-400 group-hover:text-blue-500 transition-colors">
+              <UserPlusIcon />
+            </div>
+            <h2 className="text-3xl font-bold mb-2">I am hiring</h2>
+            <p className="text-gray-600 dark:text-gray-400">Post a job opening and find skilled, ambitious student talent for your team.</p>
+          </a>
+        </div>
       </div>
-      <h1 className="text-4xl sm:text-5xl font-bold text-gray-800 dark:text-white mb-4">
-        Job & Freelance Opportunities
-      </h1>
-      <p className="max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-        Coming soon! This is where you'll find a curated list of part-time jobs and freelance gigs tailored to your skills. Start earning and gaining experience while you study.
-      </p>
     </div>
   );
 }
