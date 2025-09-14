@@ -30,9 +30,9 @@ export default function Navbar() {
   }, [isMenuOpen]);
 
   const navLinks = [
-    { name: 'Skill Quest', href: '/discover' },
-    { name: 'Learn Skills', href: 'https://www.grameenphone.academy/', isExternal: true },
-    { name: 'Resume Feedback', href: '/resume-feedback' },
+    { name: 'Discover', href: '/discover', icon: '/homepage/ai-icon.png' },
+    { name: 'Learn Skills', href: '/learn-skill' },
+    { name: 'AI Resume Feedback', href: '/resume-feedback', icon: '/homepage/ai-icon.png' },
     { name: 'Opportunities', href: '/opportunities' },
     { name: 'About Us', href: '/about-us' },
   ];
@@ -68,19 +68,18 @@ export default function Navbar() {
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-2">
             {navLinks.map((link) => {
-              const isActive = !link.isExternal && pathname === link.href;
+              const isActive = pathname === link.href;
               return (
                 <a
                   key={link.name}
                   href={link.href}
-                  target={link.isExternal ? '_blank' : '_self'}
-                  rel={link.isExternal ? 'noopener noreferrer' : ''}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                     isActive
                       ? 'bg-blue-600 text-white'
                       : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
+                  {link.icon && <img src={link.icon} alt="" className="w-4 h-4 mr-1.5" />}
                   {link.name}
                 </a>
               );
@@ -110,21 +109,20 @@ export default function Navbar() {
       >
         <nav className="flex flex-col p-4 gap-2">
           {navLinks.map((link) => {
-            const isActive = !link.isExternal && pathname === link.href;
+            const isActive = pathname === link.href;
             return (
               <a
                 key={link.name}
                 href={link.href}
-                target={link.isExternal ? '_blank' : '_self'}
-                rel={link.isExternal ? 'noopener noreferrer' : ''}
                 onClick={() => setIsMenuOpen(false)}
-                className={`block px-4 py-3 text-lg font-medium rounded-md text-center ${
+                className={`flex items-center justify-center px-4 py-3 text-lg font-medium rounded-md text-center ${
                   isActive
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               >
-                {link.name}
+                {link.icon && <img src={link.icon} alt="" className="w-5 h-5 mr-2" />}
+                <span>{link.name}</span>
               </a>
             );
           })}
