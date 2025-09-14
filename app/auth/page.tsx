@@ -1,16 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-    createUserWithEmailAndPassword, 
     signInWithEmailAndPassword,
     signInWithPopup,
-    GoogleAuthProvider
+    sendSignInLinkToEmail,
+    isSignInWithEmailLink,
+    signInWithEmailLink
 } from 'firebase/auth';
-import { auth, googleProvider } from '../../lib/firebase';
+import { auth, googleProvider, actionCodeSettings } from '../../lib/firebase';
 import { useRouter } from 'next/navigation';
 
-type AuthMode = 'login' | 'signup' | 'verify-otp';
+type AuthMode = 'login' | 'signup';
 
 const GoogleIcon = () => (
     <svg className="w-5 h-5" viewBox="0 0 48 48">
@@ -26,70 +27,53 @@ export default function AuthPage() {
     const [mode, setMode] = useState<AuthMode>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [otp, setOtp] = useState('');
-    const [generatedOtp, setGeneratedOtp] = useState(''); // To display the simulated OTP
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const router = useRouter();
 
+    // Effect to handle email link sign-in on page load
+    useEffect(() => {
+        const handleEmailLinkSignIn = async () => {
+            if (isSignInWithEmailLink(auth, window.location.href)) {
+                let storedEmail = window.localStorage.getItem('emailForSignIn');
+                if (!storedEmail) {
+                    storedEmail = window.prompt('Please provide your email for confirmation');
+                }
+                if(storedEmail) {
+                    setIsLoading(true);
+                    try {
+                        await signInWithEmailLink(auth, storedEmail, window.location.href);
+                        window.localStorage.removeItem('emailForSignIn');
+                        router.push('/profile');
+                    } catch (err) {
+                        setError('Failed to sign in with email link. The link may be expired.');
+                    } finally {
+                        setIsLoading(false);
+                    }
+                }
+            }
+        };
+        handleEmailLinkSignIn();
+    }, [router]);
+
+
     const handleSignup = async () => {
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters long.');
-            return;
-        }
         setIsLoading(true);
         setError('');
         setMessage('');
 
         try {
-            const response = await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'generate-otp', email }),
-            });
-
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error);
-            
-            setMessage(data.message);
-            setGeneratedOtp(data.otp); // This is for simulation
-            setMode('verify-otp');
-
+            await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+            window.localStorage.setItem('emailForSignIn', email);
+            setMessage(`A sign-in link has been sent to ${email}! Check your inbox.`);
         } catch (err: any) {
-            setError(err.message || 'Failed to generate OTP.');
+            setError(err.message || 'Failed to send sign-in link.');
         } finally {
             setIsLoading(false);
         }
     };
     
-    const handleVerifyOtp = async () => {
-        setIsLoading(true);
-        setError('');
-
-        try {
-            const verifyResponse = await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'verify-otp', email, otp }),
-            });
-            
-            const verifyData = await verifyResponse.json();
-            if (!verifyResponse.ok) throw new Error(verifyData.error);
-            
-            // OTP is good, now create the user in Firebase
-            await createUserWithEmailAndPassword(auth, email, password);
-            setMessage('Account created successfully! You are now logged in.');
-            setTimeout(() => router.push('/profile'), 2000);
-
-        } catch (err: any) {
-            setError(err.message || 'Failed to create account.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-
     const handleLogin = async () => {
         setIsLoading(true);
         setError('');
@@ -134,14 +118,12 @@ export default function AuthPage() {
         e.preventDefault();
         if (mode === 'login') handleLogin();
         else if (mode === 'signup') handleSignup();
-        else if (mode === 'verify-otp') handleVerifyOtp();
     };
 
     const toggleMode = () => {
         setMode(mode === 'login' ? 'signup' : 'login');
         setError('');
         setMessage('');
-        setGeneratedOtp('');
     };
 
     return (
@@ -152,84 +134,64 @@ export default function AuthPage() {
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
                         {mode === 'login' && 'Welcome Back'}
                         {mode === 'signup' && 'Create Your Account'}
-                        {mode === 'verify-otp' && 'Verify Your Email'}
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400">
                         {mode === 'login' && 'Log in to continue your journey.'}
-                        {mode === 'signup' && 'Join SkillDash to unlock your potential.'}
-                        {mode === 'verify-otp' && `We've sent an OTP to your email.`}
+                        {mode === 'signup' && 'Sign up with a magic link sent to your email.'}
                     </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {mode !== 'verify-otp' && (
-                        <>
-                            <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
-                                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                            </div>
-                            <div>
-                                <label htmlFor="password"className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
-                                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                            </div>
-                        </>
-                    )}
-                    
-                    {mode === 'verify-otp' && (
+                    <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
+                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    {mode === 'login' && (
                         <div>
-                            <label htmlFor="otp" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Enter OTP</label>
-                            <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center tracking-[0.5em]" maxLength={6}/>
-                            {generatedOtp && (
-                                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md text-center">
-                                    <p className="text-sm text-blue-700 dark:text-blue-300">{message}</p>
-                                    <p className="text-lg font-bold text-blue-800 dark:text-blue-200 tracking-widest mt-1">{generatedOtp}</p>
-                                </div>
-                            )}
+                            <label htmlFor="password"className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
+                            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                     )}
 
                     {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-                    {!error && message && mode !== 'verify-otp' && <p className="text-green-500 text-sm text-center">{message}</p>}
+                    {message && <p className="text-green-500 text-sm text-center">{message}</p>}
                     
                     <button type="submit" disabled={isLoading} className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold py-3 rounded-lg hover:shadow-xl transition-all disabled:opacity-50">
-                        {isLoading && mode !== 'login' ? 'Processing...' : (mode === 'login' ? 'Log In' : (mode === 'signup' ? 'Get OTP' : 'Verify & Create Account'))}
-                         {isLoading && mode === 'login' && 'Logging In...'}
+                        {isLoading ? 'Processing...' : (mode === 'login' ? 'Log In' : 'Send Magic Link')}
                     </button>
                 </form>
 
-                {mode !== 'verify-otp' && (
-                    <>
-                        <div className="relative my-6">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-300 dark:border-gray-700" />
-                            </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
-                                    OR
-                                </span>
-                            </div>
+                <>
+                    <div className="relative my-6">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-300 dark:border-gray-700" />
                         </div>
-
-                        <div>
-                            <button
-                                type="button"
-                                onClick={handleGoogleSignIn}
-                                disabled={isLoading}
-                                className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
-                            >
-                                <GoogleIcon />
-                                Sign in with Google
-                            </button>
+                        <div className="relative flex justify-center text-sm">
+                            <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
+                                OR
+                            </span>
                         </div>
+                    </div>
 
-                        <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-                            {mode === 'login' ? "Don't have an account?" : "Already have an account?"}{' '}
-                            <button onClick={toggleMode} className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
-                                {mode === 'login' ? 'Sign up' : 'Log in'}
-                            </button>
-                        </p>
-                    </>
-                )}
+                    <div>
+                        <button
+                            type="button"
+                            onClick={handleGoogleSignIn}
+                            disabled={isLoading}
+                            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                        >
+                            <GoogleIcon />
+                            Sign in with Google
+                        </button>
+                    </div>
+
+                    <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+                        {mode === 'login' ? "Don't have an account?" : "Already have an account?"}{' '}
+                        <button onClick={toggleMode} className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
+                            {mode === 'login' ? 'Sign up' : 'Log in'}
+                        </button>
+                    </p>
+                </>
             </div>
         </div>
     );
