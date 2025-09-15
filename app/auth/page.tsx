@@ -11,7 +11,6 @@ import {
 import { auth, googleProvider, actionCodeSettings } from '../../lib/firebase';
 import { useRouter } from 'next/navigation';
 
-
 const GoogleIcon = () => (
     <svg className="w-5 h-5" viewBox="0 0 48 48">
         <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
@@ -20,7 +19,6 @@ const GoogleIcon = () => (
         <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.99,35.533,44,30.138,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
     </svg>
 );
-
 
 export default function AuthPage() {
     const [email, setEmail] = useState('');
@@ -32,59 +30,93 @@ export default function AuthPage() {
     // Effect to handle email link sign-in on page load
     useEffect(() => {
         const handleEmailLinkSignIn = async () => {
+            console.log('Checking if this is an email link sign-in...');
+            console.log('Current URL:', window.location.href);
+            
             if (isSignInWithEmailLink(auth, window.location.href)) {
+                console.log('This is an email link sign-in');
                 setMessage('Verifying your sign-in link, please wait...');
+                setIsLoading(true);
+                
                 let storedEmail = window.localStorage.getItem('emailForSignIn');
+                console.log('Stored email:', storedEmail);
+                
                 if (!storedEmail) {
+                    // Prompt for email if not stored
                     storedEmail = window.prompt('Please provide your email for confirmation');
                 }
-                if(storedEmail) {
-                    setIsLoading(true);
+                
+                if (storedEmail) {
                     try {
-                        await signInWithEmailLink(auth, storedEmail, window.location.href);
+                        console.log('Attempting to sign in with email link...');
+                        const result = await signInWithEmailLink(auth, storedEmail, window.location.href);
+                        console.log('Sign-in successful:', result.user);
+                        
+                        // Clean up
                         window.localStorage.removeItem('emailForSignIn');
+                        
+                        // Clear URL parameters
+                        window.history.replaceState({}, document.title, '/auth');
+                        
+                        // Redirect to profile
                         router.push('/profile');
-                    } catch (err) {
-                        setError('Failed to sign in. The link may have expired or been used already.');
+                    } catch (err: any) {
+                        console.error('Email link sign-in failed:', err);
+                        setError(`Failed to sign in: ${err.message}`);
                         setMessage('');
                     } finally {
                         setIsLoading(false);
                     }
                 } else {
-                     setError('Email not found. Please try signing up again.');
-                     setMessage('');
+                    setError('Email not provided. Please try signing up again.');
+                    setMessage('');
+                    setIsLoading(false);
                 }
+            } else {
+                console.log('Not an email link sign-in');
             }
         };
+
+        // Run after component mounts
         handleEmailLinkSignIn();
     }, [router]);
 
-
     const handleEmailSignIn = async () => {
+        if (!email) {
+            setError('Please enter your email address');
+            return;
+        }
+
         setIsLoading(true);
         setError('');
         setMessage('');
 
         try {
+            console.log('Sending sign-in link to:', email);
+            console.log('Action code settings:', actionCodeSettings);
+            
             await sendSignInLinkToEmail(auth, email, actionCodeSettings);
             window.localStorage.setItem('emailForSignIn', email);
-            setMessage(`A sign-in link has been sent to ${email}! Check your inbox to sign in.`);
+            setMessage(`A sign-in link has been sent to ${email}! Check your inbox and spam folder.`);
+            setEmail(''); // Clear email field
         } catch (err: any) {
-            setError(err.message || 'Failed to send sign-in link.');
+            console.error('Failed to send sign-in link:', err);
+            setError(err.message || 'Failed to send sign-in link. Please try again.');
         } finally {
             setIsLoading(false);
         }
     };
     
-     const handleGoogleSignIn = async () => {
+    const handleGoogleSignIn = async () => {
         setIsLoading(true);
         setError('');
         try {
-            await signInWithPopup(auth, googleProvider);
+            const result = await signInWithPopup(auth, googleProvider);
+            console.log('Google sign-in successful:', result.user);
             router.push('/profile');
         } catch (err: any) {
+            console.error('Google sign-in failed:', err);
             setError('Failed to sign in with Google. Please try again.');
-            console.error(err);
         } finally {
             setIsLoading(false);
         }
@@ -111,14 +143,37 @@ export default function AuthPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
-                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Email Address
+                        </label>
+                        <input 
+                            type="email" 
+                            id="email"
+                            value={email} 
+                            onChange={(e) => setEmail(e.target.value)} 
+                            required 
+                            placeholder="your@email.com"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white" 
+                        />
                     </div>
 
-                    {error && <p className="text-red-500 text-sm text-center pt-2">{error}</p>}
-                    {message && <p className="text-green-500 text-sm text-center pt-2">{message}</p>}
+                    {error && (
+                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+                            <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+                        </div>
+                    )}
                     
-                    <button type="submit" disabled={isLoading} className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold py-3 rounded-lg hover:shadow-xl transition-all disabled:opacity-50">
+                    {message && (
+                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-3">
+                            <p className="text-green-600 dark:text-green-400 text-sm">{message}</p>
+                        </div>
+                    )}
+                    
+                    <button 
+                        type="submit" 
+                        disabled={isLoading || !email} 
+                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold py-3 rounded-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                         {isLoading ? 'Sending...' : 'Send Magic Link'}
                     </button>
                 </form>

@@ -1,3 +1,4 @@
+// lib/firebase.ts
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
@@ -16,15 +17,22 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
+// Dynamic URL for different environments
+const getBaseURL = () => {
+  if (typeof window !== 'undefined') {
+    // Client side - use current window location
+    return `${window.location.protocol}//${window.location.host}`;
+  }
+  // Server side fallback
+  return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+};
+
 // Action code settings for email link authentication
 const actionCodeSettings = {
-  // This URL is where the user will be redirected after clicking the email link.
-  // It must be the page that contains the logic to handle the sign-in.
-  url: 'http://localhost:3000/auth', 
+  // Dynamic URL that works in both dev and production
+  url: `${getBaseURL()}/auth`,
   // This must be true.
   handleCodeInApp: true,
 };
 
-
 export { auth, googleProvider, actionCodeSettings };
-
