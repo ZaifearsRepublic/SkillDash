@@ -2,6 +2,8 @@
 
 import React, { useState, useRef, FormEvent, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { useAuth } from '../../contexts/AuthContext'; // Corrected Path
+import { useRouter } from 'next/navigation';
 
 // --- Type Definitions ---
 type Step = 'industry' | 'resume' | 'job-description' | 'chat';
@@ -29,6 +31,9 @@ const LoadingDots = () => (
 );
 
 export default function ResumeFeedbackPage() {
+    const { user, loading } = useAuth();
+    const router = useRouter();
+
     // --- State Management ---
     const [currentStep, setCurrentStep] = useState<Step>('industry');
     const [messages, setMessages] = useState<Message[]>([]);
@@ -46,6 +51,12 @@ export default function ResumeFeedbackPage() {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
     
+     useEffect(() => {
+        if (!loading && !user) {
+        router.push('/auth');
+        }
+    }, [user, loading, router]);
+
     // Auto-scroll to the latest message
     useEffect(() => {
         if(currentStep === 'chat') {
@@ -315,6 +326,17 @@ export default function ResumeFeedbackPage() {
             default: return null;
         }
     };
+    
+    if (loading || !user) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                    <p className="text-lg text-gray-500 dark:text-gray-400">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
 
     return (
         <div className="flex flex-col h-screen bg-gray-50 dark:bg-black font-sans">

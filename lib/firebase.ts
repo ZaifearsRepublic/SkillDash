@@ -1,7 +1,7 @@
-// lib/firebase.ts
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
+// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -11,28 +11,23 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase correctly to avoid re-initialization
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// Check if all required environment variables are present
+if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+    throw new Error("Missing Firebase configuration. Please check your .env.local file.");
+}
 
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-// Dynamic URL for different environments
-const getBaseURL = () => {
-  if (typeof window !== 'undefined') {
-    // Client side - use current window location
-    return `${window.location.protocol}//${window.location.host}`;
-  }
-  // Server side fallback
-  return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-};
+// Dynamic URL for different environments for the email link
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
-// Action code settings for email link authentication
 const actionCodeSettings = {
-  // Dynamic URL that works in both dev and production
-  url: `${getBaseURL()}/auth`,
-  // This must be true.
+  url: `${baseUrl}/auth`,
   handleCodeInApp: true,
 };
 
 export { auth, googleProvider, actionCodeSettings };
+
