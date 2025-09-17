@@ -30,3 +30,4 @@ const actionCodeSettings = {
 };
 
 export { auth, googleProvider, actionCodeSettings };
+

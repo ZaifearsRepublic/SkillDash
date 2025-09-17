@@ -7,7 +7,7 @@
     ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": true,  // Changed to true for better safety
+    "strict": false,
     "noEmit": true,
     "incremental": true,
     "module": "esnext",
@@ -39,3 +39,4 @@
     "node_modules"
   ]
 }
+

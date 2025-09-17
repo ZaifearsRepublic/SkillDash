@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, FormEvent } from 'react';
-import { useAuth } from '@/contexts/AuthContext';  // Absolute
+import { useAuth } from '../../contexts/AuthContext'; // Corrected Path
 import { useRouter } from 'next/navigation';
 
 // ... (Keep the rest of your components like BotIcon, LoadingDots, etc.)
@@ -34,14 +34,13 @@ interface SkillSuggestions {
 // ...
 
 export default function DiscoverPage() {
-  const { user, loading, error } = useAuth();  // Added error
+  const { user, loading } = useAuth();
   const router = useRouter();
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<SkillSuggestions | null>(null);
-  const [localError, setLocalError] = useState<string | null>(null);  // Local errors
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -51,13 +50,6 @@ export default function DiscoverPage() {
       router.push('/auth');
     }
   }, [user, loading, router]);
-
-  // Handle auth error
-  useEffect(() => {
-    if (error) {
-      setLocalError(error);
-    }
-  }, [error]);
 
   // Autofocus input after message from bot
   useEffect(() => {
@@ -94,7 +86,6 @@ export default function DiscoverPage() {
     setMessages(newMessages);
     setUserInput('');
     setIsLoading(true);
-    setLocalError(null);  // Clear local error on submit
 
     try {
       const response = await fetch('/api/discover-chat', {
@@ -115,14 +106,13 @@ export default function DiscoverPage() {
       }
       setMessages(prev => [...prev, finalBotMessage]);
 
-    } catch (err: any) {
+    } catch (error) {
       const errorMessage: Message = {
         role: 'assistant',
         content: "Sorry, I'm having a little trouble connecting. Please check your connection and try again."
       };
       setMessages(prev => [...prev, errorMessage]);
-      setLocalError(err.message || 'Unknown error');
-      console.error('Discover chat error:', err);
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -175,17 +165,6 @@ export default function DiscoverPage() {
                 <p className="text-lg text-gray-500 dark:text-gray-400">Loading your Skill Quest...</p>
             </div>
         </div>
-    );
-  }
-
-  if (localError) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">{localError}</p>
-          <button onClick={() => setLocalError(null)} className="bg-blue-500 text-white px-4 py-2 rounded">Retry</button>
-        </div>
-      </div>
     );
   }
 
@@ -249,7 +228,6 @@ export default function DiscoverPage() {
               type="submit"
               className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full p-3 hover:shadow-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed transition-all transform hover:scale-110 active:scale-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               disabled={isLoading || !userInput.trim() || !!suggestions}
-              aria-label="Send message"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
@@ -262,3 +240,4 @@ export default function DiscoverPage() {
     </>
   );
 }
+
