@@ -3,8 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { AuthProvider } from "@/contexts/AuthContext";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import { Analytics } from "@vercel/analytics/next"; // Added Vercel Analytics
+import ErrorBoundary from "@/components/ErrorBoundary"; // Import the new client component
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,7 +23,6 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className={`${inter.className} antialiased bg-white dark:bg-black`}>
-        <Analytics /> {/* Added Analytics component */}
         <AuthProvider>
           <ErrorBoundary>
             <Navbar />
