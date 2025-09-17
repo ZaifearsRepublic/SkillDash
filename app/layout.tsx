@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "../components/Navbar"; // Corrected path
-import { AuthProvider } from "../contexts/AuthContext"; // Corrected path
+import Navbar from "@/components/Navbar";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ErrorBoundary from "@/components/ErrorBoundary"; // Import the new client component
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,14 +23,15 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className={`${inter.className} antialiased bg-white dark:bg-black`}>
-        <AuthProvider> {/* Wrap with AuthProvider */}
-          <Navbar />
-          <main className="pt-20">
-            {children}
-          </main>
+        <AuthProvider>
+          <ErrorBoundary>
+            <Navbar />
+            <main className="pt-20">
+              {children}
+            </main>
+          </ErrorBoundary>
         </AuthProvider>
       </body>
     </html>
   );
 }
-
