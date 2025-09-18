@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, FormEvent, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { useAuth } from '../../contexts/AuthContext'; // Corrected Path
+import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
 // --- Type Definitions ---
@@ -16,7 +16,7 @@ interface Message {
 // --- Helper Icons & Components ---
 const BotIcon = () => (
     <img
-        src="/discover/discover-ai.png"
+        src="/skilldash-logo.png"
         alt="SkillDash AI Avatar"
         className="w-10 h-10 rounded-full shadow-md object-cover"
     />
@@ -53,7 +53,9 @@ export default function ResumeFeedbackPage() {
     
      useEffect(() => {
         if (!loading && !user) {
-        router.push('/auth');
+          // Set a message for the auth page to display
+          sessionStorage.setItem('authRedirectMessage', 'Please log in to use the AI Resume Feedback feature. We require login for fair usage.');
+          router.push('/auth');
         }
     }, [user, loading, router]);
 
@@ -331,7 +333,7 @@ export default function ResumeFeedbackPage() {
         return (
             <div className="flex items-center justify-center h-full">
                 <div className="text-center">
-                    <p className="text-lg text-gray-500 dark:text-gray-400">Loading...</p>
+                    <p className="text-lg text-gray-500 dark:text-gray-400">Redirecting to login...</p>
                 </div>
             </div>
         );

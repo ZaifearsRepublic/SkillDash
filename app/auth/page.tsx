@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { 
-    signInWithEmailAndPassword,
     signInWithPopup,
     sendSignInLinkToEmail,
     isSignInWithEmailLink,
@@ -25,43 +24,36 @@ export default function AuthPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
+    const [notification, setNotification] = useState('');
     const router = useRouter();
 
-    // Effect to handle email link sign-in on page load
+    // Effect to handle redirect messages and email link sign-in
     useEffect(() => {
+        // Check for a redirect message
+        const redirectMessage = sessionStorage.getItem('authRedirectMessage');
+        if (redirectMessage) {
+            setNotification(redirectMessage);
+            sessionStorage.removeItem('authRedirectMessage');
+        }
+
         const handleEmailLinkSignIn = async () => {
-            console.log('Checking if this is an email link sign-in...');
-            console.log('Current URL:', window.location.href);
-            
             if (isSignInWithEmailLink(auth, window.location.href)) {
-                console.log('This is an email link sign-in');
                 setMessage('Verifying your sign-in link, please wait...');
                 setIsLoading(true);
                 
                 let storedEmail = window.localStorage.getItem('emailForSignIn');
-                console.log('Stored email:', storedEmail);
                 
                 if (!storedEmail) {
-                    // Prompt for email if not stored
                     storedEmail = window.prompt('Please provide your email for confirmation');
                 }
                 
                 if (storedEmail) {
                     try {
-                        console.log('Attempting to sign in with email link...');
-                        const result = await signInWithEmailLink(auth, storedEmail, window.location.href);
-                        console.log('Sign-in successful:', result.user);
-                        
-                        // Clean up
+                        await signInWithEmailLink(auth, storedEmail, window.location.href);
                         window.localStorage.removeItem('emailForSignIn');
-                        
-                        // Clear URL parameters
                         window.history.replaceState({}, document.title, '/auth');
-                        
-                        // Redirect to profile
                         router.push('/profile');
                     } catch (err: any) {
-                        console.error('Email link sign-in failed:', err);
                         setError(`Failed to sign in: ${err.message}`);
                         setMessage('');
                     } finally {
@@ -72,12 +64,9 @@ export default function AuthPage() {
                     setMessage('');
                     setIsLoading(false);
                 }
-            } else {
-                console.log('Not an email link sign-in');
             }
         };
 
-        // Run after component mounts
         handleEmailLinkSignIn();
     }, [router]);
 
@@ -92,15 +81,11 @@ export default function AuthPage() {
         setMessage('');
 
         try {
-            console.log('Sending sign-in link to:', email);
-            console.log('Action code settings:', actionCodeSettings);
-            
             await sendSignInLinkToEmail(auth, email, actionCodeSettings);
             window.localStorage.setItem('emailForSignIn', email);
             setMessage(`A sign-in link has been sent to ${email}! Check your inbox and spam folder.`);
-            setEmail(''); // Clear email field
+            setEmail('');
         } catch (err: any) {
-            console.error('Failed to send sign-in link:', err);
             setError(err.message || 'Failed to send sign-in link. Please try again.');
         } finally {
             setIsLoading(false);
@@ -111,11 +96,9 @@ export default function AuthPage() {
         setIsLoading(true);
         setError('');
         try {
-            const result = await signInWithPopup(auth, googleProvider);
-            console.log('Google sign-in successful:', result.user);
+            await signInWithPopup(auth, googleProvider);
             router.push('/profile');
         } catch (err: any) {
-            console.error('Google sign-in failed:', err);
             setError('Failed to sign in with Google. Please try again.');
         } finally {
             setIsLoading(false);
@@ -130,7 +113,15 @@ export default function AuthPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-white dark:bg-gray-900/50 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800">
+            <div className="max-w-md w-full bg-white dark:bg-gray-900/50 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 relative">
+                
+                {notification && (
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4 text-center shadow-lg">
+                        <p className="text-sm text-yellow-800 dark:text-yellow-200">{notification}</p>
+                        <button onClick={() => setNotification('')} className="absolute top-1 right-2 text-yellow-600 dark:text-yellow-300 hover:text-yellow-800 dark:hover:text-yellow-100">&times;</button>
+                    </div>
+                )}
+                
                 <div className="text-center mb-8">
                     <img src="/skilldash-logo.png" alt="SkillDash Logo" className="w-16 h-16 mx-auto mb-4" />
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">

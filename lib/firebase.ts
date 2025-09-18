@@ -21,13 +21,18 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-// Dynamic URL for different environments for the email link
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+// Determine the base URL dynamically for email link authentication.
+// This is crucial for making sure the link works in both development and production (e.g., on Vercel).
+const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL 
+  ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` // Vercel provides this variable
+  : 'http://localhost:3000';           // Fallback for local development
 
 const actionCodeSettings = {
+  // The URL to redirect to after the user signs in.
+  // This URL must be whitelisted in the Firebase Console.
   url: `${baseUrl}/auth`,
+  // This must be true for email link sign-in.
   handleCodeInApp: true,
 };
 
 export { auth, googleProvider, actionCodeSettings };
-

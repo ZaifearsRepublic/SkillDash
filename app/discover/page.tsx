@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect, FormEvent } from 'react';
-import { useAuth } from '../../contexts/AuthContext'; // Corrected Path
+import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
-// ... (Keep the rest of your components like BotIcon, LoadingDots, etc.)
 const BotIcon = () => (
     <img 
-        src="/discover/discover-ai.png" 
+        src="/skilldash-logo.png" 
         alt="SkillDash AI Avatar" 
         className="w-10 h-10 rounded-full shadow-md object-cover"
     />
@@ -31,7 +30,6 @@ interface SkillSuggestions {
   suggestedCourses: { title: string; description: string }[];
   nextStep: 'resume' | 'jobs';
 }
-// ...
 
 export default function DiscoverPage() {
   const { user, loading } = useAuth();
@@ -47,6 +45,8 @@ export default function DiscoverPage() {
 
   useEffect(() => {
     if (!loading && !user) {
+      // Set a message for the auth page to display
+      sessionStorage.setItem('authRedirectMessage', 'Please log in to use the Discover feature. We require login for fair usage.');
       router.push('/auth');
     }
   }, [user, loading, router]);
@@ -162,7 +162,7 @@ export default function DiscoverPage() {
     return (
         <div className="flex items-center justify-center h-full">
             <div className="text-center">
-                <p className="text-lg text-gray-500 dark:text-gray-400">Loading your Skill Quest...</p>
+                <p className="text-lg text-gray-500 dark:text-gray-400">Redirecting to login...</p>
             </div>
         </div>
     );
