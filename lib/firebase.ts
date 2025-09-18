@@ -3,6 +3,7 @@ import {
     getAuth, 
     GoogleAuthProvider, 
     onAuthStateChanged, 
+    signInWithPopup,
     isSignInWithEmailLink, 
     signInWithEmailLink,
     sendSignInLinkToEmail,
@@ -13,8 +14,18 @@ import {
 } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 
-// --- Type definition for the new user profile data ---
-interface UserProfileData {
+// --- Type definition for the user profile data ---
+// We remove photoURL as it's no longer saved here.
+export interface UserProfile {
+    name?: string;
+    age?: number;
+    status?: 'School' | 'College' | 'University' | 'Job' | 'Other';
+    email?: string;
+    phone?: string;
+}
+
+// --- Type definition for the sign-up data ---
+interface SignUpProfileData {
     name: string;
     age: number | null;
     status: string;
@@ -22,7 +33,6 @@ interface UserProfileData {
     email: string;
 }
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -32,11 +42,10 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
-    throw new Error("Missing Firebase configuration. Please check your .env.local file.");
+if (!firebaseConfig.apiKey) {
+    throw new Error("Missing Firebase configuration.");
 }
 
-// Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -47,33 +56,39 @@ export const getActionCodeSettings = () => ({
     handleCodeInApp: true,
 });
 
-// --- New Comprehensive Sign-Up Function ---
-export const signUpWithEmailPasswordAndProfile = async (profileData: UserProfileData, password: string) => {
-    // Step 1: Create the user in Firebase Auth
-    const userCredential = await createUserWithEmailAndPassword(auth, profileData.email, password);
-    const user = userCredential.user;
-
-    // Step 2: Update the user's display name in Firebase Auth
-    await updateProfile(user, { displayName: profileData.name });
-
-    // Step 3: Create the user's profile document in Firestore
+export const signInWithGoogleAndCreateProfile = async () => {
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
     const userDocRef = doc(db, 'users', user.uid);
-    await setDoc(userDocRef, {
-        name: profileData.name,
-        age: profileData.age,
-        status: profileData.status,
-        phone: profileData.phone || null,
-        email: profileData.email
-    });
-    
-    // Step 4: Send a verification email
-    await sendEmailVerification(user);
+    const docSnap = await getDoc(userDocRef);
 
+    // If the profile does NOT exist, create it WITHOUT the photoURL.
+    if (!docSnap.exists()) {
+        await setDoc(userDocRef, {
+            name: user.displayName, 
+            email: user.email,
+            // photoURL is intentionally omitted.
+            age: null, 
+            status: 'Other', 
+            phone: ''
+        });
+    }
     return user;
 };
 
+export const signUpWithEmailPasswordAndProfile = async (profileData: SignUpProfileData, password: string) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, profileData.email, password);
+    const user = userCredential.user;
+    await updateProfile(user, { displayName: profileData.name });
+    const userDocRef = doc(db, 'users', user.uid);
+    await setDoc(userDocRef, {
+        name: profileData.name, age: profileData.age, status: profileData.status,
+        phone: profileData.phone || null, email: profileData.email
+    });
+    await sendEmailVerification(user);
+    return user;
+};
 
-// --- Existing Firestore and Auth Functions ---
 export const updateUserProfile = async (userId: string, data: any) => {
     const userDocRef = doc(db, 'users', userId);
     await setDoc(userDocRef, data, { merge: true });
@@ -82,7 +97,7 @@ export const updateUserProfile = async (userId: string, data: any) => {
 export const getUserProfile = async (userId: string) => {
     const userDocRef = doc(db, 'users', userId);
     const docSnap = await getDoc(userDocRef);
-    return docSnap.exists() ? docSnap.data() : null;
+    return docSnap.exists() ? docSnap.data() as UserProfile : null;
 };
 
 export { 

@@ -1,16 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { onAuthStateChanged, signOut, User, sendEmailVerification } from 'firebase/auth';
-import { auth, getUserProfile, updateUserProfile } from '../../lib/firebase';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { auth, getUserProfile, updateUserProfile, UserProfile } from '../../lib/firebase';
 import { useRouter } from 'next/navigation';
-
-// --- Type definition for our new profile data ---
-interface UserProfile {
-    name?: string;
-    age?: number;
-    status?: 'School' | 'College' | 'University' | 'Job' | 'Other';
-}
 
 // --- Icons for the UI ---
 const EditIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>;
@@ -59,10 +52,7 @@ export default function ProfilePage() {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    if (loading) {
-        return <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center"><p>Loading...</p></div>;
-    }
-    
+    if (loading) return <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center"><p>Loading...</p></div>;
     if (!user) return null;
 
     return (
@@ -71,7 +61,7 @@ export default function ProfilePage() {
                 <div className="bg-white dark:bg-slate-800/50 p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 backdrop-blur-lg">
                     <div className="flex flex-col sm:flex-row items-center gap-6">
                         <img 
-                            src={user.photoURL || '/skilldash-logo.png'} 
+                            src="/profile/profile.png" // This now points to your default image for all users
                             alt="Profile" 
                             className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-violet-500 shadow-lg flex-shrink-0"
                         />

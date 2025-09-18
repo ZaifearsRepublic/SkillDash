@@ -1,14 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-    signInWithPopup,
-    isSignInWithEmailLink,
-    signInWithEmailLink,
-    onAuthStateChanged,
-    signInWithEmailAndPassword
-} from 'firebase/auth';
-import { auth, googleProvider, signUpWithEmailPasswordAndProfile } from '../../lib/firebase';
+import { onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, signUpWithEmailPasswordAndProfile, signInWithGoogleAndCreateProfile } from '../../lib/firebase';
 import { useRouter } from 'next/navigation';
 
 const GoogleIcon = () => (
@@ -39,10 +33,6 @@ export default function AuthPage() {
             sessionStorage.removeItem('redirectMessage');
         }
 
-        if (isSignInWithEmailLink(auth, window.location.href)) {
-             // Magic link logic can be expanded here if needed
-        }
-
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
                 const redirectPath = sessionStorage.getItem('redirectAfterLogin') || '/profile';
@@ -54,8 +44,7 @@ export default function AuthPage() {
     }, [router]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
     const handleSignUp = async () => {
@@ -83,8 +72,9 @@ export default function AuthPage() {
 
     const handleGoogleSignIn = async () => {
         setIsLoading(true); setError('');
-        try { await signInWithPopup(auth, googleProvider); } 
-        catch (err: any) { setError('Failed to sign in with Google.'); } 
+        try { 
+            await signInWithGoogleAndCreateProfile(); 
+        } catch (err: any) { setError('Failed to sign in with Google.'); } 
         finally { setIsLoading(false); }
     };
     
@@ -122,7 +112,7 @@ export default function AuthPage() {
                                 <input name="age" type="number" onChange={handleInputChange} placeholder="Age" className={`${commonInputClasses} w-1/2`}/>
                                 <input name="phone" type="tel" onChange={handleInputChange} placeholder="Phone (Optional)" className={`${commonInputClasses} w-1/2`}/>
                             </div>
-                            <select name="status" onChange={handleInputChange} required className={`${commonInputClasses} ${formData.status === '' ? 'text-gray-400 dark:text-gray-500' : ''}`}>
+                             <select name="status" onChange={handleInputChange} required className={`${commonInputClasses} ${formData.status === '' ? 'text-gray-400 dark:text-gray-500' : ''}`}>
                                 <option value="">Select Your Status *</option>
                                 <option value="School">School (Class 1-10)</option>
                                 <option value="College">College (Class 11-12)</option>
@@ -143,7 +133,7 @@ export default function AuthPage() {
                     {error && <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-md border border-red-300 dark:border-red-700"><p className="text-red-700 dark:text-red-300 text-sm">{error}</p></div>}
                     {message && <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-md border border-green-300 dark:border-green-700"><p className="text-green-700 dark:text-green-300 text-sm">{message}</p></div>}
                     
-                    <button type="submit" disabled={isLoading} className="w-full bg-violet-600 text-white font-bold py-3 rounded-lg hover:bg-violet-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button type="submit" disabled={isLoading} className="w-full bg-violet-600 text-white font-bold py-3 rounded-lg hover:bg-violet-700 transition-all disabled:opacity-50">
                         {isLoading ? 'Processing...' : (isSignUp ? 'Create Account' : 'Sign In')}
                     </button>
                 </form>
