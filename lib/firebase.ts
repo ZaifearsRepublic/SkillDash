@@ -5,10 +5,13 @@ import {
     onAuthStateChanged, 
     isSignInWithEmailLink, 
     signInWithEmailLink,
-    sendSignInLinkToEmail, // Make sure this is also exported
+    sendSignInLinkToEmail,
     createUserWithEmailAndPassword,
-    signInWithEmailAndPassword
+    signInWithEmailAndPassword,
+    sendEmailVerification,
+    updateProfile // Import updateProfile
 } from 'firebase/auth';
+import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore'; // Import Firestore functions
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -28,9 +31,9 @@ if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.proj
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
+const db = getFirestore(app); // Initialize Firestore
 const googleProvider = new GoogleAuthProvider();
 
-// This function MUST be called from the client-side to get the correct URL
 export const getActionCodeSettings = () => {
     return {
         url: `${window.location.origin}/auth`,
@@ -38,13 +41,36 @@ export const getActionCodeSettings = () => {
     };
 };
 
+// --- New Firestore Functions ---
+
+// Function to save user profile data
+export const updateUserProfile = async (userId: string, data: { name?: string; age?: number; status?: string }) => {
+    const userDocRef = doc(db, 'users', userId);
+    await setDoc(userDocRef, data, { merge: true }); // merge: true prevents overwriting other fields
+};
+
+// Function to get user profile data
+export const getUserProfile = async (userId: string) => {
+    const userDocRef = doc(db, 'users', userId);
+    const docSnap = await getDoc(userDocRef);
+    if (docSnap.exists()) {
+        return docSnap.data();
+    } else {
+        return null; // No profile data found
+    }
+};
+
+
 export { 
     auth, 
+    db, // Export db
     googleProvider, 
     onAuthStateChanged, 
     isSignInWithEmailLink, 
     signInWithEmailLink,
     sendSignInLinkToEmail,
     createUserWithEmailAndPassword,
-    signInWithEmailAndPassword
+    signInWithEmailAndPassword,
+    sendEmailVerification,
+    updateProfile
 };
