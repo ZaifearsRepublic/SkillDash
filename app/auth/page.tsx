@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import { 
     signInWithPopup,
     sendSignInLinkToEmail,
-    isSignInWithEmailLink,
-    signInWithEmailLink
 } from 'firebase/auth';
 import { auth, googleProvider, actionCodeSettings } from '../../lib/firebase';
 import { useRouter } from 'next/navigation';
@@ -24,51 +22,16 @@ export default function AuthPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
-    const [notification, setNotification] = useState('');
+    const [redirectMessage, setRedirectMessage] = useState<string | null>(null);
     const router = useRouter();
 
-    // Effect to handle redirect messages and email link sign-in
     useEffect(() => {
-        // Check for a redirect message
-        const redirectMessage = sessionStorage.getItem('authRedirectMessage');
-        if (redirectMessage) {
-            setNotification(redirectMessage);
-            sessionStorage.removeItem('authRedirectMessage');
+        const msg = sessionStorage.getItem('redirectMessage');
+        if (msg) {
+            setRedirectMessage(msg);
+            sessionStorage.removeItem('redirectMessage'); // Clear message after displaying
         }
-
-        const handleEmailLinkSignIn = async () => {
-            if (isSignInWithEmailLink(auth, window.location.href)) {
-                setMessage('Verifying your sign-in link, please wait...');
-                setIsLoading(true);
-                
-                let storedEmail = window.localStorage.getItem('emailForSignIn');
-                
-                if (!storedEmail) {
-                    storedEmail = window.prompt('Please provide your email for confirmation');
-                }
-                
-                if (storedEmail) {
-                    try {
-                        await signInWithEmailLink(auth, storedEmail, window.location.href);
-                        window.localStorage.removeItem('emailForSignIn');
-                        window.history.replaceState({}, document.title, '/auth');
-                        router.push('/profile');
-                    } catch (err: any) {
-                        setError(`Failed to sign in: ${err.message}`);
-                        setMessage('');
-                    } finally {
-                        setIsLoading(false);
-                    }
-                } else {
-                    setError('Email not provided. Please try signing up again.');
-                    setMessage('');
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        handleEmailLinkSignIn();
-    }, [router]);
+    }, []);
 
     const handleEmailSignIn = async () => {
         if (!email) {
@@ -96,7 +59,7 @@ export default function AuthPage() {
         setIsLoading(true);
         setError('');
         try {
-            await signInWithPopup(auth, googleProvider);
+            const result = await signInWithPopup(auth, googleProvider);
             router.push('/profile');
         } catch (err: any) {
             setError('Failed to sign in with Google. Please try again.');
@@ -112,29 +75,27 @@ export default function AuthPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-white dark:bg-gray-900/50 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 relative">
-                
-                {notification && (
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4 text-center shadow-lg">
-                        <p className="text-sm text-yellow-800 dark:text-yellow-200">{notification}</p>
-                        <button onClick={() => setNotification('')} className="absolute top-1 right-2 text-yellow-600 dark:text-yellow-300 hover:text-yellow-800 dark:hover:text-yellow-100">&times;</button>
-                    </div>
-                )}
-                
+        <div className="min-h-screen bg-gp-bg-light dark:bg-black flex items-center justify-center p-4">
+            <div className="max-w-md w-full bg-gp-bg dark:bg-gray-900/50 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800">
                 <div className="text-center mb-8">
                     <img src="/skilldash-logo.png" alt="SkillDash Logo" className="w-16 h-16 mx-auto mb-4" />
-                    <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
+                    <h1 className="text-3xl font-bold text-gp-text dark:text-white mb-2">
                         Sign In or Sign Up
                     </h1>
-                    <p className="text-gray-600 dark:text-gray-400">
+                    <p className="text-gp-text-secondary dark:text-gray-400">
                         Enter your email for a password-free magic link.
                     </p>
                 </div>
 
+                {redirectMessage && (
+                    <div className="bg-gp-primary-light/10 border border-gp-primary-light/20 rounded-md p-3 mb-4">
+                        <p className="text-gp-primary dark:text-gp-primary-light text-sm text-center">{redirectMessage}</p>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label htmlFor="email" className="block text-sm font-medium text-gp-text-secondary dark:text-gray-300 mb-2">
                             Email Address
                         </label>
                         <input 
@@ -144,7 +105,7 @@ export default function AuthPage() {
                             onChange={(e) => setEmail(e.target.value)} 
                             required 
                             placeholder="your@email.com"
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white" 
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gp-bg-light dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gp-primary-light text-gp-text dark:text-white" 
                         />
                     </div>
 
@@ -163,7 +124,7 @@ export default function AuthPage() {
                     <button 
                         type="submit" 
                         disabled={isLoading || !email} 
-                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold py-3 rounded-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-gp-primary text-white font-bold py-3 rounded-lg hover:bg-gp-primary-light transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isLoading ? 'Sending...' : 'Send Magic Link'}
                     </button>
@@ -174,7 +135,7 @@ export default function AuthPage() {
                         <div className="w-full border-t border-gray-300 dark:border-gray-700" />
                     </div>
                     <div className="relative flex justify-center text-sm">
-                        <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
+                        <span className="bg-gp-bg dark:bg-gray-900 px-2 text-gp-text-secondary dark:text-gray-400">
                             OR
                         </span>
                     </div>
@@ -185,7 +146,7 @@ export default function AuthPage() {
                         type="button"
                         onClick={handleGoogleSignIn}
                         disabled={isLoading}
-                        className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                        className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-700 rounded-lg text-gp-text-secondary dark:text-gray-200 hover:bg-gp-bg-light dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
                     >
                         <GoogleIcon />
                         Sign in with Google
@@ -195,3 +156,4 @@ export default function AuthPage() {
         </div>
     );
 }
+

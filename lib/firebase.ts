@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, getRedirectResult, onAuthStateChanged } from 'firebase/auth';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -35,4 +35,22 @@ const actionCodeSettings = {
   handleCodeInApp: true,
 };
 
-export { auth, googleProvider, actionCodeSettings };
+// This function handles the result of the redirect from the email link
+const handleRedirectSignIn = async () => {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result) {
+      // User signed in successfully.
+      // You can get the user's info from result.user
+      console.log('Signed in user:', result.user);
+    }
+  } catch (error) {
+    console.error('Error handling redirect sign in:', error);
+  }
+};
+
+// Call this function when your app initializes to check for a redirect result
+handleRedirectSignIn();
+
+export { auth, googleProvider, actionCodeSettings, onAuthStateChanged };
+
