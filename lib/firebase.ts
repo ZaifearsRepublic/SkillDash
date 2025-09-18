@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
     getAuth, 
     GoogleAuthProvider, 
+    GithubAuthProvider, // <-- ADDED
     onAuthStateChanged, 
     signInWithPopup,
     isSignInWithEmailLink, 
@@ -15,7 +16,6 @@ import {
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 
 // --- Type definition for the user profile data ---
-// We remove photoURL as it's no longer saved here.
 export interface UserProfile {
     name?: string;
     age?: number;
@@ -50,24 +50,24 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
+export const githubProvider = new GithubAuthProvider(); // <-- ADDED
 
 export const getActionCodeSettings = () => ({
     url: `${window.location.origin}/auth`,
     handleCodeInApp: true,
 });
 
-export const signInWithGoogleAndCreateProfile = async () => {
-    const result = await signInWithPopup(auth, googleProvider);
+// A more generic function to handle creating profiles for social sign-ins
+export const signInWithSocialProviderAndCreateProfile = async (provider: GoogleAuthProvider | GithubAuthProvider) => {
+    const result = await signInWithPopup(auth, provider);
     const user = result.user;
     const userDocRef = doc(db, 'users', user.uid);
     const docSnap = await getDoc(userDocRef);
 
-    // If the profile does NOT exist, create it WITHOUT the photoURL.
     if (!docSnap.exists()) {
         await setDoc(userDocRef, {
             name: user.displayName, 
             email: user.email,
-            // photoURL is intentionally omitted.
             age: null, 
             status: 'Other', 
             phone: ''
@@ -75,6 +75,7 @@ export const signInWithGoogleAndCreateProfile = async () => {
     }
     return user;
 };
+
 
 export const signUpWithEmailPasswordAndProfile = async (profileData: SignUpProfileData, password: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, profileData.email, password);
