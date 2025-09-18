@@ -31,7 +31,6 @@ export default function ProfilePage() {
                 const userProfile = await getUserProfile(currentUser.uid);
                 setProfile(userProfile);
                 setFormData(userProfile || {});
-                 // If the user has no name set, automatically enter edit mode
                 if (!userProfile?.name) {
                     setIsEditing(true);
                 }
@@ -49,7 +48,7 @@ export default function ProfilePage() {
     };
 
     const handleSave = async () => {
-        if (!user || !formData.name) return; // Prevent saving without a name
+        if (!user || !formData.name) return;
         await updateUserProfile(user.uid, formData);
         setProfile(formData);
         setIsEditing(false);
@@ -67,9 +66,9 @@ export default function ProfilePage() {
     if (!user) return null;
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col items-center justify-center p-4 antialiased">
             <div className="w-full max-w-2xl mx-auto">
-                <div className="bg-white dark:bg-black/50 p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 backdrop-blur-lg">
+                <div className="bg-white dark:bg-slate-800/50 p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 backdrop-blur-lg">
                     <div className="flex flex-col sm:flex-row items-center gap-6">
                         <img 
                             src={user.photoURL || '/skilldash-logo.png'} 
@@ -79,21 +78,21 @@ export default function ProfilePage() {
                         <div className="flex-1 w-full text-center sm:text-left">
                             {!isEditing ? (
                                 <>
-                                    <h1 className="text-3xl font-bold text-gray-800 dark:text-white break-words">
+                                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white break-words">
                                         {profile?.name || user.email?.split('@')[0]}
                                     </h1>
-                                    <p className="text-gray-500 dark:text-gray-400 break-all">{user.email}</p>
+                                    <p className="text-gray-500 dark:text-slate-400 break-all">{user.email}</p>
                                     <div className="mt-4 flex flex-wrap justify-center sm:justify-start gap-2">
-                                        {profile?.age && <span className="bg-gray-100 dark:bg-gray-800 text-sm font-medium px-3 py-1 rounded-full">{profile.age} years old</span>}
-                                        {profile?.status && <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 text-sm font-medium px-3 py-1 rounded-full">{profile.status}</span>}
+                                        {profile?.age && <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium px-3 py-1 rounded-full">{profile.age} years old</span>}
+                                        {profile?.status && <span className="bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 text-sm font-medium px-3 py-1 rounded-full">{profile.status}</span>}
                                     </div>
                                 </>
                             ) : (
                                 <div className="space-y-4">
-                                    <input type="text" name="name" value={formData.name || ''} onChange={handleInputChange} placeholder="Your Full Name" className="w-full p-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 text-gray-800 dark:text-white focus:ring-violet-500 focus:border-violet-500" />
+                                    <input type="text" name="name" value={formData.name || ''} onChange={handleInputChange} placeholder="Your Full Name" className="w-full p-2 border rounded-md bg-gray-50 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500" />
                                     <div className="flex flex-col sm:flex-row gap-4">
-                                        <input type="number" name="age" value={formData.age || ''} onChange={handleInputChange} placeholder="Age" className="w-full sm:w-1/3 p-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 text-gray-800 dark:text-white focus:ring-violet-500 focus:border-violet-500" />
-                                        <select name="status" value={formData.status || ''} onChange={handleInputChange} className="w-full sm:w-2/3 p-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 text-gray-800 dark:text-white focus:ring-violet-500 focus:border-violet-500">
+                                        <input type="number" name="age" value={formData.age || ''} onChange={handleInputChange} placeholder="Age" className="w-full sm:w-1/3 p-2 border rounded-md bg-gray-50 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500" />
+                                        <select name="status" value={formData.status || ''} onChange={handleInputChange} className="w-full sm:w-2/3 p-2 border rounded-md bg-gray-50 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
                                             <option value="">Select Status...</option>
                                             <option value="School">School (Class 1-10)</option>
                                             <option value="College">College (Class 11-12)</option>
@@ -107,22 +106,22 @@ export default function ProfilePage() {
                         </div>
                     </div>
                     
-                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row gap-3">
+                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-slate-700 flex flex-col sm:flex-row gap-3">
                         {!isEditing ? (
-                            <button onClick={() => setIsEditing(true)} className="flex items-center justify-center gap-2 w-full px-4 py-2 text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                            <button onClick={() => setIsEditing(true)} className="flex items-center justify-center gap-2 w-full px-4 py-2 text-sm font-medium bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-white rounded-lg transition-colors">
                                 <EditIcon /> Edit Profile
                             </button>
                         ) : (
                             <>
-                                <button onClick={() => { setIsEditing(false); setFormData(profile || {}); }} className="w-full sm:w-auto px-4 py-2 text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                                <button onClick={() => { setIsEditing(false); setFormData(profile || {}); }} className="w-full sm:w-auto px-4 py-2 text-sm font-medium bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-white rounded-lg transition-colors">
                                     Cancel
                                 </button>
-                                <button onClick={handleSave} className="flex-1 bg-green-500 text-white font-bold hover:bg-green-600 rounded-lg transition-colors py-2">
+                                <button onClick={handleSave} className="flex-1 bg-violet-600 text-white font-bold hover:bg-violet-700 rounded-lg transition-colors py-2">
                                     Save Changes
                                 </button>
                             </>
                         )}
-                        <button onClick={handleLogout} className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2 text-sm font-medium text-red-500 bg-red-100 dark:bg-red-900/50 hover:bg-red-200 dark:hover:bg-red-900 rounded-lg transition-colors">
+                        <button onClick={handleLogout} className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2 text-sm font-medium text-red-100 bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
                             <LogoutIcon /> Logout
                         </button>
                     </div>

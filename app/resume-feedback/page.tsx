@@ -30,6 +30,14 @@ const LoadingDots = () => (
     </div>
 );
 
+// --- A neutral loading component to prevent the flicker ---
+const AuthLoadingScreen = () => (
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-black items-center justify-center">
+       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
+    </div>
+);
+
+
 export default function ResumeFeedbackPage() {
     const { user, loading } = useAuth();
     const router = useRouter();
@@ -329,16 +337,10 @@ export default function ResumeFeedbackPage() {
         }
     };
     
+    // --- THIS IS THE FIX ---
     if (loading || !user) {
-        return (
-            <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                    <p className="text-lg text-gray-500 dark:text-gray-400">Redirecting to login...</p>
-                </div>
-            </div>
-        );
+        return <AuthLoadingScreen />;
     }
-
 
     return (
         <div className="flex flex-col h-screen bg-gray-50 dark:bg-black font-sans">

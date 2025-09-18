@@ -20,6 +20,14 @@ const LoadingDots = () => (
   </div>
 );
 
+// --- A neutral loading component to prevent the flicker ---
+const AuthLoadingScreen = () => (
+    <div className="flex flex-col h-[calc(100vh-80px)] bg-gray-50 dark:bg-black items-center justify-center">
+       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
+    </div>
+);
+
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -50,7 +58,6 @@ export default function DiscoverPage() {
     }
   }, [user, loading, router]);
 
-  // Autofocus input after message from bot
   useEffect(() => {
     if (!isLoading && inputRef.current) {
         inputRef.current.focus();
@@ -157,14 +164,11 @@ export default function DiscoverPage() {
     </div>
   );
 
+  // --- THIS IS THE FIX ---
+  // While loading, show the neutral loading screen.
+  // The useEffect handles the redirect if the user is not logged in after loading.
   if (loading || !user) {
-    return (
-        <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-                <p className="text-lg text-gray-500 dark:text-gray-400">Redirecting to login...</p>
-            </div>
-        </div>
-    );
+    return <AuthLoadingScreen />;
   }
 
   return (
