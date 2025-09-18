@@ -1,5 +1,14 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
+import { 
+    getAuth, 
+    GoogleAuthProvider, 
+    onAuthStateChanged, 
+    isSignInWithEmailLink, 
+    signInWithEmailLink,
+    sendSignInLinkToEmail, // Make sure this is also exported
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword
+} from 'firebase/auth';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -29,4 +38,13 @@ export const getActionCodeSettings = () => {
     };
 };
 
-export { auth, googleProvider, onAuthStateChanged, isSignInWithEmailLink, signInWithEmailLink };
+export { 
+    auth, 
+    googleProvider, 
+    onAuthStateChanged, 
+    isSignInWithEmailLink, 
+    signInWithEmailLink,
+    sendSignInLinkToEmail,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword
+};
