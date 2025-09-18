@@ -102,9 +102,9 @@ export default function SkillDashHome() {
                     </p>
                     {/* New Discover Button */}
                     <div className="my-10">
-                        <a href="/discover" className="inline-flex flex-col items-center bg-gradient-to-r from-blue-600 via-purple-500 to-indigo-600 text-white py-4 px-16 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none active:scale-100">
-                            <span className="text-2xl font-bold tracking-wide">Discover your talent</span>
-                            <span className="text-sm opacity-80 font-normal tracking-wide">with SkillDash AI</span>
+                        <a href="/discover" className="inline-flex flex-col items-center bg-gradient-to-r from-blue-600 via-purple-500 to-indigo-600 text-white py-3 px-10 sm:py-4 sm:px-16 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none active:scale-100">
+                            <span className="text-lg sm:text-2xl font-bold tracking-wide">Discover your talent</span>
+                            <span className="text-xs sm:text-sm opacity-80 font-normal tracking-wide">with SkillDash AI</span>
                         </a>
                     </div>
                     <div className="flex flex-row items-baseline justify-center gap-x-2 sm:gap-x-3 text-2xl sm:text-3xl font-semibold mb-10">
