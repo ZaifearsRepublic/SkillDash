@@ -53,8 +53,8 @@ export default function ResumeFeedbackPage() {
     
      useEffect(() => {
         if (!loading && !user) {
-          // Set a message for the auth page to display
-          sessionStorage.setItem('authRedirectMessage', 'Please log in to use the AI Resume Feedback feature. We require login for fair usage.');
+          sessionStorage.setItem('redirectMessage', 'Please log in to use the AI Resume Feedback feature. We require login for fair usage.');
+          sessionStorage.setItem('redirectAfterLogin', '/resume-feedback');
           router.push('/auth');
         }
     }, [user, loading, router]);
@@ -379,4 +379,3 @@ export default function ResumeFeedbackPage() {
         </div>
     );
 }
-

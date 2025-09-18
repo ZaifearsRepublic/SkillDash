@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
+import {
     signInWithPopup,
     sendSignInLinkToEmail,
+    isSignInWithEmailLink,
+    signInWithEmailLink,
+    onAuthStateChanged
 } from 'firebase/auth';
-import { auth, googleProvider, actionCodeSettings } from '../../lib/firebase';
+import { auth, googleProvider, getActionCodeSettings } from '../../lib/firebase';
 import { useRouter } from 'next/navigation';
 
 const GoogleIcon = () => (
@@ -19,7 +22,9 @@ const GoogleIcon = () => (
 
 export default function AuthPage() {
     const [email, setEmail] = useState('');
+    const [isEmailValid, setIsEmailValid] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isProcessingLink, setIsProcessingLink] = useState(true);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [redirectMessage, setRedirectMessage] = useState<string | null>(null);
@@ -29,25 +34,67 @@ export default function AuthPage() {
         const msg = sessionStorage.getItem('redirectMessage');
         if (msg) {
             setRedirectMessage(msg);
-            sessionStorage.removeItem('redirectMessage'); // Clear message after displaying
+            sessionStorage.removeItem('redirectMessage');
         }
-    }, []);
+
+        if (isSignInWithEmailLink(auth, window.location.href)) {
+            let storedEmail = window.localStorage.getItem('emailForSignIn');
+            if (!storedEmail) {
+                storedEmail = window.prompt('Please provide your email for confirmation');
+            }
+            if (storedEmail) {
+                signInWithEmailLink(auth, storedEmail, window.location.href)
+                    .catch((err) => {
+                        setError("Failed to sign in. The link may be expired or invalid.");
+                    })
+                    .finally(() => {
+                         window.localStorage.removeItem('emailForSignIn');
+                         window.history.replaceState({}, document.title, "/auth");
+                    });
+            } else {
+                 setError("Could not find email to complete sign-in.");
+                 setIsProcessingLink(false);
+            }
+        } else {
+            setIsProcessingLink(false);
+        }
+        
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const redirectPath = sessionStorage.getItem('redirectAfterLogin') || '/profile';
+                sessionStorage.removeItem('redirectAfterLogin');
+                router.push(redirectPath);
+            }
+        });
+        return () => unsubscribe();
+    }, [router]);
+
+    const validateEmail = (email: string) => {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(String(email).toLowerCase());
+    };
+
+    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newEmail = e.target.value;
+        setEmail(newEmail);
+        setIsEmailValid(validateEmail(newEmail));
+    };
 
     const handleEmailSignIn = async () => {
-        if (!email) {
-            setError('Please enter your email address');
+        if (!isEmailValid) {
+            setError('Please enter a valid email address');
             return;
         }
-
         setIsLoading(true);
         setError('');
         setMessage('');
-
         try {
+            const actionCodeSettings = getActionCodeSettings();
             await sendSignInLinkToEmail(auth, email, actionCodeSettings);
             window.localStorage.setItem('emailForSignIn', email);
             setMessage(`A sign-in link has been sent to ${email}! Check your inbox and spam folder.`);
             setEmail('');
+            setIsEmailValid(false);
         } catch (err: any) {
             setError(err.message || 'Failed to send sign-in link. Please try again.');
         } finally {
@@ -59,8 +106,7 @@ export default function AuthPage() {
         setIsLoading(true);
         setError('');
         try {
-            const result = await signInWithPopup(auth, googleProvider);
-            router.push('/profile');
+            await signInWithPopup(auth, googleProvider);
         } catch (err: any) {
             setError('Failed to sign in with Google. Please try again.');
         } finally {
@@ -73,39 +119,52 @@ export default function AuthPage() {
         if (isLoading) return;
         handleEmailSignIn();
     };
+    
+    if (isProcessingLink) {
+        return (
+            <div className="min-h-screen bg-gp-bg-light dark:bg-black flex items-center justify-center p-4">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold text-gp-text dark:text-white mb-4">Completing Sign In...</h1>
+                    <div className="flex justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gp-primary"></div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-gp-bg-light dark:bg-black flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-gp-bg dark:bg-gray-900/50 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800">
+        <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center p-4">
+            <div className="max-w-md w-full bg-white dark:bg-gray-900/50 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800">
                 <div className="text-center mb-8">
                     <img src="/skilldash-logo.png" alt="SkillDash Logo" className="w-16 h-16 mx-auto mb-4" />
-                    <h1 className="text-3xl font-bold text-gp-text dark:text-white mb-2">
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
                         Sign In or Sign Up
                     </h1>
-                    <p className="text-gp-text-secondary dark:text-gray-400">
+                    <p className="text-gray-600 dark:text-gray-400">
                         Enter your email for a password-free magic link.
                     </p>
                 </div>
 
                 {redirectMessage && (
-                    <div className="bg-gp-primary-light/10 border border-gp-primary-light/20 rounded-md p-3 mb-4">
-                        <p className="text-gp-primary dark:text-gp-primary-light text-sm text-center">{redirectMessage}</p>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-4">
+                        <p className="text-blue-600 dark:text-blue-300 text-sm text-center">{redirectMessage}</p>
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gp-text-secondary dark:text-gray-300 mb-2">
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Email Address
                         </label>
                         <input 
                             type="email" 
                             id="email"
                             value={email} 
-                            onChange={(e) => setEmail(e.target.value)} 
+                            onChange={handleEmailChange}
                             required 
                             placeholder="your@email.com"
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gp-bg-light dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gp-primary-light text-gp-text dark:text-white" 
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white" 
                         />
                     </div>
 
@@ -123,8 +182,8 @@ export default function AuthPage() {
                     
                     <button 
                         type="submit" 
-                        disabled={isLoading || !email} 
-                        className="w-full bg-gp-primary text-white font-bold py-3 rounded-lg hover:bg-gp-primary-light transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isLoading || !isEmailValid} 
+                        className="w-full bg-violet-600 text-white font-bold py-3 rounded-lg hover:bg-violet-700 transition-all disabled:bg-gray-300 disabled:dark:bg-gray-600 disabled:cursor-not-allowed"
                     >
                         {isLoading ? 'Sending...' : 'Send Magic Link'}
                     </button>
@@ -135,7 +194,7 @@ export default function AuthPage() {
                         <div className="w-full border-t border-gray-300 dark:border-gray-700" />
                     </div>
                     <div className="relative flex justify-center text-sm">
-                        <span className="bg-gp-bg dark:bg-gray-900 px-2 text-gp-text-secondary dark:text-gray-400">
+                        <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
                             OR
                         </span>
                     </div>
@@ -146,7 +205,7 @@ export default function AuthPage() {
                         type="button"
                         onClick={handleGoogleSignIn}
                         disabled={isLoading}
-                        className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-700 rounded-lg text-gp-text-secondary dark:text-gray-200 hover:bg-gp-bg-light dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                        className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
                     >
                         <GoogleIcon />
                         Sign in with Google
@@ -156,4 +215,3 @@ export default function AuthPage() {
         </div>
     );
 }
-

@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, getRedirectResult, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, onAuthStateChanged, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -21,36 +21,12 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-// Determine the base URL dynamically for email link authentication.
-// This is crucial for making sure the link works in both development and production (e.g., on Vercel).
-const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL 
-  ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` // Vercel provides this variable
-  : 'http://localhost:3000';           // Fallback for local development
-
-const actionCodeSettings = {
-  // The URL to redirect to after the user signs in.
-  // This URL must be whitelisted in the Firebase Console.
-  url: `${baseUrl}/auth`,
-  // This must be true for email link sign-in.
-  handleCodeInApp: true,
+// This function MUST be called from the client-side to get the correct URL
+export const getActionCodeSettings = () => {
+    return {
+        url: `${window.location.origin}/auth`,
+        handleCodeInApp: true,
+    };
 };
 
-// This function handles the result of the redirect from the email link
-const handleRedirectSignIn = async () => {
-  try {
-    const result = await getRedirectResult(auth);
-    if (result) {
-      // User signed in successfully.
-      // You can get the user's info from result.user
-      console.log('Signed in user:', result.user);
-    }
-  } catch (error) {
-    console.error('Error handling redirect sign in:', error);
-  }
-};
-
-// Call this function when your app initializes to check for a redirect result
-handleRedirectSignIn();
-
-export { auth, googleProvider, actionCodeSettings, onAuthStateChanged };
-
+export { auth, googleProvider, onAuthStateChanged, isSignInWithEmailLink, signInWithEmailLink };
