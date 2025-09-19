@@ -22,6 +22,7 @@ const GitHubIcon = () => (
 
 export default function AuthPage() {
     const [isSignUp, setIsSignUp] = useState(false);
+    const [showForgotModal, setShowForgotModal] = useState(false);
     const [formData, setFormData] = useState({
         name: '', email: '', phone: '', age: '',
         status: '', password: '', confirmPassword: ''
@@ -146,6 +147,15 @@ export default function AuthPage() {
                         <>
                             <input name="email" type="email" onChange={handleInputChange} required placeholder="Email Address" className={commonInputClasses}/>
                             <input name="password" type="password" onChange={handleInputChange} required placeholder="Password" className={commonInputClasses}/>
+                            <p className="text-right">
+                                <button 
+                                    type="button"
+                                    onClick={() => setShowForgotModal(true)} 
+                                    className="text-sm text-blue-600 hover:underline focus:outline-none"
+                                >
+                                    Forgot Password?
+                                </button>
+                            </p>
                         </>
                     )}
 
@@ -163,6 +173,28 @@ export default function AuthPage() {
                     </button>
                 </div>
             </div>
+
+            {/* Forgot Password Modal */}
+            {showForgotModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-slate-600">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Forgot Password?</h2>
+                            <button 
+                                onClick={() => setShowForgotModal(false)} 
+                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl leading-none font-bold"
+                            >
+                                &times;
+                            </button>
+                        </div>
+                        <div className="p-4">
+                            <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                                Sign in using the "Continue with Google Account" or Github account option. Sorry for the inconvenience.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

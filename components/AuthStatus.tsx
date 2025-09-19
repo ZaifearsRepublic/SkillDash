@@ -43,7 +43,7 @@ export default function AuthStatus() {
                         <span className="font-bold">{userName}</span>
                     </div>
                 ) : (
-                    <span>Login / Sign Up</span>
+                    <span>Join</span>
                 )}
             </button>
         </div>
