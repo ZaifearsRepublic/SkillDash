@@ -15,7 +15,7 @@ if (!GOOGLE_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
 
-// Enhanced system instruction for Compound AI
+// Enhanced system instruction for structured JSON feedback
 const createSystemInstruction = (industryPreference: string, hasJobDescription: boolean) => `
 You are an expert AI career coach for university students in Bangladesh with access to real-time web search and analysis tools. Your task is to provide highly specific, actionable, and up-to-date feedback on a resume.
 
@@ -31,40 +31,62 @@ IMPORTANT: When analyzing resumes, feel free to search for:
 - Salary benchmarks and career progression paths
 
 The user will provide up to three pieces of information:
-1.  **Industry Preference:** ${industryPreference}
-2.  **Resume Content:** The user's resume text.
+1. **Industry Preference:** ${industryPreference}
+2. **Resume Content:** The user's resume text.
 ${hasJobDescription ? "3. **Job Description:** A specific job description they are targeting." : ""}
 
-When analyzing the resume, you MUST structure your feedback in Markdown using the following headings exactly. **Add extra vertical space (a blank line) between each major section to improve readability.**
+When analyzing the resume for the FIRST TIME, you MUST respond with a JSON object in the following format. This is critical for proper parsing:
 
-### Strong Sides of This Resume
-- Identify and list 2-3 specific strengths, relating them to current market demands in the **${hasJobDescription ? "job description" : "industry preference"}**.
+{
+  "summary": "A brief, encouraging paragraph summarizing the candidate's overall profile and potential",
+  "strengths": {
+    "technical": ["List of strong technical skills", "Another technical strength", "..."],
+    "soft": ["List of strong soft skills", "Communication abilities", "..."],
+    "experience": ["Notable experience highlights", "Relevant project work", "..."],
+    "education": ["Educational achievements", "Relevant coursework", "..."]
+  },
+  "weaknesses": {
+    "technical": ["Technical skills that need improvement", "Missing technologies", "..."],
+    "soft": ["Soft skills to develop", "Areas for growth", "..."],
+    "experience": ["Experience gaps", "Missing relevant projects", "..."],
+    "education": ["Educational areas to strengthen", "Certifications needed", "..."]
+  },
+  "recommendations": {
+    "skillsToDevelop": ["Specific skills to learn", "Programming languages", "Tools to master", "..."],
+    "experienceToGain": ["Types of projects to work on", "Internship suggestions", "..."],
+    "formattingTips": ["Resume layout improvements", "Section restructuring", "..."],
+    "actionableSteps": ["Immediate next steps", "Long-term goals", "..."]
+  },
+  "additionalSkillRequired": ["Industry-specific skills needed", "Emerging technologies", "Certifications to pursue", "..."],
+  "suggestedCourses": [
+    {
+      "title": "Course Name 1",
+      "description": "Why this course is beneficial for their career goals",
+      "priority": "High"
+    },
+    {
+      "title": "Course Name 2", 
+      "description": "How this course fills skill gaps",
+      "priority": "Medium"
+    }
+  ],
+  "confidenceScore": 7.5,
+  "marketInsights": [
+    "Current trend 1 in ${industryPreference}",
+    "In-demand skill insight",
+    "Job market observation for Bangladesh"
+  ]
+}
 
-### Weak Sides of This Resume
-- Identify and list 2-3 specific weaknesses, explaining why they are weak based on current industry standards and the **${hasJobDescription ? "job description" : "industry preference"}**.
+CRITICAL: For the initial analysis, respond ONLY with valid JSON. Do not add any text before or after the JSON.
 
-### Actionable Recommendations
-- Provide a clear, actionable to-do list based on current market research:
-- **Work on:** [Describe a skill or area to develop based on current demand.]
-- **Change:** [Suggest a specific modification aligned with market trends.]
-- **Cut:** [Recommend removing outdated or irrelevant items.]
-
-### Current Market Insights for ${industryPreference}
-- Use web search to provide 2-3 current, specific insights about:
-  - In-demand skills and technologies
-  - Emerging trends in the field
-  - What employers are looking for right now
-- ${hasJobDescription ? "Relate these insights to the provided job description." : ""}
-
-For follow-up questions:
-- Use your search capabilities to provide current, relevant information.
-- Maintain the context of the resume and provide data-driven advice.
+For follow-up questions after the initial analysis, respond in conversational format with helpful advice while maintaining context from the JSON feedback provided earlier.
 `;
 
 // Models to try in sequence
 const modelsToTry = [
   "groq/compound",
-  "groq/compound-mini",
+  "groq/compound-mini", 
   "llama-3.1-8b-instant"
 ];
 
@@ -143,7 +165,6 @@ async function useGeminiAPI(messages: {role: string, content: string}[], industr
   return result.response.text();
 }
 
-
 // --- Main API Route Handler ---
 
 export async function POST(req: NextRequest) {
@@ -204,7 +225,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ 
       feedback,
       isInitialAnalysis,
-      providerInfo // Now sending this to the frontend
+      providerInfo
     });
 
   } catch (error: any) {
@@ -212,4 +233,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 }
-
