@@ -27,8 +27,9 @@ export default function OpportunitiesPage() {
     return <AuthLoadingScreen />;
   }
 
+  // ✅ FIXED - Updated URLs
   const jobSeekerMaintenanceUrl = "/opportunities/job-seeker";
-  const hirerMaintenanceUrl = "/opportunities/hiring/under-maintenance";
+  const hirerMaintenanceUrl = "/opportunities/hiring"; // ✅ Fixed this line
 
   const features = [
     {
@@ -66,7 +67,7 @@ export default function OpportunitiesPage() {
       </div>
 
       <div className="min-h-screen text-gray-800 dark:text-gray-200 relative z-10">
-        {/* Top Section - Path Selection - Keep Original Design */}
+        {/* Top Section - Path Selection */}
         <div className="bg-white/60 dark:bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center text-center p-4 py-16">
           <div className="max-w-4xl w-full">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter mb-4 bg-gradient-to-r from-blue-500 via-purple-400 to-pink-500 bg-clip-text text-transparent">
@@ -97,7 +98,7 @@ export default function OpportunitiesPage() {
                 <div className="hidden dark:block absolute -bottom-4 -right-4 w-16 h-16 bg-blue-400/20 rounded-full opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
               </a>
 
-              {/* I am hiring card */}
+              {/* I am hiring card - ✅ NOW POINTS TO CORRECT PAGE */}
               <a
                 href={hirerMaintenanceUrl}
                 className="group relative flex flex-col items-center justify-center p-12 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm text-gray-800 dark:text-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200 dark:border-gray-800 hover:border-blue-500"
