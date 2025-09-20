@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 
 // Data for the team members
@@ -30,112 +32,198 @@ const teamMembers = [
 
 export default function AboutUsPage() {
     const cardGradients = [
-        "from-blue-50 to-purple-100 dark:from-slate-900 dark:to-slate-800",
-        "from-pink-50 to-blue-100 dark:from-slate-900 dark:to-slate-800",
-        "from-violet-50 to-sky-100 dark:from-slate-900 dark:to-slate-800"
+        "from-blue-500/10 via-purple-500/5 to-indigo-500/10 dark:from-blue-500/20 dark:via-purple-500/10 dark:to-indigo-500/20",
+        "from-pink-500/10 via-rose-500/5 to-purple-500/10 dark:from-pink-500/20 dark:via-rose-500/10 dark:to-purple-500/20",
+        "from-violet-500/10 via-sky-500/5 to-cyan-500/10 dark:from-violet-500/20 dark:via-sky-500/10 dark:to-cyan-500/20"
     ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-gray-800 dark:text-gray-200 py-12 sm:py-24 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900 text-gray-800 dark:text-gray-200 py-12 sm:py-24 px-4 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none">
+        <div className="absolute top-10 left-10 w-20 h-20 bg-blue-400/10 dark:bg-blue-400/20 rounded-full animate-pulse"></div>
+        <div className="absolute top-32 right-20 w-16 h-16 bg-purple-400/10 dark:bg-purple-400/20 rounded-full animate-bounce" style={{animationDelay: '1s'}}></div>
+        <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-pink-400/10 dark:bg-pink-400/20 rounded-full animate-pulse" style={{animationDelay: '2s'}}></div>
+        <div className="absolute bottom-32 right-1/3 w-24 h-24 bg-indigo-400/10 dark:bg-indigo-400/20 rounded-full animate-bounce" style={{animationDelay: '0.5s'}}></div>
+      </div>
 
-        {/* About at Top */}
-        <section className="text-center mb-16 md:mb-20">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter mb-4 bg-gradient-to-r from-blue-600 via-purple-500 to-indigo-600 bg-clip-text text-transparent">
-            About SkillDash
-          </h1>
-          <p className="max-w-3xl mx-auto text-lg text-gray-600 dark:text-gray-400">
-            We are a passionate team of students dedicated to empowering the youth of Bangladesh by bridging the gap between education and employment.
-          </p>
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Hero Section */}
+        <section className="text-center mb-20 md:mb-28">
+          <div className="animate-fade-in-up">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight mb-6 bg-gradient-to-r from-blue-600 via-purple-500 to-indigo-600 bg-clip-text text-transparent animate-gradient">
+              About SkillDash
+            </h1>
+            <p className="max-w-3xl mx-auto text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
+              We are passionate students building a bridge between education and employment in Bangladesh.
+            </p>
+          </div>
         </section>
 
         {/* Meet the Team Header */}
-        <section className="text-center mb-12 md:mb-20">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white bg-gradient-to-r from-blue-500 via-purple-400 to-pink-500 bg-clip-text text-transparent">
-            Meet the Team
-          </h2>
+        <section className="text-center mb-16 md:mb-20">
+          <div className="animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+            <h2 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-blue-500 via-purple-400 to-pink-500 bg-clip-text text-transparent mb-4">
+              Meet the Team
+            </h2>
+            <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto rounded-full"></div>
+          </div>
         </section>
 
         {/* Team Members Section */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12 mb-16 md:mb-24">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12 mb-20 md:mb-32">
           {teamMembers.map((member, idx) => (
             <div
               key={member.name}
-              className={`group relative flex flex-col items-center text-center p-8 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-200/50 dark:border-gray-800 bg-gradient-to-br ${
+              className={`group relative flex flex-col items-center text-center p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 border border-gray-200/30 dark:border-gray-700/50 backdrop-blur-sm bg-gradient-to-br ${
                 cardGradients[idx % 3]
-              }`}
+              } animate-fade-in-up`}
+              style={{animationDelay: `${0.3 + idx * 0.1}s`}}
             >
-              <div className="relative w-32 h-32 mb-6 rounded-full overflow-hidden shadow-lg border-4 border-white dark:border-gray-700 transform group-hover:scale-110 transition-transform duration-300">
+              {/* Floating decoration */}
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              
+              <div className="relative w-36 h-36 mb-6 rounded-full overflow-hidden shadow-xl border-4 border-white/50 dark:border-gray-700/50 transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
                 <img
                   src={member.imageUrl}
                   alt={`Profile picture of ${member.name}`}
-                  width={128}
-                  height={128}
                   className="w-full h-full object-cover"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{member.name}</h2>
-              <h3 className="text-md font-semibold mb-4 bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+              
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
+                {member.name}
+              </h2>
+              
+              <h3 className="text-sm font-semibold mb-4 bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent uppercase tracking-wide">
                 {member.role}
               </h3>
-              <p className="text-gray-700 dark:text-gray-300 mb-6 flex-grow">{member.description}</p>
+              
+              <p className="text-gray-700 dark:text-gray-300 mb-8 flex-grow leading-relaxed text-sm">
+                {member.description}
+              </p>
+              
               <a
                 href={member.contactUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full bg-gradient-to-r from-blue-600 via-purple-500 to-indigo-600 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none active:scale-100"
+                className="w-full bg-gradient-to-r from-blue-600 via-purple-500 to-indigo-600 hover:from-blue-700 hover:via-purple-600 hover:to-indigo-700 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-300/50"
               >
-                Contact
+                Get in Touch
               </a>
             </div>
           ))}
         </section>
 
-        {/* The Idea Section */}
-        <section className="mb-16 md:mb-24 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-6">How the Idea Was Born</h2>
-          <p className="max-w-4xl mx-auto text-gray-600 dark:text-gray-400 leading-relaxed mb-5">
-            The journey of SkillDash started with a simple question: 
-            <span className="italic"> "Why do so many talented students in Bangladesh struggle to land jobs or internships, despite years of study?"</span>
-            Observing friends, classmates, and our own journeys, we noticed a clear and persistent mismatch between what is taught in classrooms and what employers actually seek. Grades and degrees alone were not enough—what really mattered were practical, demonstrable skills, confidence, and a clear path to real-world experience.
-          </p>
-          <p className="max-w-4xl mx-auto text-gray-600 dark:text-gray-400 leading-relaxed mb-5">
-            As university students ourselves, we wrestled with traditional self-discovery quizzes, endless lists of online courses, and confusing, generic job boards. Much of it felt broken or overwhelming. We wanted something smarter: an ecosystem that could 
-            <b> show </b>
-            students their hidden strengths, guide their growth with the help of AI, and directly connect learning to practical work opportunities. 
-          </p>
-          <p className="max-w-4xl mx-auto text-gray-600 dark:text-gray-400 leading-relaxed">
-            The call for ideas from the <b>GP AI Future Maker competition</b> was the catalyst. It gave us the perfect challenge and the spark to assemble a team—combining backgrounds in finance, education, strategy, and community leadership. From the start, 
-            <b>SkillDash aimed to turn the daunting job prep journey into an accessible, gamified, and personalized web platform</b>
-            —built by students, for students.
-          </p>
+        {/* Story Section - Redesigned with cards */}
+        <section className="mb-20 md:mb-32">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500 bg-clip-text text-transparent mb-4">
+              Our Story
+            </h2>
+            <div className="w-24 h-1 bg-gradient-to-r from-emerald-500 to-purple-500 mx-auto rounded-full"></div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            {/* The Problem Card */}
+            <div className="bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 dark:from-red-950/20 dark:via-orange-950/20 dark:to-yellow-950/20 p-8 rounded-3xl shadow-lg border border-red-200/30 dark:border-red-800/30 transform hover:scale-105 transition-all duration-300">
+              <div className="flex items-center mb-6">
+                <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-orange-500 rounded-full flex items-center justify-center mr-4">
+                  <span className="text-2xl">🎯</span>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">The Challenge</h3>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                We saw talented students struggling to find jobs despite years of study. There was a clear gap between classroom learning and what employers actually wanted. Traditional grades weren't enough.
+              </p>
+            </div>
+
+            {/* The Solution Card */}
+            <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950/20 dark:via-teal-950/20 dark:to-cyan-950/20 p-8 rounded-3xl shadow-lg border border-emerald-200/30 dark:border-emerald-800/30 transform hover:scale-105 transition-all duration-300">
+              <div className="flex items-center mb-6">
+                <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center mr-4">
+                  <span className="text-2xl">💡</span>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Our Solution</h3>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                We created SkillDash to show students their hidden strengths, guide their growth with AI, and connect learning directly to real work opportunities. It's gamified, personalized, and built by students for students.
+              </p>
+            </div>
+          </div>
         </section>
 
-        {/* Our Mission Section */}
-        <section className="mb-16 md:mb-24 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-6">Our Mission</h2>
-          <p className="max-w-4xl mx-auto text-gray-600 dark:text-gray-400 leading-relaxed">
-            SkillDash was born from a simple but powerful idea: to close the gap between the theoretical knowledge gained in the classroom and the practical, real-world skills demanded by today's employers. We leverage cutting-edge AI to create a personalized and engaging journey for every student, guiding them from self-discovery to career-readiness and connecting them with tangible opportunities.
-          </p>
+        {/* Mission Section */}
+        <section className="mb-20 md:mb-32 text-center">
+          <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30 py-16 px-8 rounded-3xl shadow-xl border border-blue-200/30 dark:border-blue-800/30">
+            <div className="mb-8">
+              <span className="text-6xl">🚀</span>
+            </div>
+            <h2 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-clip-text text-transparent mb-6">
+              Our Mission
+            </h2>
+            <p className="max-w-4xl mx-auto text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+              Close the gap between classroom knowledge and real-world skills. We use AI to create personalized journeys that guide students from discovery to career readiness, connecting them with actual opportunities.
+            </p>
+          </div>
         </section>
 
-        {/* Our Journey Section */}
-        <section className="mb-16 md:mb-24 text-center bg-gray-50 dark:bg-gray-900/50 py-16 px-6 rounded-3xl">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-6">The Spark Behind the Project</h2>
-          <p className="max-w-4xl mx-auto text-gray-600 dark:text-gray-400 leading-relaxed">
-            The initial boost to bring SkillDash to life came from the opportunity to participate in the{' '}
+        {/* Competition Section */}
+        <section className="text-center bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 dark:from-yellow-950/20 dark:via-orange-950/20 dark:to-red-950/20 py-16 px-8 rounded-3xl shadow-xl border border-yellow-200/30 dark:border-yellow-800/30">
+          <div className="mb-8">
+            <span className="text-6xl">🏆</span>
+          </div>
+          <h2 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-yellow-600 via-orange-500 to-red-500 bg-clip-text text-transparent mb-6">
+            The Spark
+          </h2>
+          <p className="max-w-4xl mx-auto text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-8">
+            The{' '}
             <a
               href="https://gpfuturemakers.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline"
+              className="font-bold text-orange-600 hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300 underline decoration-2 underline-offset-4 hover:decoration-wavy transition-all duration-300"
             >
               GP AI Future Maker
             </a>
-            {' '}competition. This challenge inspired us to harness the power of artificial intelligence to solve a critical issue facing our peers. It provided the momentum to build a platform that could genuinely empower the future leaders of Bangladesh.
+            {' '}competition gave us the perfect challenge to turn our idea into reality. It inspired us to harness AI to solve real problems and empower the future leaders of Bangladesh.
           </p>
         </section>
       </div>
+
+      <style jsx>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes gradient {
+          0%, 100% {
+            background-size: 200% 200%;
+            background-position: left center;
+          }
+          50% {
+            background-size: 200% 200%;
+            background-position: right center;
+          }
+        }
+
+        .animate-fade-in-up {
+          animation: fade-in-up 0.8s ease-out forwards;
+          opacity: 0;
+        }
+
+        .animate-gradient {
+          animation: gradient 3s ease infinite;
+        }
+      `}</style>
     </div>
   );
 }
