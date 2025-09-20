@@ -1,12 +1,5 @@
 import React from 'react';
 
-const UserCircleIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-);
-
 export default function JobSeekerMaintenancePage() {
   return (
     <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center p-4 overflow-hidden relative">
@@ -16,7 +9,11 @@ export default function JobSeekerMaintenancePage() {
 
       <div className="relative z-10 text-center max-w-2xl w-full bg-white/50 dark:bg-black/50 backdrop-blur-lg p-8 sm:p-12 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-800">
         <div className="text-purple-500 dark:text-purple-400 mx-auto mb-6 inline-block">
-          <UserCircleIcon />
+          <img 
+            src="/opportunities/job-seeker-under-construction.png" 
+            alt="Under Construction" 
+            className="h-16 w-16 object-contain mx-auto filter invert dark:invert-0"
+          />
         </div>
         <h1 className="text-4xl sm:text-5xl font-bold text-gray-800 dark:text-white mb-4">
           Profile Creation is Coming Soon!

@@ -1,12 +1,5 @@
 import React from 'react';
 
-const ConstructionIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-);
-
 export default function UnderMaintenancePage() {
   return (
     <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center p-4 overflow-hidden relative">
@@ -16,7 +9,11 @@ export default function UnderMaintenancePage() {
 
       <div className="relative z-10 text-center max-w-2xl w-full bg-white/50 dark:bg-black/50 backdrop-blur-lg p-8 sm:p-12 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-800">
         <div className="text-blue-500 dark:text-blue-400 mx-auto mb-6 inline-block animate-pulse">
-          <ConstructionIcon />
+          <img 
+            src="/opportunities/job-seeker-under-construction.png" 
+            alt="Under Construction" 
+            className="h-16 w-16 object-contain mx-auto filter invert dark:invert-0"
+          />
         </div>
         <h1 className="text-4xl sm:text-5xl font-bold text-gray-800 dark:text-white mb-4">
           We're Building Something Great
@@ -34,4 +31,3 @@ export default function UnderMaintenancePage() {
     </div>
   );
 }
-
