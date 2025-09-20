@@ -53,47 +53,51 @@ export default function Navbar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-20"> {/* Increased height */}
+        <div className="flex items-center justify-between h-20">
           {/* Logo and Site Name */}
-          <a href="/" className="flex items-center gap-3 text-2xl font-bold text-gray-800 dark:text-white"> {/* Increased size and gap */}
+          <a href="/" className="flex items-center gap-3 text-2xl font-bold text-gray-800 dark:text-white flex-shrink-0">
             <img
               src="/skilldash-logo.png"
               alt="SkillDash Logo"
               width="40"
               height="40"
-              className="h-10 w-10" // Increased size
+              className="h-10 w-10"
             />
-            <span>SkillDash</span>
+            <span className="whitespace-nowrap">SkillDash</span>
           </a>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-3"> {/* Increased gap */}
+          <nav className="hidden md:flex items-center gap-3">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <a
                   key={link.name}
                   href={link.href}
-                  className={`flex items-center px-4 py-3 text-base font-medium rounded-md transition-colors ${ // Increased padding and font size
+                  className={`flex items-center px-4 py-3 text-base font-medium rounded-md transition-colors whitespace-nowrap ${
                     isActive
                       ? 'bg-blue-600 text-white'
                       : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
-                  {link.icon && <img src={link.icon} alt="" className="w-5 h-5 mr-2" />} {/* Increased icon size */}
+                  {link.icon && <img src={link.icon} alt="" className="w-5 h-5 mr-2" />}
                   {link.name}
                 </a>
               );
             })}
-             <AuthStatus />
+            {/* ✅ Full size AuthStatus for desktop */}
+            <AuthStatus />
           </nav>
           
-          {/* Hamburger Menu Button */}
-          <div className="md:hidden flex items-center gap-2">
-            <AuthStatus />
+          {/* Mobile: Compact AuthStatus + Hamburger Menu Button */}
+          <div className="md:hidden flex items-center gap-1">
+            {/* ✅ Compact AuthStatus for mobile */}
+            <div className="scale-75 origin-right">
+              <AuthStatus />
+            </div>
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
               aria-label="Toggle menu"
             >
               {isMenuOpen ? <CloseIcon /> : <HamburgerIcon />}
@@ -110,7 +114,7 @@ export default function Navbar() {
           ${isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}
         `}
       >
-        <nav className="flex flex-col p-4 gap-4"> {/* Increased gap */}
+        <nav className="flex flex-col p-4 gap-4">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -118,7 +122,7 @@ export default function Navbar() {
                 key={link.name}
                 href={link.href}
                 onClick={() => setIsMenuOpen(false)}
-                className={`flex items-center justify-center px-4 py-4 text-lg font-medium rounded-md text-center ${ // Increased padding
+                className={`flex items-center justify-center px-4 py-4 text-lg font-medium rounded-md text-center ${
                   isActive
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -134,4 +138,3 @@ export default function Navbar() {
     </header>
   );
 }
-

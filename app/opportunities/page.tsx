@@ -128,11 +128,12 @@ export default function OpportunitiesPage() {
               <p className="max-w-2xl mx-auto text-lg text-gray-600 dark:text-gray-400 mb-8">
                 Join SkillDash to discover your talents, prove your abilities, and connect with opportunities that launch your career.
               </p>
+              {/* ✅ UPDATED: Changed "Create Your Profile" to "Find Opportunities" */}
               <a
                 href={jobSeekerMaintenanceUrl}
                 className="inline-block bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-bold py-3 px-10 rounded-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 shadow-md"
               >
-                Create Your Profile
+                Find Opportunities
               </a>
             </div>
           </header>
@@ -145,11 +146,12 @@ export default function OpportunitiesPage() {
                   <div className={`text-center md:text-left ${index % 2 === 1 ? 'md:order-2' : ''}`}>
                     <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-white">{feature.title}</h2>
                     <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">{feature.description}</p>
+                    {/* ✅ UPDATED: Changed "Sign up now →" to "Find Opportunities →" */}
                     <a
                       href={jobSeekerMaintenanceUrl}
                       className="inline-block text-lg font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors"
                     >
-                      Sign up now &rarr;
+                      Find Opportunities &rarr;
                     </a>
                   </div>
                   <div className={`flex justify-center ${index % 2 === 1 ? 'md:order-1' : ''}`}>

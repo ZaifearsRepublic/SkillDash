@@ -80,7 +80,6 @@ export default function JobDetailsPage() {
       return content;
     }
     if (content && content.content) {
-      // Simple rich text renderer - you can enhance this based on your needs
       return content.content.map((node: any, index: number) => {
         if (node.nodeType === 'paragraph') {
           return (
@@ -276,7 +275,6 @@ export default function JobDetailsPage() {
                 <p className="text-blue-100 text-sm mb-4">Follow the application procedure above to submit your application.</p>
                 <button 
                   onClick={() => {
-                    // You can add application tracking or analytics here
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="bg-white text-blue-600 font-semibold py-2 px-6 rounded-lg hover:bg-blue-50 transition-colors duration-200"
