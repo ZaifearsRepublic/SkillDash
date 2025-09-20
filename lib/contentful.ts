@@ -1,15 +1,18 @@
 import { createClient, Entry, EntryFieldTypes, EntrySkeletonType } from 'contentful';
 
-// ✅ Updated configuration
+// ✅ Environment variables with fallbacks (for Next.js 15 compatibility)
+const spaceId = process.env.CONTENTFUL_SPACE_ID || 'qz001ds11gs3';
+const accessToken = process.env.CONTENTFUL_ACCESS_TOKEN || '9Xkr6hXeKKPMfTCIngLAG7k0n-g4JsIqJ2xeJGcUSb0';
+
 const client = createClient({
-  space: process.env.CONTENTFUL_SPACE_ID!,
-  environment: 'master', // ✅ Add environment
-  accessToken: process.env.CONTENTFUL_ACCESS_TOKEN!,
+  space: spaceId,
+  environment: 'master',
+  accessToken: accessToken,
 });
 
-// ✅ Updated interface with correct content type ID
+// ✅ Interface with correct content type ID
 interface JobOpportunitySkeleton extends EntrySkeletonType {
-  contentTypeId: 'SkillDashJobs'; // ✅ Changed from 'jobOpportunity' to 'SkillDashJobs'
+  contentTypeId: 'SkillDashJobs';
   fields: {
     positionName: EntryFieldTypes.Text;
     company: EntryFieldTypes.Text;
@@ -25,10 +28,10 @@ interface JobOpportunitySkeleton extends EntrySkeletonType {
   };
 }
 
-// ✅ Use the Entry type directly instead of extending it
+// ✅ Use the Entry type directly
 export type JobOpportunity = Entry<JobOpportunitySkeleton, undefined, string>;
 
-// ✅ Create a separate interface for the processed/formatted data
+// ✅ Formatted job interface
 export interface FormattedJobOpportunity {
   id: string;
   createdAt: string;
@@ -65,7 +68,7 @@ export interface FormattedJobOpportunity {
 export async function getJobOpportunities(): Promise<JobOpportunity[]> {
   try {
     const entries = await client.getEntries<JobOpportunitySkeleton>({
-      content_type: 'SkillDashJobs', // ✅ Updated content type
+      content_type: 'SkillDashJobs',
       order: ['-sys.createdAt'],
     });
     
@@ -86,7 +89,7 @@ export async function getJobOpportunityById(id: string): Promise<JobOpportunity 
   }
 }
 
-// ✅ Helper function to safely access fields from Contentful entry
+// ✅ Helper function to safely access fields
 function getJobField<T>(job: JobOpportunity, fieldName: string): T {
   return (job.fields as any)[fieldName] as T;
 }
@@ -99,9 +102,9 @@ export function formatDeadline(dateString: string): string {
       day: '2-digit',
       month: '2-digit', 
       year: 'numeric'
-    }); // Returns format like "30/09/2025"
+    });
   } catch (error) {
-    return dateString; // Fallback to original string if parsing fails
+    return dateString;
   }
 }
 

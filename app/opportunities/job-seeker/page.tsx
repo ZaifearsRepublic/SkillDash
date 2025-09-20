@@ -40,7 +40,7 @@ const AuthLoadingScreen = () => (
   </div>
 );
 
-// ✅ Updated Job Card Component - THIS IS WHERE THE UPDATE GOES
+// ✅ Updated Job Card Component
 const JobCard: React.FC<{ job: JobOpportunity }> = ({ job }) => {
   // ✅ Use the helper function to get properly typed data
   const formattedJob = formatJobOpportunity(job);
@@ -118,9 +118,8 @@ const JobCard: React.FC<{ job: JobOpportunity }> = ({ job }) => {
 export default function JobSeekerPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [jobs, setJobs] = useState<JobOpportunity[]>([]); // ✅ Updated type
+  const [jobs, setJobs] = useState<JobOpportunity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -146,57 +145,33 @@ export default function JobSeekerPage() {
     }
   };
 
-  // ✅ Updated filtering logic to use formatted job data
-  const filteredJobs = jobs.filter(job => {
-    const formatted = formatJobOpportunity(job);
-    return (
-      formatted.positionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      formatted.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      formatted.location.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
-
   if (loading || !user) {
     return <AuthLoadingScreen />;
   }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
-      {/* Header */}
+      {/* Enhanced Header with Prominent Back Button */}
       <div className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <Link href="/opportunities" className="text-blue-600 hover:text-blue-700 mb-4 inline-flex items-center text-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Opportunities
-          </Link>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* ✅ Big Back Button in a Box */}
+          <div className="mb-8">
+            <Link href="/opportunities" className="inline-flex items-center bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-6 py-4 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg border border-blue-200 dark:border-blue-800">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span className="text-lg">Back to Opportunities</span>
+            </Link>
+          </div>
           
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          {/* Title Section */}
+          <div className="text-center">
+            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
               Job <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Opportunities</span>
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Discover amazing career opportunities from top companies. Find your perfect match and take the next step in your career.
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto leading-relaxed">
+              Discover amazing career opportunities from top companies. Find your perfect match and take the next step in your career journey.
             </p>
-          </div>
-
-          {/* Search Bar */}
-          <div className="max-w-md mx-auto">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                placeholder="Search jobs, companies, or locations..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-              />
-            </div>
           </div>
         </div>
       </div>
@@ -204,32 +179,41 @@ export default function JobSeekerPage() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400 text-lg">Loading opportunities...</p>
+            </div>
           </div>
-        ) : filteredJobs.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              {searchTerm ? 'No jobs found' : 'No opportunities available'}
+        ) : jobs.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="text-8xl mb-6">💼</div>
+            <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+              No opportunities available yet
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              {searchTerm ? 'Try adjusting your search terms' : 'Check back later for new opportunities'}
+            <p className="text-gray-600 dark:text-gray-400 text-lg max-w-md mx-auto">
+              We're working on bringing you amazing job opportunities. Check back soon!
             </p>
+            <div className="mt-8">
+              <Link href="/opportunities" className="inline-block bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition-all transform hover:scale-105">
+                Explore Other Options
+              </Link>
+            </div>
           </div>
         ) : (
           <>
             {/* Results Count */}
-            <div className="mb-6">
-              <p className="text-gray-600 dark:text-gray-400">
-                Showing {filteredJobs.length} {filteredJobs.length === 1 ? 'opportunity' : 'opportunities'}
-                {searchTerm && ` for "${searchTerm}"`}
-              </p>
+            <div className="mb-8">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 px-6 py-4">
+                <p className="text-gray-700 dark:text-gray-300 text-lg font-medium">
+                  Found {jobs.length} {jobs.length === 1 ? 'opportunity' : 'opportunities'} for you
+                </p>
+              </div>
             </div>
 
-            {/* Job Grid - Using the updated JobCard component */}
+            {/* Job Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredJobs.map((job) => (
+              {jobs.map((job) => (
                 <JobCard key={job.sys.id} job={job} />
               ))}
             </div>
