@@ -1,31 +1,15 @@
 import { createClient, Entry, EntryFieldTypes, EntrySkeletonType } from 'contentful';
 
-// Debug environment variables (remove this after fixing)
-console.log('Environment check:', {
-  spaceId: process.env.CONTENTFUL_SPACE_ID ? 'Found' : 'Missing',
-  accessToken: process.env.CONTENTFUL_ACCESS_TOKEN ? 'Found' : 'Missing',
-});
-
-// Validate environment variables
-const spaceId = process.env.CONTENTFUL_SPACE_ID;
-const accessToken = process.env.CONTENTFUL_ACCESS_TOKEN;
-
-if (!spaceId) {
-  throw new Error('CONTENTFUL_SPACE_ID environment variable is required');
-}
-
-if (!accessToken) {
-  throw new Error('CONTENTFUL_ACCESS_TOKEN environment variable is required');
-}
-
+// ✅ Updated configuration
 const client = createClient({
-  space: spaceId,
-  accessToken: accessToken,
+  space: process.env.CONTENTFUL_SPACE_ID!,
+  environment: 'master', // ✅ Add environment
+  accessToken: process.env.CONTENTFUL_ACCESS_TOKEN!,
 });
 
-// Define the entry skeleton type for Contentful
+// ✅ Updated interface with correct content type ID
 interface JobOpportunitySkeleton extends EntrySkeletonType {
-  contentTypeId: 'jobOpportunity';
+  contentTypeId: 'SkillDashJobs'; // ✅ Changed from 'jobOpportunity' to 'SkillDashJobs'
   fields: {
     positionName: EntryFieldTypes.Text;
     company: EntryFieldTypes.Text;
@@ -81,7 +65,7 @@ export interface FormattedJobOpportunity {
 export async function getJobOpportunities(): Promise<JobOpportunity[]> {
   try {
     const entries = await client.getEntries<JobOpportunitySkeleton>({
-      content_type: 'jobOpportunity',
+      content_type: 'SkillDashJobs', // ✅ Updated content type
       order: ['-sys.createdAt'],
     });
     
@@ -115,7 +99,7 @@ export function formatDeadline(dateString: string): string {
       day: '2-digit',
       month: '2-digit', 
       year: 'numeric'
-    }); // Returns format like "27/09/2025"
+    }); // Returns format like "30/09/2025"
   } catch (error) {
     return dateString; // Fallback to original string if parsing fails
   }
