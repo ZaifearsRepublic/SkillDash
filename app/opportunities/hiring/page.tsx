@@ -1,9 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useRouter } from 'next/navigation';
 
 const MailIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -11,41 +9,12 @@ const MailIcon = () => (
     </svg>
 );
 
-const ExclamationTriangleIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-    </svg>
-);
-
-// Loading component
-const AuthLoadingScreen = () => (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-black items-center justify-center">
-       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
-    </div>
-);
-
 export default function HiringPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      sessionStorage.setItem('redirectMessage', 'Please log in to access hiring features. We require login for fair usage.');
-      sessionStorage.setItem('redirectAfterLogin', '/opportunities/hiring');
-      router.push('/auth');
-    }
-  }, [user, loading, router]);
-
-  if (loading || !user) {
-    return <AuthLoadingScreen />;
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       {/* Header with Back Button */}
       <div className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-4xl mx-auto px-4 py-8">
-          {/* Big Back Button in a Box */}
           <div className="mb-8">
             <Link href="/opportunities" className="inline-flex items-center bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-6 py-4 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg border border-blue-200 dark:border-blue-800">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -70,27 +39,6 @@ export default function HiringPage() {
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
           
-          {/* Beta Notice */}
-          <div className="bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 border-b border-orange-200 dark:border-orange-800/50 px-8 py-6">
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0">
-                <ExclamationTriangleIcon />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                  🚀 Beta Testing Phase
-                </h2>
-                <p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed mb-4">
-                  This website is still in <strong>beta testing</strong>. For posting jobs, please contact us via email. 
-                  We will update this feature in a few hours after verifying everything is working perfectly.
-                </p>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Thank you for your patience as we ensure the best experience for both employers and job seekers!
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* Contact Section */}
           <div className="px-8 py-12 text-center">
             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
@@ -110,23 +58,7 @@ export default function HiringPage() {
               
               <MailIcon />
               <span className="ml-3 relative z-10">Contact Us to Post Jobs</span>
-              
-              {/* Arrow animation */}
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
             </a>
-
-            {/* Contact Info */}
-            <div className="mt-8 p-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Direct email:</p>
-              <a 
-                href="mailto:alshahoriar.hossain@gmail.com" 
-                className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
-              >
-                alshahoriar.hossain@gmail.com
-              </a>
-            </div>
           </div>
 
           {/* Features Preview */}

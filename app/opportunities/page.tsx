@@ -1,35 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import React from 'react';
+import Link from 'next/link';
 
-// Loading component
-const AuthLoadingScreen = () => (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-black items-center justify-center">
-       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
-    </div>
-);
+// NOTE: The useAuth and useRouter hooks have been removed.
 
 export default function OpportunitiesPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      sessionStorage.setItem('redirectMessage', 'Please log in to access opportunities. We require login for fair usage.');
-      sessionStorage.setItem('redirectAfterLogin', '/opportunities');
-      router.push('/auth');
-    }
-  }, [user, loading, router]);
-
-  if (loading || !user) {
-    return <AuthLoadingScreen />;
-  }
-
-  // ✅ FIXED - Updated URLs
+  // ✅ FIXED - URLs remain the same
   const jobSeekerMaintenanceUrl = "/opportunities/job-seeker";
-  const hirerMaintenanceUrl = "/opportunities/hiring"; // ✅ Fixed this line
+  const hirerMaintenanceUrl = "/opportunities/hiring";
 
   const features = [
     {
@@ -51,18 +30,11 @@ export default function OpportunitiesPage() {
 
   return (
     <div className="w-full bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-black dark:to-blue-950/30 overflow-x-hidden relative">
-      {/* Animated background elements - same as homepage */}
+      {/* Animated background elements */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-        {/* Circle 1 - Top left, bouncing */}
         <div className="absolute top-20 left-16 w-20 h-20 bg-blue-400/20 dark:bg-blue-400/30 rounded-full animate-bounce" style={{animationDelay: '0s', animationDuration: '4s'}}></div>
-        
-        {/* Circle 2 - Top right, pulsing */}
         <div className="absolute top-40 right-24 w-16 h-16 bg-purple-400/20 dark:bg-purple-400/30 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
-        
-        {/* Circle 3 - Center, bouncing */}
         <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-indigo-400/15 dark:bg-indigo-400/25 rounded-full animate-bounce" style={{animationDelay: '2s', animationDuration: '5s'}}></div>
-        
-        {/* Circle 4 - Bottom right, bouncing */}
         <div className="absolute bottom-32 right-20 w-18 h-18 bg-emerald-400/20 dark:bg-emerald-400/30 rounded-full animate-bounce" style={{animationDelay: '1.5s', animationDuration: '3.5s'}}></div>
       </div>
 
@@ -92,13 +64,11 @@ export default function OpportunitiesPage() {
                 </div>
                 <h2 className="text-3xl font-bold mb-2">I am seeking a job</h2>
                 <p className="text-white/80">Find part-time roles, internships, and freelance gigs tailored to your skills.</p>
-                {/* Light mode animation */}
                 <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-white/10 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500 dark:hidden" />
-                {/* Dark mode animation - subtle glow effect */}
                 <div className="hidden dark:block absolute -bottom-4 -right-4 w-16 h-16 bg-blue-400/20 rounded-full opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
               </a>
 
-              {/* I am hiring card - ✅ NOW POINTS TO CORRECT PAGE */}
+              {/* I am hiring card */}
               <a
                 href={hirerMaintenanceUrl}
                 className="group relative flex flex-col items-center justify-center p-12 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm text-gray-800 dark:text-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200 dark:border-gray-800 hover:border-blue-500"
@@ -119,7 +89,6 @@ export default function OpportunitiesPage() {
 
         {/* Job Seeker Section */}
         <div className="text-gray-800 dark:text-gray-200">
-          {/* Hero Section */}
           <header className="py-24 sm:py-32 text-center bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm px-4">
             <div className="max-w-4xl mx-auto">
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter mb-4 bg-gradient-to-r from-blue-600 via-purple-500 to-indigo-600 bg-clip-text text-transparent">
@@ -128,17 +97,15 @@ export default function OpportunitiesPage() {
               <p className="max-w-2xl mx-auto text-lg text-gray-600 dark:text-gray-400 mb-8">
                 Join SkillDash to discover your talents, prove your abilities, and connect with opportunities that launch your career.
               </p>
-              {/* ✅ UPDATED: Changed "Create Your Profile" to "Find Opportunities" */}
               <a
                 href={jobSeekerMaintenanceUrl}
                 className="inline-block bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-bold py-3 px-10 rounded-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 shadow-md"
               >
-                Find Opportunities
+                Create Your Profile
               </a>
             </div>
           </header>
 
-          {/* Features Section */}
           <main className="py-20 sm:py-24 px-4">
             <div className="max-w-6xl mx-auto space-y-20">
               {features.map((feature, index) => (
@@ -146,12 +113,11 @@ export default function OpportunitiesPage() {
                   <div className={`text-center md:text-left ${index % 2 === 1 ? 'md:order-2' : ''}`}>
                     <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-white">{feature.title}</h2>
                     <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">{feature.description}</p>
-                    {/* ✅ UPDATED: Changed "Sign up now →" to "Find Opportunities →" */}
                     <a
                       href={jobSeekerMaintenanceUrl}
                       className="inline-block text-lg font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors"
                     >
-                      Find Opportunities &rarr;
+                      Sign up now &rarr;
                     </a>
                   </div>
                   <div className={`flex justify-center ${index % 2 === 1 ? 'md:order-1' : ''}`}>
@@ -167,10 +133,9 @@ export default function OpportunitiesPage() {
           </main>
         </div>
 
-        {/* Footer with homepage style */}
+        {/* Footer */}
         <footer className="border-t border-gray-200/50 dark:border-gray-800/50 pt-10 mt-16 bg-white/30 dark:bg-black/30 backdrop-blur-sm rounded-t-3xl mx-4">
           <div className="max-w-5xl mx-auto px-4 pb-6 flex flex-col md:flex-row gap-6 md:gap-12 items-start justify-between">
-            {/* Logo and About */}
             <div className="flex flex-col gap-3 min-w-[150px]">
               <div className="relative">
                 <img src="/skilldash-logo.png" alt="SkillDash Logo" width="56" height="56" className="mb-2 transform hover:scale-110 transition-transform duration-300" />
@@ -181,8 +146,6 @@ export default function OpportunitiesPage() {
                 Built for the <a href="https://gpfuturemakers.com/" className="underline font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300" target="_blank" rel="noopener noreferrer">GP AI Future Maker</a> competition.
               </p>
             </div>
-            
-            {/* Footer Links */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 flex-1">
               <div>
                 <h4 className="text-md font-bold text-gray-800 dark:text-white mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">About</h4>
@@ -228,36 +191,6 @@ export default function OpportunitiesPage() {
           </div>
         </footer>
       </div>
-
-      <style jsx>{`
-        @keyframes fade-in-up {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes gradient {
-          0%, 100% {
-            background-size: 200% 200%;
-            background-position: left center;
-          }
-          50% {
-            background-size: 200% 200%;
-            background-position: right center;
-          }
-        }
-        .animate-fade-in-up {
-          animation: fade-in-up 0.8s ease-out forwards;
-          opacity: 0;
-        }
-        .animate-gradient {
-          animation: gradient 3s ease infinite;
-        }
-      `}</style>
     </div>
   );
 }
