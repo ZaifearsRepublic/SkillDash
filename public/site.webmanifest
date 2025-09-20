@@ -1,0 +1,16 @@
+{
+  "name": "SkillDash",
+  "short_name": "SkillDash",
+  "description": "AI-Powered Skill Platform for Bangladesh's Youth",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32",
+      "type": "image/x-icon"
+    }
+  ]
+}

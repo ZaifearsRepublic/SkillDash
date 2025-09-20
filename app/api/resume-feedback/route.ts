@@ -15,7 +15,7 @@ if (!GOOGLE_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
 
-// Enhanced system instruction for structured JSON feedback
+// Enhanced system instruction for structured JSON feedback (unchanged)
 const createSystemInstruction = (industryPreference: string, hasJobDescription: boolean) => `
 You are an expert AI career coach for university students in Bangladesh with access to real-time web search and analysis tools. Your task is to provide highly specific, actionable, and up-to-date feedback on a resume.
 
@@ -79,21 +79,27 @@ When analyzing the resume for the FIRST TIME, you MUST respond with a JSON objec
 }
 
 CRITICAL: For the initial analysis, respond ONLY with valid JSON. Do not add any text before or after the JSON.
-
 For follow-up questions after the initial analysis, respond in conversational format with helpful advice while maintaining context from the JSON feedback provided earlier.
 `;
 
-// Models to try in sequence
-const modelsToTry = [
+// CORRECTED: Your original three-tier model strategy
+const groqCompoundModels = [
   "groq/compound",
-  "groq/compound-mini", 
+  "groq/compound-mini"
+];
+
+const groqLlamaModels = [
   "llama-3.1-8b-instant"
 ];
 
-// --- API Call Functions ---
+interface GroqResult {
+  success: boolean;
+  content?: string;
+  error?: string;
+}
 
-// Main function to try Groq API with model fallback
-async function tryGroqAPI(messages: {role: string, content: string}[], industryPreference: string, hasJobDescription: boolean): Promise<{ success: boolean; content?: string; error?: string }> {
+// STRATEGY 1: Try Groq Compound models first
+async function tryGroqCompoundAPI(messages: {role: string, content: string}[], industryPreference: string, hasJobDescription: boolean): Promise<GroqResult> {
   if (!GROQ_API_KEY) {
     return { success: false, error: 'Groq API key not configured' };
   }
@@ -104,9 +110,12 @@ async function tryGroqAPI(messages: {role: string, content: string}[], industryP
   };
   const messagesForApi = [systemMessage, ...messages];
 
-  for (const model of modelsToTry) {
+  for (const model of groqCompoundModels) {
     try {
-      console.log(`Attempting Groq API with model: ${model}...`);
+      console.log(`🚀 Attempting Groq COMPOUND with model: ${model}...`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
       
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -114,35 +123,100 @@ async function tryGroqAPI(messages: {role: string, content: string}[], industryP
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${GROQ_API_KEY}`
         },
-        body: JSON.stringify({ model, messages: messagesForApi }),
-        signal: AbortSignal.timeout(30000),
+        body: JSON.stringify({ 
+          model, 
+          messages: messagesForApi,
+          max_tokens: 2000,
+          temperature: 0.3
+        }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        console.warn(`Groq API with model ${model} failed (${response.status})`);
-        continue; // Try the next model
+        console.warn(`❌ Groq COMPOUND model ${model} failed (${response.status})`);
+        continue;
       }
 
       const data = await response.json();
       if (!data.choices?.[0]?.message?.content) {
-        console.warn(`Invalid Groq response from model ${model}`);
-        continue; // Try the next model
+        console.warn(`❌ Invalid Groq COMPOUND response from ${model}`);
+        continue;
       }
 
-      console.log(`✅ Groq API successful with model: ${model}`);
+      console.log(`✅ Groq COMPOUND successful with model: ${model}`);
       return { success: true, content: data.choices[0].message.content };
 
     } catch (error: any) {
-      console.warn(`Groq API error with model ${model}:`, error.name);
+      console.warn(`❌ Groq COMPOUND error with ${model}:`, error.name);
     }
   }
 
-  return { success: false, error: 'all_groq_models_failed' };
+  return { success: false, error: 'all_groq_compound_models_failed' };
 }
 
-// Function to use Google Gemini as the final fallback
+// STRATEGY 2: Try Groq LLAMA models as second fallback
+async function tryGroqLlamaAPI(messages: {role: string, content: string}[], industryPreference: string, hasJobDescription: boolean): Promise<GroqResult> {
+  if (!GROQ_API_KEY) {
+    return { success: false, error: 'Groq API key not configured' };
+  }
+
+  const systemMessage = { 
+    role: "system", 
+    content: createSystemInstruction(industryPreference, hasJobDescription) 
+  };
+  const messagesForApi = [systemMessage, ...messages];
+
+  for (const model of groqLlamaModels) {
+    try {
+      console.log(`🔄 Attempting Groq LLAMA with model: ${model}...`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GROQ_API_KEY}`
+        },
+        body: JSON.stringify({ 
+          model, 
+          messages: messagesForApi,
+          max_tokens: 2000,
+          temperature: 0.3
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        console.warn(`❌ Groq LLAMA model ${model} failed (${response.status})`);
+        continue;
+      }
+
+      const data = await response.json();
+      if (!data.choices?.[0]?.message?.content) {
+        console.warn(`❌ Invalid Groq LLAMA response from ${model}`);
+        continue;
+      }
+
+      console.log(`✅ Groq LLAMA successful with model: ${model}`);
+      return { success: true, content: data.choices[0].message.content };
+
+    } catch (error: any) {
+      console.warn(`❌ Groq LLAMA error with ${model}:`, error.name);
+    }
+  }
+
+  return { success: false, error: 'all_groq_llama_models_failed' };
+}
+
+// STRATEGY 3: Use Google Gemini as the final fallback
 async function useGeminiAPI(messages: {role: string, content: string}[], industryPreference: string, hasJobDescription: boolean): Promise<string> {
-  console.log('🔄 Falling back to Google Gemini...');
+  console.log('🔄 Final fallback to Google Gemini...');
   
   const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",
@@ -157,22 +231,70 @@ async function useGeminiAPI(messages: {role: string, content: string}[], industr
     parts: [{ text: msg.content }]
   }));
   
-  const chat = model.startChat({ history });
+  const chat = model.startChat({ 
+    history,
+    generationConfig: {
+      maxOutputTokens: 1500,
+      temperature: 0.3,
+    }
+  });
+  
   const latestMessage = messages[messages.length - 1]?.content || '';
   const result = await chat.sendMessage(latestMessage);
-
+  
   console.log('✅ Google Gemini successful');
   return result.response.text();
 }
 
-// --- Main API Route Handler ---
+// Environment-aware timeout configuration
+const getTimeouts = () => {
+  const isVercel = process.env.VERCEL === '1';
+  
+  if (isVercel) {
+    return { 
+      groqCompound: 3000,  // 3s for compound models
+      groqLlama: 3000,     // 3s for LLAMA models  
+      gemini: 3000         // 3s for Gemini (total 9s < 10s Vercel limit)
+    };
+  }
+  
+  return { 
+    groqCompound: 15000,   // 15s for compound models
+    groqLlama: 15000,      // 15s for LLAMA models
+    gemini: 25000          // 25s for Gemini
+  };
+};
 
+// Input validation
+const validateInputs = (body: any) => {
+  const { resumeText, jobDescription } = body;
+  
+  if (resumeText && (typeof resumeText !== 'string' || resumeText.length > 15000)) {
+    return { isValid: false, error: 'Resume text is invalid or too long (max 15,000 characters)' };
+  }
+  
+  if (jobDescription && (typeof jobDescription !== 'string' || jobDescription.length > 8000)) {
+    return { isValid: false, error: 'Job description is too long (max 8,000 characters)' };
+  }
+  
+  return { isValid: true };
+};
+
+// --- Main API Route Handler ---
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
   let usedProvider = 'unknown';
   let fallbackReason = '';
 
   try {
     const body = await req.json();
+    
+    // Input validation
+    const validation = validateInputs(body);
+    if (!validation.isValid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+    
     const { 
       messages = [], 
       resumeText = null, 
@@ -184,17 +306,15 @@ export async function POST(req: NextRequest) {
     const isInitialAnalysis = !!resumeText;
 
     if (isInitialAnalysis) {
-      // For the first analysis, create a single user message with all context
       let prompt = `Please analyze this resume for a student interested in the ${industryPreference} industry.\n\n**Resume Content:**\n${resumeText}`;
       if (jobDescription) {
         prompt += `\n\n**Target Job Description:**\n${jobDescription}`;
       }
       apiMessages = [{ role: 'user', content: prompt }];
     } else {
-      // For follow-ups, use the entire message history from the client
       apiMessages = messages.map((msg: any) => ({
         role: msg.role,
-        content: typeof msg.content === 'string' ? msg.content : 'User sent a complex message.' // Sanitize content
+        content: typeof msg.content === 'string' ? msg.content : 'User sent a complex message.'
       })).filter(msg => msg.role === 'user' || msg.role === 'assistant');
     }
 
@@ -203,24 +323,83 @@ export async function POST(req: NextRequest) {
     }
 
     let feedback = '';
+    const timeouts = getTimeouts();
 
-    // Strategy 1: Try Groq first
-    const groqResult = await tryGroqAPI(apiMessages, industryPreference, !!jobDescription);
-    
-    if (groqResult.success && groqResult.content) {
-      feedback = groqResult.content;
-      usedProvider = 'groq';
-    } else {
-      // Strategy 2: Fallback to Google Gemini
-      fallbackReason = groqResult.error || 'unknown_error';
-      const geminiMessages = apiMessages.map(m => ({...m, role: m.role === 'assistant' ? 'model' : 'user'}));
-      feedback = await useGeminiAPI(geminiMessages, industryPreference, !!jobDescription);
-      usedProvider = 'gemini';
+    // THREE-TIER STRATEGY: Groq Compound → Groq LLAMA → Gemini
+    try {
+      // STRATEGY 1: Try Groq COMPOUND models first
+      console.log('🚀 Step 1: Trying Groq COMPOUND models...');
+      const compoundResult = await Promise.race([
+        tryGroqCompoundAPI(apiMessages, industryPreference, !!jobDescription),
+        new Promise<GroqResult>((_, reject) => 
+          setTimeout(() => reject(new Error('Compound timeout')), timeouts.groqCompound)
+        )
+      ]);
+      
+      if (compoundResult.success && compoundResult.content) {
+        feedback = compoundResult.content;
+        usedProvider = 'groq-compound';
+      } else {
+        throw new Error(`Compound failed: ${compoundResult.error}`);
+      }
+      
+    } catch (compoundError: any) {
+      console.log(`❌ Groq COMPOUND failed: ${compoundError.message}`);
+      
+      try {
+        // STRATEGY 2: Try Groq LLAMA models
+        console.log('🔄 Step 2: Trying Groq LLAMA models...');
+        const llamaResult = await Promise.race([
+          tryGroqLlamaAPI(apiMessages, industryPreference, !!jobDescription),
+          new Promise<GroqResult>((_, reject) => 
+            setTimeout(() => reject(new Error('LLAMA timeout')), timeouts.groqLlama)
+          )
+        ]);
+        
+        if (llamaResult.success && llamaResult.content) {
+          feedback = llamaResult.content;
+          usedProvider = 'groq-llama';
+          fallbackReason = compoundError.message;
+        } else {
+          throw new Error(`LLAMA failed: ${llamaResult.error}`);
+        }
+        
+      } catch (llamaError: any) {
+        console.log(`❌ Groq LLAMA failed: ${llamaError.message}`);
+        
+        // STRATEGY 3: Final fallback to Gemini
+        console.log('🔄 Step 3: Final fallback to Gemini...');
+        fallbackReason = `Compound: ${compoundError.message}, LLAMA: ${llamaError.message}`;
+        
+        const geminiMessages = apiMessages.map(m => ({...m, role: m.role === 'assistant' ? 'model' : 'user'}));
+        
+        feedback = await Promise.race([
+          useGeminiAPI(geminiMessages, industryPreference, !!jobDescription),
+          new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Gemini timeout')), timeouts.gemini)
+          )
+        ]);
+        
+        usedProvider = 'gemini';
+      }
     }
 
-    const providerInfo = usedProvider === 'groq' 
-      ? 'Powered by Groq AI' 
-      : `Powered by Google Gemini (Groq fallback: ${fallbackReason})`;
+    const processingTime = Date.now() - startTime;
+    console.log(`✅ Resume feedback completed in ${processingTime}ms using ${usedProvider}`);
+
+    // Updated provider info to reflect the three strategies
+    const providerInfo = (() => {
+      switch (usedProvider) {
+        case 'groq-compound':
+          return 'Powered by Groq AI (Compound Models)';
+        case 'groq-llama':
+          return 'Powered by Groq AI (LLAMA Models)';
+        case 'gemini':
+          return `Powered by Google Gemini (Groq fallback: ${fallbackReason})`;
+        default:
+          return 'Powered by AI';
+      }
+    })();
 
     return NextResponse.json({ 
       feedback,
@@ -229,7 +408,17 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error(`Resume feedback error:`, error);
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    const processingTime = Date.now() - startTime;
+    console.error(`Resume feedback error after ${processingTime}ms:`, error.message);
+    
+    if (error.message.includes('timeout')) {
+      return NextResponse.json({ 
+        error: 'Request timed out. Please try again with a shorter resume.' 
+      }, { status: 408 });
+    }
+    
+    return NextResponse.json({ 
+      error: 'An unexpected error occurred.' 
+    }, { status: 500 });
   }
 }
