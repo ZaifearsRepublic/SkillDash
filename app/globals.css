@@ -55,3 +55,119 @@
 .animate-optimized-pulse {
   animation: optimized-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+
+/* Add to existing globals.css */
+
+/* OPTIMIZED: Hardware-accelerated animations */
+@keyframes message-fade-in {
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes suggestions-fade-in {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px) scale(0.98); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+  }
+}
+
+.message-fade-in {
+  animation: message-fade-in 0.4s ease-out forwards;
+}
+
+.suggestions-fade-in {
+  animation: suggestions-fade-in 0.6s ease-out forwards;
+}
+
+/* Optimized loading dots */
+.loading-dot-1 {
+  animation-delay: -0.3s;
+}
+
+.loading-dot-2 {
+  animation-delay: -0.15s;
+}
+
+.loading-dot-3 {
+  animation-delay: 0s;
+}
+
+/* Optimize scrolling */
+.chat-container {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+/* Add to existing globals.css */
+
+/* OPTIMIZED: Hardware-accelerated animations */
+@keyframes hero-fade-in {
+  from { 
+    opacity: 0; 
+    transform: translateY(30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes academy-fade-in {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px) scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+  }
+}
+
+@keyframes features-fade-in {
+  from { 
+    opacity: 0; 
+    transform: translateY(15px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.hero-fade-in {
+  animation: hero-fade-in 0.8s ease-out forwards;
+}
+
+.academy-fade-in {
+  animation: academy-fade-in 0.8s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.features-fade-in {
+  animation: features-fade-in 0.8s ease-out 0.3s forwards;
+  opacity: 0;
+}
+
+/* Optimized background animations */
+@keyframes optimized-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-optimized-bounce {
+  animation: optimized-bounce 3s ease-in-out infinite;
+}
