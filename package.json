@@ -9,7 +9,8 @@
     "lint": "next lint",
     "clean": "if exist .next rmdir /s /q .next && if exist node_modules\\.cache rmdir /s /q node_modules\\.cache",
     "fresh": "npm run clean && pnpm install && pnpm dev",
-    "analyze": "ANALYZE=true npm run build"
+    "analyze": "ANALYZE=true npm run build",
+    "postinstall": "pnpm install --frozen-lockfile=false"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
