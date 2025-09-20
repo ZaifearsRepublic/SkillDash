@@ -3,10 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 
-// NOTE: The useAuth and useRouter hooks have been removed.
-
 export default function OpportunitiesPage() {
-  // ✅ FIXED - URLs remain the same
   const jobSeekerMaintenanceUrl = "/opportunities/job-seeker";
   const hirerMaintenanceUrl = "/opportunities/hiring";
 
@@ -101,7 +98,7 @@ export default function OpportunitiesPage() {
                 href={jobSeekerMaintenanceUrl}
                 className="inline-block bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-bold py-3 px-10 rounded-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 shadow-md"
               >
-                Create Your Profile
+                Look into Opportunities
               </a>
             </div>
           </header>
@@ -117,7 +114,7 @@ export default function OpportunitiesPage() {
                       href={jobSeekerMaintenanceUrl}
                       className="inline-block text-lg font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors"
                     >
-                      Sign up now &rarr;
+                      Explore Job Listings &rarr;
                     </a>
                   </div>
                   <div className={`flex justify-center ${index % 2 === 1 ? 'md:order-1' : ''}`}>

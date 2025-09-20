@@ -4,11 +4,54 @@ import { createClient, Entry, EntryFieldTypes, EntrySkeletonType } from 'content
 const spaceId = process.env.CONTENTFUL_SPACE_ID || 'qz001ds11gs3';
 const accessToken = process.env.CONTENTFUL_ACCESS_TOKEN || '9Xkr6hXeKKPMfTCIngLAG7k0n-g4JsIqJ2xeJGcUSb0';
 
+// ✅ Create client with optimized settings
 const client = createClient({
   space: spaceId,
   environment: 'master',
   accessToken: accessToken,
+  // Add timeout and retry settings for better performance
+  timeout: 10000, // 10 seconds timeout
+  retryLimit: 3,
 });
+
+// ✅ In-memory cache with TTL
+interface CacheItem<T> {
+  data: T;
+  timestamp: number;
+  ttl: number;
+}
+
+class SimpleCache {
+  private cache = new Map<string, CacheItem<any>>();
+  private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
+
+  set<T>(key: string, data: T, ttl = this.DEFAULT_TTL): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl,
+    });
+  }
+
+  get<T>(key: string): T | null {
+    const item = this.cache.get(key);
+    if (!item) return null;
+
+    const isExpired = Date.now() - item.timestamp > item.ttl;
+    if (isExpired) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return item.data as T;
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+const cache = new SimpleCache();
 
 // ✅ Interface with correct content type ID
 interface JobOpportunitySkeleton extends EntrySkeletonType {
@@ -65,23 +108,65 @@ export interface FormattedJobOpportunity {
   };
 }
 
-export async function getJobOpportunities(): Promise<JobOpportunity[]> {
+// ✅ Optimized function with caching and pagination
+export async function getJobOpportunities(limit = 100): Promise<JobOpportunity[]> {
+  const cacheKey = `jobs_${limit}`;
+  
+  // Check cache first
+  const cachedData = cache.get<JobOpportunity[]>(cacheKey);
+  if (cachedData) {
+    return cachedData;
+  }
+
   try {
-    const entries = await client.getEntries<JobOpportunitySkeleton>({
+    // Use Promise.race for timeout handling
+    const fetchPromise = client.getEntries<JobOpportunitySkeleton>({
       content_type: 'SkillDashJobs',
       order: ['-sys.createdAt'],
+      limit
+      // Note: Removed select parameter due to TypeScript compatibility issues
+      // The performance benefits from caching and timeouts are more important
     });
+
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout')), 8000)
+    );
+
+    const entries = await Promise.race([fetchPromise, timeoutPromise]);
+    
+    // Cache the result
+    cache.set(cacheKey, entries.items);
     
     return entries.items;
   } catch (error) {
     console.error('Error fetching job opportunities:', error);
+    
+    // Return empty array but don't cache failures
     return [];
   }
 }
 
+// ✅ Optimized single job fetch with caching
 export async function getJobOpportunityById(id: string): Promise<JobOpportunity | null> {
+  const cacheKey = `job_${id}`;
+  
+  // Check cache first
+  const cachedData = cache.get<JobOpportunity>(cacheKey);
+  if (cachedData) {
+    return cachedData;
+  }
+
   try {
-    const entry = await client.getEntry<JobOpportunitySkeleton>(id);
+    const fetchPromise = client.getEntry<JobOpportunitySkeleton>(id);
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout')), 8000)
+    );
+
+    const entry = await Promise.race([fetchPromise, timeoutPromise]);
+    
+    // Cache with shorter TTL for individual entries (2 minutes)
+    cache.set(cacheKey, entry, 2 * 60 * 1000);
+    
     return entry;
   } catch (error) {
     console.error('Error fetching job opportunity:', error);
@@ -94,32 +179,75 @@ function getJobField<T>(job: JobOpportunity, fieldName: string): T {
   return (job.fields as any)[fieldName] as T;
 }
 
-// ✅ Helper function to format dates
+// ✅ Memoized date formatting
+const dateFormatCache = new Map<string, string>();
+
 export function formatDeadline(dateString: string): string {
+  if (dateFormatCache.has(dateString)) {
+    return dateFormatCache.get(dateString)!;
+  }
+
   try {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', {
+    const formatted = date.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: '2-digit', 
       year: 'numeric'
     });
+    
+    dateFormatCache.set(dateString, formatted);
+    return formatted;
   } catch (error) {
+    dateFormatCache.set(dateString, dateString);
     return dateString;
   }
 }
 
-// Helper function to check if deadline has passed
+// ✅ Memoized deadline checking
+const deadlineCache = new Map<string, boolean>();
+
 export function isDeadlinePassed(dateString: string): boolean {
+  const cacheKey = `${dateString}_${new Date().toDateString()}`;
+  
+  if (deadlineCache.has(cacheKey)) {
+    return deadlineCache.get(cacheKey)!;
+  }
+
   try {
     const deadline = new Date(dateString);
     const now = new Date();
-    return deadline < now;
+    const isPassed = deadline < now;
+    
+    deadlineCache.set(cacheKey, isPassed);
+    return isPassed;
   } catch (error) {
+    deadlineCache.set(cacheKey, false);
     return false;
   }
 }
 
-// ✅ Helper function to convert Contentful entry to formatted data
+// ✅ Optimized formatting with minimal processing for list views
+export function formatJobOpportunityMinimal(job: JobOpportunity): Partial<FormattedJobOpportunity> {
+  const deadlineString = getJobField<string>(job, 'deadlineToApply');
+  
+  return {
+    id: job.sys.id,
+    createdAt: job.sys.createdAt,
+    updatedAt: job.sys.updatedAt,
+    positionName: getJobField<string>(job, 'positionName'),
+    company: getJobField<string>(job, 'company'),
+    location: getJobField<string>(job, 'location'),
+    educationalRequirement: getJobField<string>(job, 'educationalRequirement'),
+    deadlineToApply: deadlineString,
+    formattedDeadline: formatDeadline(deadlineString),
+    isExpired: isDeadlinePassed(deadlineString),
+    workplace: getJobField<string>(job, 'workplace'),
+    employmentStatus: getJobField<string>(job, 'employmentStatus'),
+    jobLocation: getJobField<string>(job, 'jobLocation'),
+  };
+}
+
+// ✅ Full formatting for detail views only
 export function formatJobOpportunity(job: JobOpportunity): FormattedJobOpportunity {
   const deadlineString = getJobField<string>(job, 'deadlineToApply');
   const requirements = getJobField<any>(job, 'requirements') || {};
@@ -157,4 +285,11 @@ export function formatJobOpportunity(job: JobOpportunity): FormattedJobOpportuni
       description: companyInfo.description || '',
     },
   };
+}
+
+// ✅ Utility function to clear cache (useful for development)
+export function clearCache(): void {
+  cache.clear();
+  dateFormatCache.clear();
+  deadlineCache.clear();
 }
