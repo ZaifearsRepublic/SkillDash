@@ -8,7 +8,11 @@ import StockTradingSection from '@/components/StockTradingSection';
 
 const getAllDseStocks = cache(fetchAllStocks);
 
-export const revalidate = 3600;
+export const dynamic = 'force-static';
+
+// SEO remains unchanged: the public HTML stays statically served and crawlable.
+// This only changes how often Vercel rebuilds its cached copy.
+export const revalidate = 86400; // 24 hours
 
 type RouteParams = {
   symbol: string;

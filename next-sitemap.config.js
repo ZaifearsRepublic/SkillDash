@@ -2,7 +2,7 @@
 module.exports = {
   siteUrl: 'https://www.stocksimulator.tech',
   generateRobotsTxt: true,
-  autoLastmod: true,
+  autoLastmod: false,
   outDir: './public',
   
   // Keep this empty. Dynamic routes (/stocks/[stock]) are handled by your server-sitemap.xml
@@ -82,7 +82,7 @@ module.exports = {
       loc: path,
       changefreq: changefreqs[path] || 'monthly',
       priority: priorities[path] || 0.5,
-      lastmod: config.autoLastmod ? new Date().toISOString() : undefined,
+      lastmod: undefined,
       alternateRefs: config.alternateRefs ?? [],
     }
   },
