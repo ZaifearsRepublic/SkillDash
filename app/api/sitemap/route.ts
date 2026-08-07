@@ -13,7 +13,9 @@ const staticPages = [
 ];
 
 export async function GET() {
-  const lastmod = new Date().toISOString();
+  // Do not claim every URL changed whenever the sitemap is requested.
+// Omit <lastmod> until you have a genuine per-page update timestamp.
+const lastmod = '';
   
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -24,7 +26,7 @@ export async function GET() {
         xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
 ${staticPages.map(page => `  <url>
     <loc>${baseUrl}${page.url}</loc>
-    <lastmod>${lastmod}</lastmod>
+    ${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>`).join('\n')}
