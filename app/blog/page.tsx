@@ -87,6 +87,25 @@ export default async function BlogPage() {
     })),
   };
 
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: baseUrl,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Blog',
+        item: `${baseUrl}/blog`,
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white">
       <script
@@ -95,9 +114,38 @@ export default async function BlogPage() {
           __html: JSON.stringify(blogListSchema).replace(/</g, '\\u003c'),
         }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbSchema).replace(/</g, '\\u003c'),
+        }}
+      />
 
       <section className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
         <div className="mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6 sm:pt-10 lg:px-8 lg:pb-16 lg:pt-10">
+          <nav
+            aria-label="Breadcrumb"
+            className="mb-6 text-sm text-slate-500 dark:text-slate-400"
+          >
+            <ol className="flex items-center gap-2">
+              <li>
+                <Link
+                  href="/"
+                  className="transition hover:text-emerald-700 dark:hover:text-emerald-400"
+                >
+                  Home
+                </Link>
+              </li>
+              <li aria-hidden="true">/</li>
+              <li
+                aria-current="page"
+                className="font-medium text-slate-700 dark:text-slate-200"
+              >
+                Blog
+              </li>
+            </ol>
+          </nav>
+
           <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)] lg:gap-12">
             <div className="max-w-3xl">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
@@ -124,7 +172,6 @@ export default async function BlogPage() {
 
             <div className="relative mx-auto w-full max-w-[250px] sm:max-w-[310px] lg:max-w-[430px]">
               <div className="absolute inset-x-6 bottom-4 top-10 rounded-full bg-emerald-500/15 blur-3xl dark:bg-emerald-400/10" />
-
               <Image
                 src="/images/blog-hero-mascot.png"
                 alt="StockSimulatorBD learner studying a simulated stock market dashboard"
@@ -143,7 +190,6 @@ export default async function BlogPage() {
         {posts.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">
             <h2 className="text-xl font-semibold">Articles are coming soon.</h2>
-
             <p className="mt-3 text-slate-600 dark:text-slate-300">
               Publish an article in Contentful to display it here.
             </p>
@@ -184,7 +230,6 @@ export default async function BlogPage() {
                       <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
                         {post.category}
                       </span>
-
                       {post.featured && (
                         <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
                           Featured
@@ -210,7 +255,6 @@ export default async function BlogPage() {
                         <CalendarDays className="h-3.5 w-3.5" />
                         {formatDate(post.publishedAt)}
                       </span>
-
                       <span className="inline-flex items-center gap-1.5">
                         <Clock className="h-3.5 w-3.5" />
                         {readingTime} min read
@@ -238,14 +282,12 @@ export default async function BlogPage() {
             <h2 className="text-2xl font-bold">
               Learn by practising, not risking real money.
             </h2>
-
             <p className="mt-3 max-w-2xl text-slate-300">
               Explore StockSimulatorBD to practise DSE-style investing concepts
               with virtual money before making real-world financial decisions.
             </p>
-
             <Link
-              href="/simulator"
+              href="/trade"
               className="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400"
             >
               Open StockSimulatorBD

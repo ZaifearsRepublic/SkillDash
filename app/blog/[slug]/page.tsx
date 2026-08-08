@@ -138,7 +138,6 @@ function getRelatedPosts(
       const sharedTags = post.tags.filter((tag) =>
         currentTags.has(tag.toLocaleLowerCase())
       ).length;
-
       const categoryMatch = post.category === currentPost.category ? 1 : 0;
 
       return {
@@ -310,6 +309,31 @@ export default async function BlogArticlePage({
       : {}),
   };
 
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: baseUrl,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Blog',
+        item: `${baseUrl}/blog`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: post.title,
+        item: articleUrl,
+      },
+    ],
+  };
+
   const faqSchema =
     faqItems.length > 0
       ? {
@@ -329,8 +353,7 @@ export default async function BlogArticlePage({
   const richTextOptions = {
     renderNode: {
       [INLINES.HYPERLINK]: (node: Node, children: ReactNode) => {
-        const uri =
-          typeof node.data?.uri === 'string' ? node.data.uri : null;
+        const uri = typeof node.data?.uri === 'string' ? node.data.uri : null;
 
         if (!uri) {
           return <>{children}</>;
@@ -355,7 +378,6 @@ export default async function BlogArticlePage({
           </a>
         );
       },
-
       [BLOCKS.QUOTE]: (_node: Node, children: ReactNode) => (
         <blockquote>{children}</blockquote>
       ),
@@ -370,7 +392,12 @@ export default async function BlogArticlePage({
           __html: JSON.stringify(articleSchema).replace(/</g, '\\u003c'),
         }}
       />
-
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbSchema).replace(/</g, '\\u003c'),
+        }}
+      />
       {faqSchema && (
         <script
           type="application/ld+json"
@@ -427,11 +454,9 @@ export default async function BlogArticlePage({
               <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
                 {post.category}
               </span>
-
               <h1 className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl">
                 {post.title}
               </h1>
-
               <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">
                 {post.excerpt}
               </p>
@@ -441,12 +466,10 @@ export default async function BlogArticlePage({
                   <CalendarDays className="h-4 w-4" />
                   Published {formatDate(post.publishedAt)}
                 </span>
-
                 <span className="inline-flex items-center gap-1.5">
                   <Clock className="h-4 w-4" />
                   {readingTime} min read
                 </span>
-
                 {post.lastVerifiedAt && (
                   <span className="inline-flex items-center gap-1.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
@@ -504,19 +527,12 @@ export default async function BlogArticlePage({
               aria-labelledby="faq-heading"
               className="mt-16 border-t border-slate-200 pt-10 dark:border-slate-800"
             >
-              <h2
-                id="faq-heading"
-                className="text-2xl font-bold tracking-tight"
-              >
+              <h2 id="faq-heading" className="text-2xl font-bold tracking-tight">
                 Frequently asked questions
               </h2>
-
               <div className="mt-6 divide-y divide-slate-200 rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
                 {faqItems.map((item) => (
-                  <details
-                    key={item.question}
-                    className="group p-5"
-                  >
+                  <details key={item.question} className="group p-5">
                     <summary className="cursor-pointer list-none pr-8 font-semibold marker:hidden">
                       {item.question}
                     </summary>
@@ -534,13 +550,9 @@ export default async function BlogArticlePage({
               aria-labelledby="sources-heading"
               className="mt-16 border-t border-slate-200 pt-10 dark:border-slate-800"
             >
-              <h2
-                id="sources-heading"
-                className="text-2xl font-bold tracking-tight"
-              >
+              <h2 id="sources-heading" className="text-2xl font-bold tracking-tight">
                 Sources and verification
               </h2>
-
               <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 Consult these primary sources for the latest official
                 information. Market rules and services may change after this
@@ -562,13 +574,11 @@ export default async function BlogArticlePage({
                       {source.name}
                       <ExternalLink className="h-4 w-4" />
                     </a>
-
                     {source.description && (
                       <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                         {source.description}
                       </p>
                     )}
-
                     {source.verifiedAt && (
                       <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                         Source checked: {formatDate(source.verifiedAt)}
@@ -604,15 +614,10 @@ export default async function BlogArticlePage({
                   <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
                     About the author
                   </p>
-
-                  <h2 className="mt-1 text-xl font-bold">
-                    {post.author.name}
-                  </h2>
-
+                  <h2 className="mt-1 text-xl font-bold">{post.author.name}</h2>
                   <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
                     {post.author.role}
                   </p>
-
                   <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
                     {post.author.bio}
                   </p>
@@ -628,7 +633,6 @@ export default async function BlogArticlePage({
                         LinkedIn
                       </a>
                     )}
-
                     {post.author.githubUrl && (
                       <a
                         href={post.author.githubUrl}
@@ -650,13 +654,9 @@ export default async function BlogArticlePage({
               aria-labelledby="related-heading"
               className="mt-16 border-t border-slate-200 pt-10 dark:border-slate-800"
             >
-              <h2
-                id="related-heading"
-                className="text-2xl font-bold tracking-tight"
-              >
+              <h2 id="related-heading" className="text-2xl font-bold tracking-tight">
                 Continue learning
               </h2>
-
               <div className="mt-6 grid gap-5 md:grid-cols-3">
                 {relatedPosts.map((relatedPost) => (
                   <Link
@@ -667,11 +667,9 @@ export default async function BlogArticlePage({
                     <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
                       {relatedPost.category}
                     </p>
-
                     <h3 className="mt-2 font-bold group-hover:text-emerald-700 dark:group-hover:text-emerald-400">
                       {relatedPost.title}
                     </h3>
-
                     <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
                       {relatedPost.excerpt}
                     </p>
@@ -685,14 +683,12 @@ export default async function BlogArticlePage({
             <h2 className="text-2xl font-bold">
               Practise before risking real money.
             </h2>
-
             <p className="mt-3 max-w-2xl text-slate-300">
               Use StockSimulatorBD to practise DSE-style trading concepts with
               virtual money, track a portfolio, and learn through simulation.
             </p>
-
             <Link
-              href="/simulator"
+              href="/trade"
               className="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400"
             >
               Open StockSimulatorBD
