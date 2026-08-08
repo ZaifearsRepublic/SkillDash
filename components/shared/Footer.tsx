@@ -1,124 +1,134 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Facebook } from 'lucide-react';
 
-interface FooterLink {
+interface InternalFooterLink {
   label: string;
   href: string;
-  external?: boolean;
-  icon?: React.ReactNode;
 }
 
-interface FooterSection {
-  useful: FooterLink[];
-  social: FooterLink[];
+interface SocialFooterLink {
+  label: string;
+  href: string;
+  icon: ReactNode;
+  ariaLabel: string;
 }
 
-const FOOTER_LINKS: FooterSection = {
-  useful: [
-    { label: 'About Us', href: '/about-us' },
-    { label: 'Privacy Policy', href: '/policy' },
-  ],
-  social: [
-    {
-      label: 'Facebook',
-      href: 'https://www.facebook.com/stocksimbd',
-      external: true,
-      icon: <Facebook size={16} />,
-    },
-  ],
-};
+const PLATFORM_LINKS: InternalFooterLink[] = [
+  { label: 'Trade Simulator', href: '/trade' },
+  { label: 'Stock Directory', href: '/stocks' },
+  { label: 'DSE Learning Blog', href: '/blog' },
+  { label: 'About Us', href: '/about-us' },
+  { label: 'Privacy Policy', href: '/policy' },
+];
+
+const SOCIAL_LINKS: SocialFooterLink[] = [
+  {
+    label: 'Facebook',
+    href: 'https://www.facebook.com/stocksimbd',
+    icon: <Facebook size={16} />,
+    ariaLabel: 'Follow Stock Simulator BD on Facebook',
+  },
+];
 
 const Footer = memo(function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="w-full bg-white dark:bg-[#090E17] pt-16 pb-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row gap-12 items-start justify-between">
+    <footer className="w-full border-t border-gray-200 bg-white dark:border-gray-800 dark:bg-[#090E17]">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.25fr)_auto] lg:gap-20">
+          <div className="max-w-sm">
+            <Link
+              href="/"
+              aria-label="Go to Stock Simulator BD homepage"
+              className="inline-flex items-center gap-3 transition-opacity hover:opacity-90"
+            >
+              <Image
+                src="/favicon.svg"
+                alt="Stock Simulator BD logo"
+                width={40}
+                height={40}
+                className="transition-transform duration-300 hover:scale-105"
+              />
+              <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+                StockSim<span className="text-blue-600 dark:text-blue-400">BD</span>
+              </span>
+            </Link>
 
-        {/* Logo and About */}
-        <div className="flex flex-col gap-4 max-w-xs">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/favicon.svg"
-              alt="Stock Simulator BD Logo"
-              width={40}
-              height={40}
-              className="transform hover:scale-105 transition-transform duration-300"
-            />
-            <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-              StockSim<span className="text-blue-600 dark:text-blue-400">BD</span>
-            </span>
+            <p className="mt-4 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+              Helping students learn DSE-style stock market concepts through
+              virtual trading, market education, and portfolio practice.
+            </p>
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-            Empowering students with risk-free stock market knowledge and a realistic DSE trading experience.
+
+          <div className="grid grid-cols-2 gap-8 sm:gap-12 lg:gap-20">
+            <nav aria-label="Platform links">
+              <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white">
+                Platform
+              </h2>
+
+              <ul className="space-y-3 text-sm">
+                {PLATFORM_LINKS.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="font-medium text-gray-600 transition-colors duration-300 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+            <nav aria-label="Social links">
+              <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white">
+                Connect
+              </h2>
+
+              <ul className="space-y-3 text-sm">
+                {SOCIAL_LINKS.map((link) => (
+                  <li key={link.href}>
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={link.ariaLabel}
+                      className="inline-flex items-center gap-2 font-medium text-gray-600 transition-colors duration-300 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                    >
+                      <span aria-hidden="true" className="text-gray-400 dark:text-gray-500">
+                        {link.icon}
+                      </span>
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+        </div>
+
+        <div className="mt-12 flex flex-col gap-3 border-t border-gray-100 pt-6 text-center text-xs text-gray-500 dark:border-gray-800/60 dark:text-gray-500 sm:mt-14 sm:flex-row sm:items-center sm:justify-between sm:text-left">
+          <span>
+            &copy; {currentYear} Stock Simulator BD. All rights reserved.
+          </span>
+
+          <p>
+            Created by{' '}
+            <a
+              href="https://shahoriar.bd"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-gray-700 transition-colors hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+            >
+              Md Al Shahoriar Hossain
+            </a>
           </p>
         </div>
-
-        {/* Footer Links Wrapper */}
-        <div className="flex gap-16 sm:gap-24">
-          
-          {/* Useful Links */}
-          <div>
-            <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-              Platform
-            </h4>
-            <ul className="flex flex-col gap-3 text-sm">
-              {FOOTER_LINKS.useful.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300 font-medium"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Social Links */}
-          <div>
-            <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-              Connect
-            </h4>
-            <ul className="flex flex-col gap-3 text-sm">
-              {FOOTER_LINKS.social.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target={link.external ? "_blank" : undefined}
-                    rel={link.external ? "noopener noreferrer" : undefined}
-                    className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300 font-medium"
-                  >
-                    <span className="text-gray-400 dark:text-gray-500">{link.icon}</span> 
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Copyright Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-16 pt-8 border-t border-gray-100 dark:border-gray-800/60 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <span className="text-xs text-gray-500 dark:text-gray-500">
-          &copy; {currentYear} Stock Simulator BD. All rights reserved.
-        </span>
-        <p className="text-xs text-gray-500 dark:text-gray-500">
-          Created by{' '}
-          <a
-            href="https://shahoriar.bd"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-gray-700 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-          >
-            Md Al Shahoriar Hossain
-          </a>
-        </p>
       </div>
     </footer>
   );
