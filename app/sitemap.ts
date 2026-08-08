@@ -1,50 +1,25 @@
 import type { MetadataRoute } from 'next';
-import { readdir } from 'node:fs/promises';
-import type { Dirent } from 'node:fs';
-import path from 'node:path';
 import { getAllDseStocks } from '@/lib/dseStocks';
+import { getBlogPosts } from '@/lib/contentful-blog';
 
-const BASE_URL = (process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'https://www.stocksimulator.tech').replace(/\/$/, '');
+const baseUrl = (
+  process.env.NEXT_PUBLIC_MAIN_DOMAIN ||
+  'https://www.stocksimulator.tech'
+).replace(/\/$/, '');
+
+export const revalidate = 3600;
 
 function withBaseUrl(path: string): string {
-  return `${BASE_URL}${path}`;
-}
-
-const PAGE_FILE_PATTERN = /^page\.(tsx|ts|jsx|js|mdx)$/i;
-
-async function collectBlogRoutes(dir: string, segments: string[] = []): Promise<string[]> {
-  let entries: Dirent<string>[] = [];
-  try {
-    entries = await readdir(dir, { withFileTypes: true, encoding: 'utf8' });
-  } catch { return []; }
-
-  const routes: string[] = [];
-  for (const entry of entries) {
-    if (entry.isFile() && PAGE_FILE_PATTERN.test(entry.name)) {
-      const suffix = segments.join('/');
-      routes.push(suffix ? `/blog/${suffix}` : '/blog');
-    }
-  }
-  for (const entry of entries) {
-    if (!entry.isDirectory() || entry.name.startsWith('[') || entry.name.startsWith('@')) continue;
-    const isRouteGroup = entry.name.startsWith('(') && entry.name.endsWith(')');
-    const nextSegments = isRouteGroup ? segments : [...segments, entry.name];
-    const nestedRoutes = await collectBlogRoutes(path.join(dir, entry.name), nextSegments);
-    routes.push(...nestedRoutes);
-  }
-  return routes;
-}
-
-async function getAllBlogRoutes(): Promise<string[]> {
-  const blogRoot = path.join(process.cwd(), 'app', 'blog');
-  const routes = await collectBlogRoutes(blogRoot);
-  return [...new Set(routes)].sort((a, b) => a.localeCompare(b));
+  return `${baseUrl}${path}`;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
-  const blogPaths = await getAllBlogRoutes();
-  const stocks = await getAllDseStocks();
+
+  const [stocks, blogPosts] = await Promise.all([
+    getAllDseStocks(),
+    getBlogPosts(),
+  ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -65,12 +40,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily',
       priority: 0.9,
     },
-    // Add this inside the staticRoutes array in app/sitemap.ts
     {
-      url: withBaseUrl('/stocks'),
+      url: withBaseUrl('/blog'),
       lastModified: now,
       changeFrequency: 'daily',
-      priority: 0.9, // High priority hub page
+      priority: 0.85,
     },
     {
       url: withBaseUrl('/about-us'),
@@ -81,17 +55,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   const stockRoutes: MetadataRoute.Sitemap = stocks.map((stock) => ({
-    url: withBaseUrl(`/stocks/${encodeURIComponent(stock.symbol.toLowerCase())}`),
+    url: withBaseUrl(
+      `/stocks/${encodeURIComponent(stock.symbol.toLowerCase())}`
+    ),
     lastModified: now,
     changeFrequency: 'daily',
     priority: 0.8,
   }));
 
-  const blogRoutes: MetadataRoute.Sitemap = blogPaths.map((blogPath) => ({
-    url: withBaseUrl(blogPath),
-    lastModified: now,
-    changeFrequency: 'weekly',
-    priority: 0.75,
+  const blogRoutes: MetadataRoute.Sitemap = blogPosts.map((post) => ({
+    url: withBaseUrl(`/blog/${post.slug}`),
+    lastModified: new Date(post.updatedAt || post.publishedAt),
+    changeFrequency: post.lastVerifiedAt ? 'weekly' : 'monthly',
+    priority: post.featured ? 0.8 : 0.7,
   }));
 
   return [...staticRoutes, ...blogRoutes, ...stockRoutes];

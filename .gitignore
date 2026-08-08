@@ -142,3 +142,6 @@ vite.config.ts.timestamp-*
 .env*.local
 .vercel
 .env*
+
+__pycache__/
+*.py[cod]

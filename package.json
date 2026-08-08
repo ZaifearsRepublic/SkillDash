@@ -23,6 +23,9 @@
   },
   "dependencies": {
     "@ai-sdk/perplexity": "^2.0.20",
+    "@contentful/rich-text-plain-text-renderer": "^17.2.1",
+    "@contentful/rich-text-react-renderer": "^16.2.2",
+    "@contentful/rich-text-types": "^17.2.7",
     "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.9",
     "@next/third-parties": "^16.2.2",
@@ -35,7 +38,6 @@
     "contentful": "^11.10.3",
     "firebase": "^12.9.0",
     "firebase-admin": "^13.6.1",
-    "googleapis": "^170.1.0",
     "groq-sdk": "^0.32.0",
     "lightweight-charts": "^4.1.1",
     "lucide-react": "^0.294.0",
