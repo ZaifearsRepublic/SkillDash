@@ -35,12 +35,30 @@ const MAX_QUANTITY = 1_000_000;
 // balance.
 const SANE_BALANCE_CAP = 100_000_000;
 
+interface Lot {
+  quantity: number;
+  purchaseDate: string;
+}
+
 interface PortfolioItem {
   symbol: string;
   quantity: number;
   averageBuyPrice: number;
   totalCost: number;
   purchaseDate: string;
+  lots?: Lot[];
+}
+
+// Portfolio items only had a single aggregate `purchaseDate` before lots
+// were introduced; treat the whole holding as one lot dated by that field.
+function getLots(item: PortfolioItem): Lot[] {
+  return item.lots && item.lots.length > 0
+    ? item.lots
+    : [{ quantity: item.quantity, purchaseDate: item.purchaseDate }];
+}
+
+function dhakaDateStr(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' });
 }
 
 interface SimulatorStateDoc {
@@ -136,14 +154,25 @@ export async function POST(req: NextRequest) {
           throw new Error(`Insufficient balance. Required: ৳${totalCost.toFixed(2)}`);
         }
 
+        const nowIso = new Date().toISOString();
+        const todayDhaka = dhakaDateStr(nowIso);
+
         if (existingItem) {
           const newTotalCost = moneyAdd(existingItem.totalCost, totalCost);
           const newQuantity = existingItem.quantity + quantity;
+          const existingLots = getLots(existingItem);
+          const lastLot = existingLots[existingLots.length - 1];
+          // Fold same-day purchases into one lot instead of growing the array forever.
+          const newLots: Lot[] =
+            lastLot && dhakaDateStr(lastLot.purchaseDate) === todayDhaka
+              ? [...existingLots.slice(0, -1), { ...lastLot, quantity: lastLot.quantity + quantity }]
+              : [...existingLots, { quantity, purchaseDate: nowIso }];
           portfolio[itemIndex] = {
             ...existingItem,
             quantity: newQuantity,
             averageBuyPrice: roundMoney(newTotalCost / newQuantity),
             totalCost: newTotalCost,
+            lots: newLots,
           };
         } else {
           portfolio.push({
@@ -151,7 +180,8 @@ export async function POST(req: NextRequest) {
             quantity,
             averageBuyPrice: roundMoney(totalCost / quantity),
             totalCost,
-            purchaseDate: new Date().toISOString(),
+            purchaseDate: nowIso,
+            lots: [{ quantity, purchaseDate: nowIso }],
           });
         }
 
@@ -169,11 +199,35 @@ export async function POST(req: NextRequest) {
           throw new Error(`Insufficient shares. You own ${existingItem?.quantity || 0}.`);
         }
 
-        const bdOptions = { timeZone: 'Asia/Dhaka' };
-        const purchaseDateStr = new Date(existingItem.purchaseDate).toLocaleDateString('en-CA', bdOptions);
-        const todayDateStr = new Date().toLocaleDateString('en-CA', bdOptions);
-        if (purchaseDateStr === todayDateStr) {
-          throw new Error('T+1 Rule: Cannot sell shares on the same day of purchase.');
+        const todayDateStr = dhakaDateStr(new Date().toISOString());
+        const existingLots = getLots(existingItem);
+        // Shares bought today aren't sellable yet; older lots (possibly mixed
+        // with a same-day top-up) are. Sum only the eligible lots.
+        const eligibleQuantity = existingLots.reduce(
+          (sum, lot) => (dhakaDateStr(lot.purchaseDate) === todayDateStr ? sum : sum + lot.quantity),
+          0
+        );
+        if (quantity > eligibleQuantity) {
+          throw new Error(
+            eligibleQuantity > 0
+              ? `T+1 Rule: Only ${eligibleQuantity} of your ${existingItem.quantity} shares are eligible to sell (shares bought today are locked until tomorrow).`
+              : 'T+1 Rule: Cannot sell shares on the same day of purchase.'
+          );
+        }
+
+        // Consume oldest lots first. Because `quantity <= eligibleQuantity`,
+        // this can never reach a same-day lot before the request is satisfied.
+        let remainingToSell = quantity;
+        const newLots: Lot[] = [];
+        for (const lot of existingLots) {
+          if (remainingToSell <= 0) {
+            newLots.push(lot);
+          } else if (lot.quantity <= remainingToSell) {
+            remainingToSell -= lot.quantity;
+          } else {
+            newLots.push({ ...lot, quantity: lot.quantity - remainingToSell });
+            remainingToSell = 0;
+          }
         }
 
         const netProceeds = moneySubtract(grossValue, commission);
@@ -193,6 +247,7 @@ export async function POST(req: NextRequest) {
             ...existingItem,
             quantity: existingItem.quantity - quantity,
             totalCost: moneySubtract(existingItem.totalCost, costOfSoldShares),
+            lots: newLots,
           };
         }
 

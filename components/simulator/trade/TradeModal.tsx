@@ -41,19 +41,27 @@ export default function TradeModal({
     const canAfford = total <= availableBalance + 0.01;
     const holding = selectedStock ? portfolioBySymbol.get(selectedStock) : undefined;
     const holdingQty = holding?.quantity || 0;
-    const canSellQty = qty <= holdingQty;
     const shortage = Math.max(0, Math.round((total - availableBalance) * 100) / 100);
-    const canSell = !holding || (() => {
-      if (!holding.purchaseDate) return true;
-      const bdOpts = { timeZone: 'Asia/Dhaka' } as const;
-      const purchaseStr = new Date(holding.purchaseDate).toLocaleDateString('en-CA', bdOpts);
-      const todayStr = new Date().toLocaleDateString('en-CA', bdOpts);
-      return purchaseStr !== todayStr;
-    })();
+
+    // Shares bought today aren't sellable yet (T+1 rule). Mirrors the
+    // per-lot eligibility check in app/api/simulator/trade/route.ts —
+    // falls back to the whole holding as one lot for pre-lots portfolios.
+    const bdOpts = { timeZone: 'Asia/Dhaka' } as const;
+    const todayStr = new Date().toLocaleDateString('en-CA', bdOpts);
+    const lots = holding
+      ? (holding.lots && holding.lots.length > 0 ? holding.lots : [{ quantity: holding.quantity, purchaseDate: holding.purchaseDate }])
+      : [];
+    const sellableQty = lots.reduce((sum, lot) => {
+      const lotDateStr = new Date(lot.purchaseDate).toLocaleDateString('en-CA', bdOpts);
+      return lotDateStr === todayStr ? sum : sum + lot.quantity;
+    }, 0);
+    const hasT1Restriction = holdingQty > 0 && sellableQty < holdingQty;
+    const notEnoughOwned = qty > holdingQty;
+    const canSellQty = qty <= sellableQty;
 
     return {
-      qty, stockPrice, subtotal, commission, total, availableBalance, canAfford, holdingQty, canSellQty, shortage, canSell,
-      isDisabled: transactionStatus === 'processing' || !marketOpen || qty <= 0 || (tradeType === 'buy' && !canAfford) || (tradeType === 'sell' && (!canSellQty || !canSell)),
+      qty, stockPrice, subtotal, commission, total, availableBalance, canAfford, holdingQty, sellableQty, canSellQty, shortage, hasT1Restriction, notEnoughOwned,
+      isDisabled: transactionStatus === 'processing' || !marketOpen || qty <= 0 || (tradeType === 'buy' && !canAfford) || (tradeType === 'sell' && !canSellQty),
     };
   }, [deferredTradeQuantity, selectedStock, stockBySymbol, tradeType, simulatorState.balance, portfolioBySymbol, transactionStatus, marketOpen]);
 
@@ -166,10 +174,14 @@ export default function TradeModal({
                 <button type="button" onClick={() => setTradeType('sell')} className={`py-2 text-sm font-bold rounded-md transition-all ${tradeType === 'sell' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>Sell</button>
               </div>
 
-              {tradeType === 'sell' && !tradeSummary.canSell && (
+              {tradeType === 'sell' && tradeSummary.hasT1Restriction && (
                 <div className="px-2.5 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg flex items-center gap-1.5">
                   <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                  <p className="text-[11px] text-amber-700 dark:text-amber-300">Cannot sell on same day (T+1 Rule)</p>
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                    {tradeSummary.sellableQty > 0
+                      ? `Only ${tradeSummary.sellableQty} of ${tradeSummary.holdingQty} shares are sellable today — the rest were bought today (T+1 Rule).`
+                      : 'Cannot sell any shares yet — all were bought today (T+1 Rule).'}
+                  </p>
                 </div>
               )}
 
@@ -210,7 +222,13 @@ export default function TradeModal({
                   <span className={`text-base font-bold font-mono ${tradeType === 'buy' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>৳{tradeSummary.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 {tradeType === 'buy' && !tradeSummary.canAfford && tradeSummary.shortage > 0 && <div className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded border border-red-200 dark:border-red-800/50">Insufficient balance. Need ৳{tradeSummary.shortage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} more.</div>}
-                {tradeType === 'sell' && !tradeSummary.canSellQty && tradeSummary.qty > 0 && <div className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded border border-red-200 dark:border-red-800/50">You only have {tradeSummary.holdingQty} shares available.</div>}
+                {tradeType === 'sell' && !tradeSummary.canSellQty && tradeSummary.qty > 0 && (
+                  <div className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded border border-red-200 dark:border-red-800/50">
+                    {tradeSummary.notEnoughOwned
+                      ? `You only have ${tradeSummary.holdingQty} shares available.`
+                      : `Only ${tradeSummary.sellableQty} shares are sellable today (T+1 Rule).`}
+                  </div>
+                )}
               </div>
             </div>
 

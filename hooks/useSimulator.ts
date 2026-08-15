@@ -36,6 +36,7 @@ export interface PortfolioItem {
   averageBuyPrice: number;
   totalCost: number;
   purchaseDate: string;
+  lots?: { quantity: number; purchaseDate: string }[];
 }
 
 export interface SimulatorState {
