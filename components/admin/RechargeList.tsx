@@ -1,10 +1,13 @@
-    'use client';
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { auth, db } from '@/lib/firebase';
 import { collection, query, orderBy, onSnapshot, limit, where, startAfter, getDocs, getCountFromServer, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import {
+  Search, CheckCircle2, LayoutDashboard, Home, Clock, Inbox, Check, X, Loader2,
+} from 'lucide-react';
 
 type StatusFilter = 'all' | 'pending' | 'approved' | 'rejected';
 
@@ -258,9 +261,9 @@ export default function RechargeList({ statusFilter }: { statusFilter: StatusFil
   };
 
   return (
-    <div className="min-h-screen pt-24 px-4 pb-12 bg-gray-50/50 dark:bg-[#0a0a0a]">
+    <div className="min-h-screen pt-24 px-4 pb-12 bg-gray-50/50 dark:bg-[#090E17]">
       {/* WebMCP Schema Injection */}
-      <script 
+      <script
         type="application/webmcp+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(adminWebMcpSchema) }}
       />
@@ -269,24 +272,22 @@ export default function RechargeList({ statusFilter }: { statusFilter: StatusFil
         {showSuccessToast && (
           <div className="fixed top-24 right-4 bg-green-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 animate-slide-in-right border border-green-500">
             <div className="flex items-center gap-3">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+              <CheckCircle2 className="w-5 h-5" />
               <span className="font-medium text-sm">{toastMessage}</span>
             </div>
           </div>
         )}
 
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-gray-200 dark:border-gray-800 pb-6 gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-gray-100 dark:border-gray-800 pb-6 gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
-                Recharge Operations
+              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                Recharge <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Operations</span>
               </h1>
-              <span className="inline-flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-xs font-bold px-3 py-1 rounded-full">
+              <span className="inline-flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-xs font-bold uppercase tracking-wide px-3 py-1 rounded-full">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                LIVE
+                Live
               </span>
             </div>
             <p className="text-gray-500 dark:text-gray-400">
@@ -298,16 +299,16 @@ export default function RechargeList({ statusFilter }: { statusFilter: StatusFil
           <div className="flex items-center gap-3">
             <Link
               href="/admin"
-              className="inline-flex items-center gap-2 bg-white dark:bg-[#111] hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 bg-white dark:bg-[#1A1F26] hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl text-sm font-medium transition-colors shadow-sm"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+              <LayoutDashboard className="w-4 h-4" />
               Dashboard
             </Link>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 shadow-lg shadow-blue-500/30 transform hover:-translate-y-1"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+              <Home className="w-4 h-4" />
               Home
             </Link>
           </div>
@@ -317,20 +318,18 @@ export default function RechargeList({ statusFilter }: { statusFilter: StatusFil
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search Bar */}
           <div className="flex-1 relative">
-            <svg className="absolute left-3.5 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            <Search className="absolute left-3.5 top-3.5 w-5 h-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search by name, email, or TrxID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+              className="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#1A1F26] border border-gray-100 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
             />
           </div>
 
           {/* Filter Tabs as Links */}
-          <div className="flex bg-gray-100/50 dark:bg-[#1a1a1a] p-1.5 rounded-xl border border-gray-200 dark:border-gray-800 whitespace-nowrap overflow-x-auto">
+          <div className="flex bg-gray-100/50 dark:bg-[#111418] p-1.5 rounded-xl border border-gray-100 dark:border-gray-800 whitespace-nowrap overflow-x-auto">
             {NAV_ITEMS.map((item) => {
               const isActive = statusFilter === item.filter;
               return (
@@ -360,11 +359,9 @@ export default function RechargeList({ statusFilter }: { statusFilter: StatusFil
         {/* Requests List */}
         <div className="space-y-4">
           {filteredRequests.length === 0 ? (
-            <div className="bg-white dark:bg-[#111] rounded-2xl p-16 text-center border border-gray-200 dark:border-gray-800 border-dashed">
+            <div className="bg-white dark:bg-[#1A1F26] rounded-3xl p-16 text-center border border-gray-200 dark:border-gray-800 border-dashed">
               <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800/50 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                </svg>
+                <Inbox className="w-8 h-8 text-gray-400" strokeWidth={1.5} />
               </div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">No {statusFilter !== 'all' ? statusFilter : ''} requests found</h3>
               <p className="text-gray-500 dark:text-gray-400 text-sm">
@@ -375,7 +372,7 @@ export default function RechargeList({ statusFilter }: { statusFilter: StatusFil
             filteredRequests.map((req) => (
               <div
                 key={req.id}
-                className="bg-white dark:bg-[#111] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 transition-all hover:border-gray-300 dark:hover:border-gray-700"
+                className="bg-white dark:bg-[#1A1F26] rounded-3xl p-6 border border-gray-100 dark:border-gray-800 transition-all hover:border-gray-300 dark:hover:border-gray-700"
               >
                 <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
                   <div className="flex-1 w-full">
@@ -391,7 +388,7 @@ export default function RechargeList({ statusFilter }: { statusFilter: StatusFil
                           {req.status.toUpperCase()}
                         </span>
                         <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          <Clock className="w-3.5 h-3.5" />
                           {new Date(req.createdAt?.toDate()).toLocaleString('en-US', {
                             month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                           })}
@@ -429,15 +426,12 @@ export default function RechargeList({ statusFilter }: { statusFilter: StatusFil
                         <button
                           type="submit"
                           disabled={processing === req.id}
-                          className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-green-500/20 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                         >
                           {processing === req.id ? (
-                            <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
+                            <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            <Check className="w-4 h-4" />
                           )}
                           <span>Approve</span>
                         </button>
@@ -447,9 +441,9 @@ export default function RechargeList({ statusFilter }: { statusFilter: StatusFil
                         <button
                           type="submit"
                           disabled={processing === req.id}
-                          className="w-full flex items-center justify-center gap-2 bg-white dark:bg-transparent border border-gray-200 dark:border-gray-700 hover:border-red-500 hover:text-red-600 dark:hover:border-red-500/50 dark:hover:bg-red-500/10 text-gray-700 dark:text-gray-300 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full flex items-center justify-center gap-2 bg-white dark:bg-transparent border border-gray-200 dark:border-gray-700 hover:border-red-500 hover:text-red-600 dark:hover:border-red-500/50 dark:hover:bg-red-500/10 text-gray-700 dark:text-gray-300 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                          <X className="w-4 h-4" />
                           <span>Reject</span>
                         </button>
                       </form>
@@ -466,14 +460,11 @@ export default function RechargeList({ statusFilter }: { statusFilter: StatusFil
               <button
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="inline-flex items-center gap-2 bg-white dark:bg-[#111] hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-xl text-sm font-medium transition-colors shadow-sm disabled:opacity-50"
+                className="inline-flex items-center gap-2 bg-white dark:bg-[#1A1F26] hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-xl text-sm font-medium transition-colors shadow-sm disabled:opacity-50"
               >
                 {loadingMore ? (
                   <>
-                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Loading...
                   </>
                 ) : (

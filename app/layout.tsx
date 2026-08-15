@@ -13,6 +13,7 @@ import { Analytics } from "@vercel/analytics/react"
 import ServiceWorkerCleanup from '@/components/ServiceWorkerCleanup'
 import Script from 'next/script'
 import { GoogleAnalytics } from '@next/third-parties/google'
+import VisitTracker from '@/components/VisitTracker'
 
 const GTM_ID = 'GTM-PS2HRL37'
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim()
@@ -349,6 +350,7 @@ export default function RootLayout({
         )}
 
         <AuthProvider>
+          <VisitTracker />
           <EmailVerificationBanner />
           <SparkEffectInitializer />
           <SentryInitializer />

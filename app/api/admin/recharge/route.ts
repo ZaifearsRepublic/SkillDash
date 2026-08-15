@@ -12,6 +12,18 @@ import '@/lib/coinManagerServer';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// Fixed BDT → coin exchange rate, mirrored from the client's conversion in
+// app/coins/page.tsx (PRICE_PER_10K_COINS / COINS_PER_10_BDT). This is the
+// single source of truth for how many coins a recharge is worth — see the
+// comment inside the transaction below for why the credited amount is
+// recomputed from this rate instead of trusted from client input.
+const PRICE_PER_10K_COINS = 10; // 10 BDT = 10,000 coins
+const COINS_PER_10_BDT = 10000;
+
+function coinsForAmount(amountBdt: number): number {
+  return Math.floor(amountBdt / PRICE_PER_10K_COINS) * COINS_PER_10_BDT;
+}
+
 export async function POST(req: NextRequest) {
   try {
     // 🔒 Verify admin access via Firebase custom claims
@@ -80,24 +92,21 @@ export async function POST(req: NextRequest) {
     // ─────────────────────────────────────────────
     // APPROVE — Atomic transaction
     // ─────────────────────────────────────────────
-    if (!userId || !coins || typeof coins !== 'number' || coins <= 0) {
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'Missing or invalid fields: userId, coins' },
+        { success: false, error: 'Missing required field: userId' },
         { status: 400 }
       );
     }
 
-    // Cap maximum coins per request (safety valve)
+    // Cap maximum coins per request (safety valve — mirrors the max BDT
+    // amount firestore.rules allows on recharge_requests.amount)
     const MAX_COINS_PER_REQUEST = 5_000_000; // 5M coins = 5,000 BDT
-    if (coins > MAX_COINS_PER_REQUEST) {
-      return NextResponse.json(
-        { success: false, error: `Coins exceed maximum per request (${MAX_COINS_PER_REQUEST.toLocaleString()})` },
-        { status: 400 }
-      );
-    }
 
     const appId = process.env.NEXT_PUBLIC_SIMULATOR_APP_ID || 'stocksimulatorbd-dse-v1';
     const simulatorStateRef = db.doc(`artifacts/${appId}/users/${userId}/simulator/state`);
+
+    let creditedCoins = 0;
 
     // Run as a Firestore transaction — either both writes succeed or neither does
     await db.runTransaction(async (transaction) => {
@@ -112,18 +121,40 @@ export async function POST(req: NextRequest) {
         throw new Error(`Request is already ${requestData?.status}. Cannot approve.`);
       }
 
+      // 🔒 SECURITY: never trust a client-supplied coin amount for the actual
+      // credit. Recompute it server-side from the request's own `amount`
+      // (BDT) field — the only value firestore.rules validates on create
+      // (0 < amount <= 5000). Requests are created directly from the client
+      // via the Firestore SDK (app/coins/page.tsx), and the rules never
+      // checked that `coins` matched `amount`, so a user could otherwise
+      // write an inflated `coins` field onto their own pending request and
+      // have it paid out at face value here.
+      const requestAmount = requestData?.amount;
+      if (typeof requestAmount !== 'number' || !Number.isFinite(requestAmount) || requestAmount <= 0 || requestAmount > 5000) {
+        throw new Error('Recharge request has an invalid amount and cannot be approved');
+      }
+      creditedCoins = coinsForAmount(requestAmount);
+      if (creditedCoins <= 0 || creditedCoins > MAX_COINS_PER_REQUEST) {
+        throw new Error('Computed coin amount is out of the allowed range');
+      }
+      if (typeof coins === 'number' && coins !== creditedCoins) {
+        console.warn(
+          `⚠️ Recharge request ${requestId}: client-submitted coins (${coins}) did not match amount-derived coins (${creditedCoins}). Crediting the amount-derived value.`
+        );
+      }
+
       // 2. Read the simulator state (may not exist yet for new users)
       const stateDoc = await transaction.get(simulatorStateRef);
 
       // 3. Credit coins to simulator balance
       if (stateDoc.exists) {
         transaction.update(simulatorStateRef, {
-          balance: FieldValue.increment(coins),
+          balance: FieldValue.increment(creditedCoins),
         });
       } else {
         // User has no simulator state yet — create with recharge amount as initial balance
         transaction.set(simulatorStateRef, {
-          balance: coins,
+          balance: creditedCoins,
           createdAt: FieldValue.serverTimestamp(),
           createdBy: 'admin-recharge',
         });
@@ -134,16 +165,17 @@ export async function POST(req: NextRequest) {
         status: 'approved',
         processedAt: FieldValue.serverTimestamp(),
         processedBy: adminCheck.uid,
+        creditedCoins,
       });
     });
 
     console.log(
-      `✅ Admin ${adminCheck.uid} approved recharge: ${coins.toLocaleString()} coins → user ${userId} (request ${requestId})`
+      `✅ Admin ${adminCheck.uid} approved recharge: ${creditedCoins.toLocaleString()} coins → user ${userId} (request ${requestId})`
     );
 
     return NextResponse.json({
       success: true,
-      message: `Approved! ${coins.toLocaleString()} coins credited to ${userName || userId}`,
+      message: `Approved! ${creditedCoins.toLocaleString()} coins credited to ${userName || userId}`,
     });
   } catch (error: any) {
     console.error('❌ Admin recharge error:', error);

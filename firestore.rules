@@ -23,11 +23,19 @@ service cloud.firestore {
       return request.resource.data.keys().hasAll(fields);
     }
     
+    // Stopgap sanity bound on client-writable balances until trades move server-side.
+    // Blocks negative/NaN/absurd balances; does NOT validate the trade math itself.
+    function isSaneBalance() {
+      return request.resource.data.balance is number
+        && request.resource.data.balance >= 0
+        && request.resource.data.balance <= 100000000;
+    }
+    
     // ===== USERS COLLECTION =====
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow write: if isOwner(userId)
-        && !request.resource.data.keys().hasAny(['coins', 'admin', 'welcomeBonusGranted']);
+        && !request.resource.data.keys().hasAny(['coins', 'admin', 'welcomeBonusGranted', 'role', 'isGodMode']);
       
       allow read: if isAdmin();
       allow update: if isAdmin()
@@ -47,11 +55,19 @@ service cloud.firestore {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow read: if isAdmin();
       allow create: if isAuthenticated()
-        && hasRequiredFields(['userId', 'amount', 'transactionId', 'status', 'createdAt'])
+        && hasRequiredFields(['userId', 'amount', 'coins', 'transactionId', 'status', 'createdAt'])
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.status == 'pending'
+        && request.resource.data.amount is number
         && request.resource.data.amount > 0
-        && request.resource.data.amount <= 5000;
+        && request.resource.data.amount <= 5000
+        && request.resource.data.amount % 10 == 0
+        // 🔒 Coins must match the fixed exchange rate (10 BDT = 10,000 coins).
+        // The admin approval endpoint recomputes this from `amount` itself and
+        // ignores whatever is stored here, but rejecting the write here stops
+        // a forged request from ever landing in the pending queue an admin
+        // has to review by eye.
+        && request.resource.data.coins == (request.resource.data.amount / 10) * 10000;
       allow update, delete: if false;
     }
     
@@ -61,12 +77,30 @@ service cloud.firestore {
       
       // Owner can write all fields (needed for buy/sell trades)
       // Welcome bonus is protected by 5-layer server-side dedup, not by rules
-      allow write: if isOwner(userId);
+      // ⚠️ STOPGAP: this still trusts the client's trade arithmetic. The bound below
+      // only blocks negative/NaN/absurd values — it cannot verify a trade's price/qty
+      // math. Move trade execution into a server API + transaction (like coinManagerServer.ts)
+      // for real integrity.
+      allow write: if isOwner(userId) && isSaneBalance();
       
       // Server (admin) can update balance for recharge approvals
       allow update: if isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['balance', 'lastBalanceUpdate', 'lastBonusGranted']);
+    }
+    
+// ===== TRADE HISTORY =====
+    match /artifacts/{appId}/users/{userId}/trade_history/{tradeId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update, delete: if false;
+    }
+
+    // trade_history nested under simulator/state (legacy path fallback)
+    match /artifacts/{appId}/users/{userId}/simulator/state/trade_history/{tradeId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update, delete: if false;
     }
     
     // ===== MARKET DATA (read-only) =====
@@ -82,9 +116,11 @@ service cloud.firestore {
     
     // ===== PUBLIC STATS =====
     match /public_stats/site_stats {
-      allow read: if true;
-      allow update: if isAuthenticated();
-    }
+  		allow read: if true;
+  		allow update: if isAuthenticated()
+    		&& request.resource.data.diff(resource.data).affectedKeys()
+        		.hasOnly(['userCount', 'lastUpdated']);
+		}
     
     match /public_stats/site_stats/counted_users/{userId} {
       allow create: if isOwner(userId);
@@ -105,7 +141,8 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isAuthenticated() && request.resource.data.creatorId == request.auth.uid;
       allow update, delete: if isOwner(resource.data.creatorId);
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clicks']);
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clicks'])
+        && request.resource.data.clicks == resource.data.clicks + 1;
     }
     
     // ===== DENY ALL OTHER PATHS =====
