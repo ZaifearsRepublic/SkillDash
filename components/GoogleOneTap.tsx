@@ -52,8 +52,25 @@ export default function GoogleOneTap({ clientId, disabled, onError, onSigningIn 
 
   const initializeOneTap = useCallback(() => {
     if (initializedRef.current || disabled) return
-    if (typeof window === 'undefined' || !window.google?.accounts?.id) return
-    if (!clientId) return
+    if (typeof window === 'undefined') return
+
+    if (!clientId) {
+      // A silent no-op here would be very hard to self-diagnose, so log a
+      // clear, actionable message instead of just returning.
+      console.warn(
+        '[GoogleOneTap] Skipped: NEXT_PUBLIC_GOOGLE_CLIENT_ID is empty. ' +
+        'This is inlined at build time — if you just added it to .env.local, ' +
+        'restart `next dev`. If this is a deployed (Vercel) build, .env.local ' +
+        'has NO effect there: add the same key in Project Settings → ' +
+        'Environment Variables in the Vercel dashboard and redeploy.'
+      )
+      return
+    }
+
+    if (!window.google?.accounts?.id) {
+      console.warn('[GoogleOneTap] Skipped: window.google.accounts.id is not available yet (GSI script not loaded).')
+      return
+    }
 
     try {
       window.google.accounts.id.initialize({
@@ -69,12 +86,32 @@ export default function GoogleOneTap({ clientId, disabled, onError, onSigningIn 
       })
       initializedRef.current = true
 
-      // Best-effort floating "Sign in with Google" card. Under FedCM,
-      // failure/skip reasons are opaque by design — if it doesn't show,
-      // we simply do nothing and let the existing button handle sign-in.
-      window.google.accounts.id.prompt()
+      // Best-effort floating "Sign in with Google" card. Under FedCM the
+      // failure/skip reason is sometimes opaque by design, but browsers
+      // often still report one — log it so a silent no-show is debuggable
+      // instead of a mystery.
+      window.google.accounts.id.prompt((notification: any) => {
+        try {
+          if (notification?.isNotDisplayed?.()) {
+            console.warn(
+              `[GoogleOneTap] Not displayed. Reason: ${notification.getNotDisplayedReason?.()}. ` +
+              'Common causes: origin missing from Google Cloud Console → Credentials → ' +
+              'Authorized JavaScript origins; no active Google session in this browser; ' +
+              'FedCM disabled/blocked; or Google\'s cooldown after recent dismissals.'
+            )
+          } else if (notification?.isSkippedMoment?.()) {
+            console.warn(`[GoogleOneTap] Skipped. Reason: ${notification.getSkippedReason?.()}.`)
+          } else if (notification?.isDismissedMoment?.()) {
+            console.info(`[GoogleOneTap] Dismissed. Reason: ${notification.getDismissedReason?.()}.`)
+          } else {
+            console.info(`[GoogleOneTap] Prompt moment: ${notification?.getMomentType?.() || 'displayed'}.`)
+          }
+        } catch (notifyErr) {
+          console.warn('[GoogleOneTap] Could not read prompt moment notification:', notifyErr)
+        }
+      })
     } catch (err) {
-      console.warn('Google One Tap initialization failed:', err)
+      console.warn('[GoogleOneTap] Initialization failed:', err)
     }
   }, [clientId, disabled, handleCredentialResponse])
 
