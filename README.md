@@ -4,7 +4,7 @@
 
   <h1>StockSimulatorBD</h1>
 
-  <h3>The Ultimate Stock Market Simulation for DSE</h3>
+  <h3>A Risk-Free Trading Simulator for the Dhaka Stock Exchange</h3>
 
   <br/>
 
@@ -23,7 +23,7 @@
 
   <br/><br/>
 
-  <em>Master the Dhaka Stock Exchange risk-free. Powered by real-time data sync.</em>
+  <em>Practice DSE trading risk-free — for students and for new investors moving towards the stock market.</em>
 
 </div>
 
@@ -33,13 +33,13 @@
 
 <br/>
 
-StockSimulatorBD is a **state-of-the-art, risk-free environment** designed to master the Dhaka Stock Exchange (DSE). Powered by real-time data sync, it transforms complex market dynamics into an engaging, gamified experience for both students and aspiring investors.
+StockSimulatorBD is a **risk-free paper-trading simulator** for the Dhaka Stock Exchange (DSE). It mirrors real market conditions — live prices, T+1 settlement, broker commission, market hours — using a virtual, non-monetary trading balance, so students and first-time investors (including people moving from safer instruments like Sanchayapatra or fixed deposits) can build confidence before risking real capital.
 
 <br/>
 
 ## 📱 Download the App
 
-> Experience the full native power of the Simulator with our standalone Android application.
+> The web app is a full PWA. A TWA-wrapped Android APK is also published directly from `/public` for a native-feeling install.
 
 <div align="center">
   <br/>
@@ -51,9 +51,8 @@ StockSimulatorBD is a **state-of-the-art, risk-free environment** designed to ma
 
 | | |
 |---|---|
-| **Latest Release** | `v1.0.0` (Simulator Pivot) |
-| **Features** | Offline Support · Native TWA Wrapper · No Browser Header · Fast Performance |
 | **Requirements** | Android 8.0+ |
+| **Notes** | The APK is a static file served from `/public/stocksimulator_bd.apk` — not built by this repo's own build pipeline. |
 
 <br/>
 
@@ -68,31 +67,38 @@ StockSimulatorBD is a **state-of-the-art, risk-free environment** designed to ma
 <table>
   <tr>
     <td width="60"><strong>🚀</strong></td>
-    <td><strong>Real-time DSE Sync</strong></td>
-    <td>Automated synchronization with Dhaka Stock Exchange data, including live price tracking and volume analysis.</td>
+    <td><strong>Live DSE Prices</strong></td>
+    <td>Market data is scraped from the DSE archive (<code>api/dse_chart.py</code>, <code>api/market_sync.py</code>) and cached in Firestore, including candlestick charts on each stock's page.</td>
+  </tr>
+  <tr>
+    <td><strong>🔒</strong></td>
+    <td><strong>Server-Side, Tamper-Proof Trades</strong></td>
+    <td>Every BUY/SELL runs in an authoritative Firestore Admin SDK transaction (<code>app/api/simulator/trade</code>) — price, commission, and the T+1 rule are all re-derived and enforced server-side, not trusted from the client.</td>
   </tr>
   <tr>
     <td><strong>📅</strong></td>
     <td><strong>Market Calendar</strong></td>
-    <td>Integrated holiday and market-hour tracking specific to Bangladesh for realistic trading sessions.</td>
+    <td>Bangladesh public holidays and DSE trading hours (10:00–14:15, Fri/Sat weekend) are enforced on both client and server.</td>
   </tr>
   <tr>
-    <td><strong>🏆</strong></td>
-    <td><strong>Gamified Leaderboards</strong></td>
-    <td>Compete with peers, climb the ranks, and earn prestige through smart virtual investing.</td>
+    <td><strong>💰</strong></td>
+    <td><strong>Virtual Currency via bKash</strong></td>
+    <td>Recharge your simulator balance through an admin-reviewed bKash flow. Coins have no real-world monetary value — they're for practice only.</td>
   </tr>
   <tr>
     <td><strong>💾</strong></td>
-    <td><strong>Offline Mode</strong></td>
-    <td>Custom service worker logic keeps the simulator functional even with poor connectivity.</td>
+    <td><strong>Offline-Capable PWA</strong></td>
+    <td>A custom service worker keeps the app usable with poor connectivity; installable on desktop and Android.</td>
   </tr>
 </table>
 
-### Additional Tools
+### Platform & Content
 
-| Tool | Description |
+| Area | Description |
 |---|---|
-| **Link Shortener (Go)** | Create smart short links with custom delays and expiration. Track and manage your links easily. |
+| **Auth** | Firebase Auth — email/password, Google Sign-In, and Google One Tap. |
+| **DSE Learning Blog** | Headless-CMS-powered (Contentful) articles on BO account opening, brokers, and DSE investing basics. |
+| **Admin Dashboard** | `/admin` — site-wide analytics (visits, retention, device/location breakdown, revenue/recharge tracking, a balance-integrity watchlist, and full exportable user lists). Firebase custom-claim gated. |
 
 <br/>
 
@@ -105,16 +111,16 @@ StockSimulatorBD is a **state-of-the-art, risk-free environment** designed to ma
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Framework        Next.js 16 (App Router)                   │
-│  Language         TypeScript 5 (Strict)                     │
-│  Styling          Tailwind CSS 3 + Framer Motion            │
+│  Language         TypeScript 5 (strict)                     │
+│  Styling          Tailwind CSS 3                             │
 │  UI               React 19 + Lucide Icons                   │
 ├─────────────────────────────────────────────────────────────┤
 │  Backend / DB     Firebase Firestore + Firebase Auth        │
-│  AI Models        Google Gemini 2.5 Flash · Groq · Perplexity│
+│  Market Data      Python serverless scrapers (Vercel)       │
+│  Content          Contentful (headless CMS, blog)           │
 ├─────────────────────────────────────────────────────────────┤
-│  Monitoring       Sentry + Vercel Analytics                 │
-│  Performance      Service Workers (PWA) + Bundle Optimization│
-│  Mobile           Capacitor (Android TWA)                   │
+│  Monitoring       Sentry + Vercel Analytics/Speed Insights  │
+│  Performance      Service Workers (PWA) + bundle analysis   │
 │  Deployment       Vercel                                    │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -129,9 +135,10 @@ StockSimulatorBD is a **state-of-the-art, risk-free environment** designed to ma
 
 ### Prerequisites
 
-- **[Node.js](https://nodejs.org/)** LTS (use `.nvmrc`)
+- **[Node.js](https://nodejs.org/)** — see `.nvmrc` for the exact version
 - **[pnpm](https://pnpm.io/)** (package manager)
 - **Git**
+- A Firebase project (Auth + Firestore + a service account for the Admin SDK)
 
 ### Quick Start
 
@@ -144,12 +151,15 @@ cd StockSimulatorBD
 pnpm install
 
 # 3. Configure environment
-cp .env.example .env.local
-# Fill in your Firebase, Gemini, Groq, and Perplexity API keys
+# Create .env.local with your Firebase (client + admin), Contentful,
+# reCAPTCHA, and Resend credentials. There's no .env.example in this repo -
+# grep the codebase for `process.env.` to see every variable in use.
 
 # 4. Launch dev server
 pnpm dev
 ```
+
+> Note: `api/dse_chart.py` and `api/market_sync.py` are Python serverless functions deployed by Vercel — they don't run under `next dev`, so live chart/market data only works against a real Vercel deployment (or `vercel dev`).
 
 ### Available Scripts
 
@@ -159,9 +169,10 @@ pnpm dev
 | `pnpm build` | Production build |
 | `pnpm start` | Start production server |
 | `pnpm type-check` | Run TypeScript type checking |
-| `pnpm lint` | Run ESLint |
-| `pnpm analyze` | Analyze bundle size |
-| `pnpm apk` | Build Android APK |
+| `pnpm lint` / `pnpm lint:fix` | Run ESLint |
+| `pnpm analyze` | Analyze bundle size (webpack bundle analyzer) |
+| `pnpm perf-test` | Lighthouse + bundle-size check against production |
+| `pnpm security-audit` | `pnpm audit` at moderate severity and above |
 
 <br/>
 
@@ -192,4 +203,3 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
   <sub>Built with ❤️ by <a href="https://github.com/zaifears">zaifears</a></sub>
 
 </div>
-```
