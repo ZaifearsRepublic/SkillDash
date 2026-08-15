@@ -23,14 +23,6 @@ service cloud.firestore {
       return request.resource.data.keys().hasAll(fields);
     }
     
-    // Stopgap sanity bound on client-writable balances until trades move server-side.
-    // Blocks negative/NaN/absurd balances; does NOT validate the trade math itself.
-    function isSaneBalance() {
-      return request.resource.data.balance is number
-        && request.resource.data.balance >= 0
-        && request.resource.data.balance <= 100000000;
-    }
-    
     // ===== USERS COLLECTION =====
     match /users/{userId} {
       allow read: if isOwner(userId);
@@ -74,19 +66,20 @@ service cloud.firestore {
     // ===== SIMULATOR STATE =====
     match /artifacts/{appId}/users/{userId}/simulator/state {
       allow read: if isOwner(userId);
-      
-      // Owner can write all fields (needed for buy/sell trades)
-      // Welcome bonus is protected by 5-layer server-side dedup, not by rules
-      // ⚠️ STOPGAP: this still trusts the client's trade arithmetic. The bound below
-      // only blocks negative/NaN/absurd values — it cannot verify a trade's price/qty
-      // math. Move trade execution into a server API + transaction (like coinManagerServer.ts)
-      // for real integrity.
-      allow write: if isOwner(userId) && isSaneBalance();
-      
-      // Server (admin) can update balance for recharge approvals
-      allow update: if isAdmin()
-        && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['balance', 'lastBalanceUpdate', 'lastBonusGranted']);
+
+      // 🔒 Trade execution moved server-side (app/api/simulator/trade), which
+      // writes via the Admin SDK and bypasses these rules entirely — so the
+      // client no longer needs (or gets) ongoing write access. The only
+      // client write left is the brand-new-user zero-balance doc created by
+      // hooks/useSimulator.ts's onSnapshot "not found" fallback, and it must
+      // match that exact zero-value shape.
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['balance', 'portfolio', 'totalInvested', 'realizedGainLoss'])
+        && request.resource.data.balance == 0
+        && request.resource.data.portfolio == []
+        && request.resource.data.totalInvested == 0
+        && request.resource.data.realizedGainLoss == 0;
+      allow update, delete: if false;
     }
     
 // ===== TRADE HISTORY =====

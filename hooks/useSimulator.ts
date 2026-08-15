@@ -4,38 +4,23 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getFirestore,
   doc,
-  collection,
   onSnapshot,
-  runTransaction,
   setDoc,
   getDoc,
   Unsubscribe
 } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUpcomingHolidays } from '@/lib/bangladeshHolidays';
-import { getFreshToken } from '@/lib/firebase';
+import { fetchWithFreshToken } from '@/lib/utils/fetchWithToken';
 
 // =====================================================
 // PRECISION MONEY MATH UTILITIES
+// Shared with the server-side trade API (app/api/simulator/trade/route.ts)
+// via lib/utils/money.ts so the two never compute a trade differently. Used
+// here only for fast client-side display math (portfolio value/gain-loss);
+// the actual trade cost/proceeds are now computed authoritatively server-side.
 // =====================================================
-const toPaisa = (amount: number): number => Math.round(amount * 100);
-const fromPaisa = (paisa: number): number => paisa / 100;
-
-const moneyMultiply = (price: number, quantity: number): number => {
-  return fromPaisa(toPaisa(price) * quantity);
-};
-
-const moneyAdd = (a: number, b: number): number => {
-  return fromPaisa(toPaisa(a) + toPaisa(b));
-};
-
-const moneySubtract = (a: number, b: number): number => {
-  return fromPaisa(toPaisa(a) - toPaisa(b));
-};
-
-const roundMoney = (amount: number): number => {
-  return Math.round(amount * 100) / 100;
-};
+import { moneyAdd, moneyMultiply, moneySubtract, roundMoney } from '@/lib/utils/money';
 
 export interface Stock {
   symbol: string;
@@ -95,8 +80,6 @@ export const useSimulator = () => {
   const categoriesUnsubscribe = useRef<Unsubscribe | null>(null);
   const stateUnsubscribe = useRef<Unsubscribe | null>(null);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
-
-  const COMMISSION_RATE = 0.004;
 
   // ── 1. Load Bangladesh Holidays ──
   useEffect(() => {
@@ -268,6 +251,13 @@ export const useSimulator = () => {
   }, [bangladeshHolidays]);
 
   // ── 6. UNIFIED TRADE EXECUTION ENGINE ──
+  // Trade math/writes now happen server-side (app/api/simulator/trade) via
+  // an Admin SDK transaction that re-derives the price from Firestore
+  // itself — this hook no longer computes or writes balance/portfolio.
+  // Everything below before the fetch is fast client-side UX pre-validation
+  // only; the server route re-checks all of it authoritatively and is the
+  // real gate. The resulting balance/portfolio changes arrive back through
+  // the onSnapshot listener in step 4 above, same as before.
   const executeTrade = useCallback(async (symbol: string, type: 'BUY' | 'SELL', quantity: number) => {
     if (!user || !marketInfo) {
       setTransactionStatus('error');
@@ -294,124 +284,30 @@ export const useSimulator = () => {
       throw new Error('Invalid Stock');
     }
 
-    const freshToken = await getFreshToken(true);
-    if (!freshToken) {
-      setTransactionStatus('error');
-      setTransactionMessage('Authentication expired. Please refresh.');
-      throw new Error('Auth Expired');
-    }
-
     setTransactionStatus('processing');
     setTransactionMessage(`Processing ${type} order for ${quantity} shares...`);
 
     try {
-      const appId = process.env.NEXT_PUBLIC_SIMULATOR_APP_ID || 'stocksimulatorbd-dse-v1';
-      const stateRef = doc(db, 'artifacts', appId, 'users', user.uid, 'simulator', 'state');
-      const historyColRef = collection(db, 'artifacts', appId, 'users', user.uid, 'simulator', 'state', 'trade_history');
-
-      await runTransaction(db, async (transaction) => {
-        const stateDoc = await transaction.get(stateRef);
-        if (!stateDoc.exists()) throw new Error('Simulator state not found');
-
-        const currentState = stateDoc.data() as SimulatorState;
-        const portfolio = [...(currentState.portfolio || [])];
-        const itemIndex = portfolio.findIndex(item => item.symbol === symbol);
-        const existingItem = itemIndex >= 0 ? portfolio[itemIndex] : null;
-
-        const grossValue = moneyMultiply(stock.ltp, quantity);
-        const commission = roundMoney(grossValue * COMMISSION_RATE);
-
-        if (type === 'BUY') {
-          const totalCost = moneyAdd(grossValue, commission);
-          
-          if (currentState.balance < totalCost) {
-            throw new Error(`Insufficient balance. Required: ৳${totalCost.toFixed(2)}`);
-          }
-
-          if (existingItem) {
-            const newTotalCost = moneyAdd(existingItem.totalCost, totalCost);
-            const newQuantity = existingItem.quantity + quantity;
-            portfolio[itemIndex] = {
-              ...existingItem,
-              quantity: newQuantity,
-              averageBuyPrice: roundMoney(newTotalCost / newQuantity),
-              totalCost: newTotalCost
-            };
-          } else {
-            portfolio.push({
-              symbol,
-              quantity,
-              averageBuyPrice: roundMoney(totalCost / quantity),
-              totalCost: totalCost,
-              purchaseDate: new Date().toISOString()
-            });
-          }
-
-          transaction.set(stateRef, {
-            ...currentState,
-            balance: moneySubtract(currentState.balance, totalCost),
-            portfolio,
-            totalInvested: moneyAdd(currentState.totalInvested || 0, totalCost)
-          });
-
-        } else if (type === 'SELL') {
-          if (!existingItem || existingItem.quantity < quantity) {
-            throw new Error(`Insufficient shares. You own ${existingItem?.quantity || 0}.`);
-          }
-
-          const bdOptions = { timeZone: 'Asia/Dhaka' };
-          const purchaseDateStr = new Date(existingItem.purchaseDate).toLocaleDateString('en-CA', bdOptions);
-          const todayDateStr = new Date().toLocaleDateString('en-CA', bdOptions);
-          
-          if (purchaseDateStr === todayDateStr) {
-            throw new Error('T+1 Rule: Cannot sell shares on the same day of purchase.');
-          }
-
-          const netProceeds = moneySubtract(grossValue, commission);
-          const averageCost = existingItem.averageBuyPrice;
-          const costOfSoldShares = moneyMultiply(averageCost, quantity);
-          const realizedGain = moneySubtract(netProceeds, costOfSoldShares);
-
-          if (existingItem.quantity === quantity) {
-            portfolio.splice(itemIndex, 1);
-          } else {
-            portfolio[itemIndex] = {
-              ...existingItem,
-              quantity: existingItem.quantity - quantity,
-              totalCost: moneySubtract(existingItem.totalCost, costOfSoldShares)
-            };
-          }
-
-          transaction.set(stateRef, {
-            ...currentState,
-            balance: moneyAdd(currentState.balance, netProceeds),
-            portfolio,
-            totalInvested: moneySubtract(currentState.totalInvested || 0, costOfSoldShares),
-            realizedGainLoss: moneyAdd(currentState.realizedGainLoss || 0, realizedGain)
-          });
-        }
-
-        const newHistoryRef = doc(historyColRef);
-        transaction.set(newHistoryRef, {
-          symbol,
-          type,
-          quantity,
-          price: stock.ltp,
-          commission,
-          totalAmount: type === 'BUY' ? -(moneyAdd(grossValue, commission)) : moneySubtract(grossValue, commission),
-          timestamp: new Date().toISOString()
-        });
+      const response = await fetchWithFreshToken('/api/simulator/trade', {
+        method: 'POST',
+        body: JSON.stringify({ symbol, type, quantity }),
       });
 
+      const json = await response.json().catch(() => ({}));
+
+      if (!response.ok || !json.success) {
+        throw new Error(json.error || `Failed to execute ${type} order.`);
+      }
+
       setTransactionStatus('success');
-      setTransactionMessage(`Successfully ${type === 'BUY' ? 'bought' : 'sold'} ${quantity} shares of ${symbol}.`);
+      setTransactionMessage(json.message || `Successfully ${type === 'BUY' ? 'bought' : 'sold'} ${quantity} shares of ${symbol}.`);
 
     } catch (err: any) {
       console.error(`[Trade Engine] ${type} error:`, err);
       setTransactionStatus('error');
       setTransactionMessage(err.message || `Failed to execute ${type} order.`);
     }
-  }, [user, marketInfo, db, isMarketOpen]);
+  }, [user, marketInfo, isMarketOpen]);
 
   const resetTransaction = useCallback(() => {
     setTransactionStatus('idle');
