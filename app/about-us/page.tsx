@@ -31,7 +31,7 @@ export default function AboutUsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-6">
-              Why We Built <span className="text-blue-600 dark:text-blue-400">StockSimBD</span>
+              Why We Built <span className="text-blue-600 dark:text-blue-400">StockSimulatorBD</span>
             </h2>
             <p className="max-w-3xl mx-auto text-base sm:text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
               We built the ultimate paper trading platform for the Dhaka Stock Exchange. Whether you are a beginner looking to understand market dynamics or an experienced trader testing new strategies, our simulator provides a 100% risk-free environment to hone your investing skills.

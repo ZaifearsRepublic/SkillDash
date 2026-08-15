@@ -70,7 +70,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-0.5">
-                      StockSimBD Coins
+                      StockSimulatorBD Coins
                     </h3>
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                       Your simulator balance

@@ -30,7 +30,7 @@ const SOCIAL_LINKS: SocialFooterLink[] = [
     label: 'Facebook',
     href: 'https://www.facebook.com/stocksimbd',
     icon: <Facebook size={16} />,
-    ariaLabel: 'Follow Stock Simulator BD on Facebook',
+    ariaLabel: 'Follow StockSimulatorBD on Facebook',
   },
 ];
 
@@ -44,18 +44,18 @@ const Footer = memo(function Footer() {
           <div className="max-w-sm">
             <Link
               href="/"
-              aria-label="Go to Stock Simulator BD homepage"
+              aria-label="Go to StockSimulatorBD homepage"
               className="inline-flex items-center gap-3 transition-opacity hover:opacity-90"
             >
               <Image
                 src="/favicon.svg"
-                alt="Stock Simulator BD logo"
+                alt="StockSimulatorBD logo"
                 width={40}
                 height={40}
                 className="transition-transform duration-300 hover:scale-105"
               />
               <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-                StockSim<span className="text-blue-600 dark:text-blue-400">BD</span>
+                StockSimulator<span className="text-blue-600 dark:text-blue-400">BD</span>
               </span>
             </Link>
 
@@ -114,7 +114,7 @@ const Footer = memo(function Footer() {
 
         <div className="mt-12 flex flex-col gap-3 border-t border-gray-100 pt-6 text-center text-xs text-gray-500 dark:border-gray-800/60 dark:text-gray-500 sm:mt-14 sm:flex-row sm:items-center sm:justify-between sm:text-left">
           <span>
-            &copy; {currentYear} Stock Simulator BD. All rights reserved.
+            &copy; {currentYear} StockSimulatorBD. All rights reserved.
           </span>
 
           <p>

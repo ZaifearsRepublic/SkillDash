@@ -14,6 +14,7 @@ import {
     sendSignInLinkToEmail,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
+    signInWithCredential,
     sendEmailVerification,
     updateProfile,
     reauthenticateWithCredential,
@@ -259,6 +260,30 @@ export const signInWithSocialProviderAndCreateProfile = async (
       console.warn('⚠️ Social OAuth failed:', error?.code || error?.message || error);
       throw error;
     }
+};
+
+// 🎯 Google Identity Services "One Tap": exchange the GIS ID token credential
+// for a Firebase session. Routes through the same handleSocialSignInResult()
+// used by the popup/redirect Google flow, so user-doc creation stays in one
+// place. onAuthStateChanged (AuthContext) picks up the resulting session the
+// same way it does for popup/redirect sign-in — welcome bonus, redirect-
+// after-login, etc. all keep working unchanged.
+export const signInWithGoogleOneTapCredential = async (idToken: string) => {
+  if (!auth) {
+    const configError = new Error('Firebase Auth is not initialized.') as Error & { code?: string };
+    configError.code = 'auth/configuration-not-found';
+    throw configError;
+  }
+
+  if (!idToken) {
+    const tokenError = new Error('Missing Google One Tap credential.') as Error & { code?: string };
+    tokenError.code = 'auth/invalid-credential';
+    throw tokenError;
+  }
+
+  const credential = GoogleAuthProvider.credential(idToken);
+  const result = await signInWithCredential(auth, credential);
+  return await handleSocialSignInResult(result.user);
 };
 
 export const handleRedirectResult = async () => {

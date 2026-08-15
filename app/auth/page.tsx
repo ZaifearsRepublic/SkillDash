@@ -8,6 +8,7 @@ import { validateEmail, validatePassword, sanitizeError, rateLimit } from '../..
 import { humanizeAuthError } from '../../lib/authErrorHandler'
 import OptimizedImage from '../../components/shared/OptimizedImage'
 import SocialAuth from '../../components/SocialAuth'
+import GoogleOneTap from '../../components/GoogleOneTap'
 import { Eye, EyeOff } from 'lucide-react'
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3'
 import { useRecaptcha } from '@/hooks/useRecaptcha'
@@ -33,9 +34,15 @@ function AuthPageContent({ recaptchaEnabled }: { recaptchaEnabled: boolean }) {
   const [showSignupSuccess, setShowSignupSuccess] = useState(false)
   const [inAppBrowser, setInAppBrowser] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
+  // Guards for Google One Tap: don't initialize/prompt once we already know
+  // a session exists (about to redirect away) or a redirect-based OAuth
+  // flow is already in flight — avoids a race between two sign-in attempts.
+  const [hasExistingSession, setHasExistingSession] = useState(false)
+  const [oauthRedirectPending, setOauthRedirectPending] = useState(false)
   const router = useRouter()
   const { verifyRecaptcha: verifyRecaptchaToken, isReady: isRecaptchaReady, isConfigured } = useRecaptcha()
   const enforceRecaptcha = recaptchaEnabled && process.env.NODE_ENV === 'production'
+  const googleOneTapClientId = (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '').trim()
 
   const canUseSocialOAuthHere = () => {
     if (typeof window === 'undefined') return true
@@ -80,8 +87,13 @@ function AuthPageContent({ recaptchaEnabled }: { recaptchaEnabled: boolean }) {
       sessionStorage.removeItem('stocksimulatorbd_oauth_error')
     }
 
+    // A redirect-based OAuth flow (in-app browser / popup fallback) is
+    // already in flight — keep Google One Tap off until it resolves.
+    setOauthRedirectPending(!!sessionStorage.getItem('stocksimulatorbd_oauth_redirect'))
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
+        setHasExistingSession(true)
         const redirectPath = sessionStorage.getItem('redirectAfterLogin') || '/profile'
         sessionStorage.removeItem('redirectAfterLogin')
         router.push(redirectPath)
@@ -312,6 +324,23 @@ function AuthPageContent({ recaptchaEnabled }: { recaptchaEnabled: boolean }) {
         <div className="absolute top-40 right-10 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
         <div className="absolute -bottom-8 left-20 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
+
+      {/* Google One Tap — invisible mount point. Renders no visible UI of its
+          own; it only shows Google's own floating "Sign in as..." card for
+          eligible returning users. The existing "Continue with Google"
+          button below remains the guaranteed fallback if it doesn't show. */}
+      <GoogleOneTap
+        clientId={googleOneTapClientId}
+        disabled={
+          !canUseSocialOAuthHere() ||
+          inAppBrowser ||
+          hasExistingSession ||
+          oauthRedirectPending ||
+          isLoading
+        }
+        onError={(err) => setError(humanizeAuthError(err))}
+        onSigningIn={setIsLoading}
+      />
 
       {/* Main card - centered */}
       <div className="w-full max-w-4xl relative z-10">

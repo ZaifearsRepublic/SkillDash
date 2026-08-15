@@ -1,6 +1,6 @@
 {
   "id": "/",
-  "name": "Stock Simulator BD",
+  "name": "StockSimulatorBD",
   "short_name": "StockSim",
   "description": "Practice trading Dhaka Stock Exchange stocks risk-free with virtual currency.",
   "start_url": "/",

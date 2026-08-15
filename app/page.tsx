@@ -13,7 +13,8 @@ export default function HomePage() {
   const webAppSchema = {
     '@context': 'https://schema.org',
     '@type': ['WebApplication', 'SoftwareApplication'],
-    name: 'StockSimulatorBD DSE Stock Market Simulator',
+    name: 'StockSimulatorBD: DSE Trading Simulator',
+    alternateName: ['Bangladesh Stock Market Game', 'Stocks Sim BD', 'Stock Market Game BD'],
     applicationCategory: 'FinanceApplication',
     operatingSystem: 'Web Browser',
     url: 'https://www.stocksimulator.tech', // ✅ Fixed URL
@@ -106,10 +107,15 @@ export default function HomePage() {
                 trade stocks using fake money in a simulated environment that mirrors real market conditions.
               </p>
               <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-                It&apos;s called &quot;paper trading&quot; because traditionally, traders would write down 
-                their hypothetical trades on paper. Today, digital platforms like StockSimBD automate this process with real-time data.
+                It&apos;s called &quot;paper trading&quot; because traditionally, traders would write down
+                their hypothetical trades on paper. Today, digital platforms like StockSimulatorBD automate this process with real-time data.
               </p>
-              
+              <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                Many first-time investors look for this as a <strong className="text-gray-900 dark:text-gray-200">stock market game</strong> or
+                a <strong className="text-gray-900 dark:text-gray-200">stocks sim</strong> instead — same idea, different words.
+                StockSimulatorBD is that stock market game for Bangladesh: a DSE-specific simulator, not a generic global app.
+              </p>
+
               {/* Alert Box */}
               <div className="flex items-start gap-3 p-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl shadow-sm">
                 <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
@@ -149,7 +155,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4">
-              Why Choose <span className="text-blue-600 dark:text-blue-400">StockSimBD</span>?
+              Why Choose <span className="text-blue-600 dark:text-blue-400">StockSimulatorBD</span>?
             </h2>
             <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg max-w-2xl mx-auto">
               One of the very few paper trading platforms built specifically for the 

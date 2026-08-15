@@ -52,13 +52,13 @@ const ModernNavbar = () => {
             <Link href="/" className="flex items-center gap-2 text-lg sm:text-xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors min-w-0">
               <Image
                 src="/favicon.svg"
-                alt="Stock Simulator BD"
+                alt="StockSimulatorBD"
                 width={32}
                 height={32}
                 className="h-7 w-7 sm:h-8 sm:w-8 object-contain transform hover:scale-105 transition-transform duration-300 flex-shrink-0"
                 priority
               />
-              <span className="tracking-tight truncate">StockSim<span className="text-blue-600 dark:text-blue-400">BD</span></span>
+              <span className="tracking-tight truncate">StockSimulator<span className="text-blue-600 dark:text-blue-400">BD</span></span>
             </Link>
 
             {/* Desktop Navigation - Hidden on mobile */}

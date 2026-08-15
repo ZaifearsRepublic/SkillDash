@@ -1,14 +1,14 @@
 <div align="center">
 
-  <img src="public/favicon.svg" alt="Stock Simulator BD Logo" width="140" />
+  <img src="public/favicon.svg" alt="StockSimulatorBD Logo" width="140" />
 
-  <h1>Stock Simulator BD</h1>
+  <h1>StockSimulatorBD</h1>
 
   <h3>The Ultimate Stock Market Simulation for DSE</h3>
 
   <br/>
 
-  <a href="https://www.stocksimulator.tech/simulator"><img src="https://img.shields.io/badge/🚀_Live_Demo-stocksimulatorbd-8b5cf6?style=for-the-badge" alt="Live Demo"/></a>
+  <a href="https://www.stocksimulator.tech/trade"><img src="https://img.shields.io/badge/🚀_Live_Demo-stocksimulatorbd-8b5cf6?style=for-the-badge" alt="Live Demo"/></a>
   <a href="https://www.stocksimulator.tech/stocksimulator_bd.apk"><img src="https://img.shields.io/badge/📱_Download-APK-34D399?style=for-the-badge" alt="Download APK"/></a>
 
   <br/><br/>
@@ -33,7 +33,7 @@
 
 <br/>
 
-Stock Simulator BD is a **state-of-the-art, risk-free environment** designed to master the Dhaka Stock Exchange (DSE). Powered by real-time data sync, it transforms complex market dynamics into an engaging, gamified experience for both students and aspiring investors.
+StockSimulatorBD is a **state-of-the-art, risk-free environment** designed to master the Dhaka Stock Exchange (DSE). Powered by real-time data sync, it transforms complex market dynamics into an engaging, gamified experience for both students and aspiring investors.
 
 <br/>
 
@@ -44,7 +44,7 @@ Stock Simulator BD is a **state-of-the-art, risk-free environment** designed to 
 <div align="center">
   <br/>
   <a href="https://www.stocksimulator.tech/stocksimulator_bd.apk">
-    <img src="https://img.shields.io/badge/📥_Download_StockSimBD-APK-8b5cf6?style=for-the-badge&logoColor=white" alt="Download APK" />
+    <img src="https://img.shields.io/badge/📥_Download_StockSimulatorBD-APK-8b5cf6?style=for-the-badge&logoColor=white" alt="Download APK" />
   </a>
   <br/><br/>
 </div>
@@ -185,7 +185,7 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
   <br/><br/>
 
-  <a href="https://www.stocksimulator.tech/simulator">Visit Live Simulator</a> &nbsp;·&nbsp; <a href="https://github.com/zaifears/StockSimulatorBD/issues">Report Issue</a> &nbsp;·&nbsp; <a href="mailto:alshahoriar.hossain@gmail.com">Contact</a>
+  <a href="https://www.stocksimulator.tech/trade">Visit Live Simulator</a> &nbsp;·&nbsp; <a href="https://github.com/zaifears/StockSimulatorBD/issues">Report Issue</a> &nbsp;·&nbsp; <a href="mailto:alshahoriar.hossain@gmail.com">Contact</a>
 
   <br/><br/>
 

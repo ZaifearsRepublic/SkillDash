@@ -15,7 +15,7 @@ const AboutHero = () => {
       <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.1] mb-6">
         About <br className="hidden sm:block" />
         <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
-          Stock Simulator BD
+          StockSimulatorBD
         </span>
       </h1>
       

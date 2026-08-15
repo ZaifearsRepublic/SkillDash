@@ -4,12 +4,12 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'DSE Stock Directory | Dhaka Stock Exchange Ticker List',
-  description: 'Explore the full list of Dhaka Stock Exchange (DSE) stocks. Research tickers, view market data, and practice trading risk-free on Stock Simulator BD.',
+  description: 'Explore the full list of Dhaka Stock Exchange (DSE) stocks. Research tickers, view market data, and practice trading risk-free on StockSimulatorBD.',
   openGraph: {
     title: 'DSE Stock Directory | Dhaka Stock Exchange Ticker List',
-    description: 'Explore the full list of Dhaka Stock Exchange (DSE) stocks. Research tickers, view market data, and practice trading risk-free on Stock Simulator BD.',
+    description: 'Explore the full list of Dhaka Stock Exchange (DSE) stocks. Research tickers, view market data, and practice trading risk-free on StockSimulatorBD.',
     url: 'https://www.stocksimulator.tech/stocks',
-    siteName: 'Stock Simulator BD',
+    siteName: 'StockSimulatorBD',
   },
   alternates: {
     canonical: 'https://www.stocksimulator.tech/stocks',

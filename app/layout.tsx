@@ -38,19 +38,21 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Stock Simulator BD - DSE Paper Trading Simulator',
+  title: 'StockSimulatorBD: DSE Trading Simulator',
   description: "Practice trading DSE stocks risk-free. Bangladesh's free simulator featuring real-time data, virtual currency, and T+1 settlement rules.",
-  applicationName: 'Stock Simulator BD',
+  applicationName: 'StockSimulatorBD',
   keywords: [
     "DSE simulator", "paper trading Bangladesh", "Dhaka Stock Exchange simulator",
     "virtual stock trading", "stock market practice Bangladesh", "DSE stocks",
     "learn stock trading", "free paper trading", "Bangladesh stock market",
     "trading simulator", "practice trading", "virtual trading Bangladesh",
-    "stock market learning", "DSE practice", "risk-free trading", "stock simulator bd", "stock simulator bd",
+    "stock market learning", "DSE practice", "risk-free trading", "stock simulator bd",
+    "stocks sim", "stock market game bd", "stock market game bangladesh", "stock market game",
+    "BO account opening", "Bangladesh BO account", "open BO account Bangladesh",
   ],
   authors: [{ name: 'Md Al Shahoriar Hossain', url: 'https://shahoriar.bd' }],
   creator: 'Md Al Shahoriar Hossain',
-  publisher: 'Stock Simulator BD',
+  publisher: 'StockSimulatorBD',
   robots: {
     index: true,
     follow: true,
@@ -63,10 +65,10 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Stock Simulator BD - DSE Paper Trading Simulator - Practice Stock Trading Risk-Free",
+    title: "StockSimulatorBD: DSE Trading Simulator — Practice Stock Trading Risk-Free",
     description: "The only free paper trading simulator built for the Dhaka Stock Exchange. Trade 300+ DSE stocks with virtual currency, real-time market data, T+1 settlement rules, and 0.3% commission. Learn investing without financial risk.",
     url: process.env.NEXT_PUBLIC_MAIN_DOMAIN || "https://www.stocksimulator.tech",
-    siteName: "Stock Simulator BD",
+    siteName: "StockSimulatorBD",
     type: "website",
     locale: "en_US",
     images: [
@@ -74,13 +76,13 @@ export const metadata: Metadata = {
         url: `${process.env.NEXT_PUBLIC_MAIN_DOMAIN || "https://www.stocksimulator.tech"}/og/og-image.png`,
         width: 1200,
         height: 630,
-        alt: "Stock Simulator BD - DSE Paper Trading Simulator",
+        alt: "StockSimulatorBD: DSE Trading Simulator",
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Stock Simulator BD - DSE Paper Trading Simulator',
+    title: 'StockSimulatorBD: DSE Trading Simulator',
     description: 'Practice trading Dhaka Stock Exchange stocks risk-free with virtual currency. Learn stock investing with real market data and realistic trading rules.',
     images: [`${process.env.NEXT_PUBLIC_MAIN_DOMAIN || "https://www.stocksimulator.tech"}/og/og-image.png`],
     creator: '@StockSimulatorBD',
@@ -132,7 +134,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Stock Simulator BD',
+    title: 'StockSimulatorBD',
   },
   other: {
     'mobile-web-app-capable': 'yes',
@@ -184,8 +186,12 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
-              "name": "Stock Simulator BD",
-              "alternateName": "Stock Simulator BD - DSE Paper Trading",
+              "name": "StockSimulatorBD",
+              "alternateName": [
+                "StockSimulatorBD: DSE Trading Simulator",
+                "Bangladesh Stock Market Game",
+                "Stocks Sim BD"
+              ],
               "description": "Practice trading Dhaka Stock Exchange stocks risk-free with virtual currency.",
               "url": "https://www.stocksimulator.tech",
               "sameAs": [
@@ -199,7 +205,7 @@ export default function RootLayout({
               },
               "publisher": {
                 "@type": "Organization",
-                "name": "Stock Simulator BD",
+                "name": "StockSimulatorBD",
                 "url": "https://www.stocksimulator.tech",
                 "logo": {
                   "@type": "ImageObject",
@@ -224,7 +230,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "EducationalOrganization",
-              "name": "Stock Simulator BD",
+              "name": "StockSimulatorBD",
               "description": "Paper trading simulator platform for Bangladesh investors",
               "url": "https://www.stocksimulator.tech",
               "logo": "https://www.stocksimulator.tech/web-app-manifest-512x512.png",
@@ -247,8 +253,8 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
-              "name": "Stock Simulator BD",
-              "alternateName": "StockSimBD",
+              "name": "StockSimulatorBD",
+              "alternateName": ["Stock Market Game BD", "Stocks Sim"],
               "url": "https://www.stocksimulator.tech",
               "applicationCategory": "FinanceApplication",
               "operatingSystem": "Web",
