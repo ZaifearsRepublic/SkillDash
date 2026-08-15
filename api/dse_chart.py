@@ -27,7 +27,14 @@ class DSEArchiveParser(HTMLParser):
 
     def handle_data(self, data):
         if self.in_td:
-            self.current_row.append(data.strip().replace(',', ''))
+            text = data.strip().replace(',', '')
+            # The "Trading Code" cell wraps its text in a nested <a>; the
+            # whitespace text nodes on either side of that <a> would each
+            # append an empty entry here, shifting every later column
+            # index by +2. Skipping empty entries keeps one row = one
+            # <td> regardless of nested markup in any cell.
+            if text:
+                self.current_row.append(text)
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -67,18 +74,28 @@ class handler(BaseHTTPRequestHandler):
                     if "-" not in date_str:
                         continue
                     
-                    # DSE Archive Map: 1:Date, 4:High, 5:Low, 6:Open, 7:Close, 10:Volume
+                    # DSE Archive columns (verified against the live table header):
+                    # 0:#, 1:Date, 2:Code, 3:LTP, 4:High, 5:Low, 6:Open, 7:Close,
+                    # 8:YCP, 9:Trade, 10:Value(mn), 11:Volume
+                    volume = int(float(row[11])) if len(row) > 11 and row[11] not in ['--', '', '0'] else 0
+                    # Days with zero volume (holidays / no trades in range) carry
+                    # a stale YCP as "close" with everything else blank — that
+                    # produces a degenerate candle (a huge wick to 0). Skip them;
+                    # the client only wants days that actually traded.
+                    if volume <= 0:
+                        continue
+
                     chart_data.append({
                         'date': date_str,
                         'open': float(row[6]) if row[6] not in ['--', '', '0'] else 0,
                         'high': float(row[4]) if row[4] not in ['--', '', '0'] else 0,
                         'low': float(row[5]) if row[5] not in ['--', '', '0'] else 0,
                         'close': float(row[7]) if row[7] not in ['--', '', '0'] else 0,
-                        'volume': int(float(row[10])) if len(row) > 10 and row[10] not in ['--', '', '0'] else 0
+                        'volume': volume
                     })
                 except (IndexError, ValueError):
                     continue
-                    
+
             if not chart_data:
                 self.send_error_response(404, "No data found")
                 return
