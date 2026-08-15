@@ -5,7 +5,7 @@
 // tracking needed for those — the data already exists).
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirestore, AggregateField } from 'firebase-admin/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
 import { verifyAdminAccess } from '@/lib/utils/adminVerification';
 import {
   getDhakaDateKey,
@@ -13,6 +13,7 @@ import {
   dhakaDateKeyToUtcMidnightISO,
   isoToDhakaDateKey,
 } from '@/lib/utils/dhakaTime';
+import { getAllUserBalances } from '@/lib/utils/simulatorBalances';
 
 // Ensure Firebase Admin is initialized with full credentials (side effect of import).
 import '@/lib/coinManagerServer';
@@ -146,15 +147,22 @@ export async function GET(req: NextRequest) {
       usersCol.where('createdAt', '>=', dhakaDateKeyToUtcMidnightISO(trendKeys[0])).count().get(),
     ]);
 
-    // ── Coin leaderboard (existing users.coins field) ───────────────────
-    const topCoinsSnap = await usersCol.orderBy('coins', 'desc').limit(10).get();
-    const topCoinHolders = topCoinsSnap.docs.map((doc) => {
-      const data = doc.data();
+    // ── Coin leaderboard — the real trading balance, not users.coins ────
+    // (see lib/utils/simulatorBalances.ts for why). Fetching every balance
+    // here also lets total-circulation and the top-10 leaderboard share one
+    // consistent snapshot instead of two separate reads that could disagree.
+    const { balances: allBalances, truncated: balancesTruncated } = await getAllUserBalances(db);
+    const totalCoinsInCirculation = allBalances.reduce((sum, b) => sum + b.balance, 0);
+    const topBalances = [...allBalances].sort((a, b) => b.balance - a.balance).slice(0, 10);
+    const topCoinUserDocs = await Promise.all(topBalances.map((b) => usersCol.doc(b.uid).get()));
+    const topCoinHolders = topBalances.map((b, i) => {
+      const snap = topCoinUserDocs[i];
+      const data = snap.exists ? snap.data() : null;
       return {
-        uid: doc.id,
-        name: displayName(data),
-        email: data.email || null,
-        coins: data.coins || 0,
+        uid: b.uid,
+        name: data ? displayName(data) : 'Unknown',
+        email: data?.email || null,
+        coins: b.balance,
       };
     });
 
@@ -200,15 +208,6 @@ export async function GET(req: NextRequest) {
         lastVisitAt: toIso(u.lastVisitAt),
         createdAt: u.createdAt || null,
       }));
-
-    // ── Coin economy — total coins in circulation (existing users.coins field) ─
-    let totalCoinsInCirculation: number | null = null;
-    try {
-      const coinsAgg = await usersCol.aggregate({ total: AggregateField.sum('coins') }).get();
-      totalCoinsInCirculation = coinsAgg.data().total || 0;
-    } catch (err) {
-      console.error('Coin aggregate unavailable:', err);
-    }
 
     // ── Trading activity — reads the SAME trade_history data the simulator ─
     // already writes (hooks/useSimulator.ts); no new tracking needed, just a
@@ -305,12 +304,14 @@ export async function GET(req: NextRequest) {
         topLandingPages,
         topCoinHolders,
         totalCoinsInCirculation,
+        coinBalancesTruncated: balancesTruncated,
         mostActiveUsers,
         leastActiveUsers,
         trading,
         tradingError,
         methodologyNote:
-          'Visit tracking started when this dashboard shipped — there is no historical data from before that. "Least active" is ranked among the oldest-registered accounts.',
+          'Visit tracking started when this dashboard shipped — there is no historical data from before that. "Least active" is ranked among the oldest-registered accounts.' +
+          (balancesTruncated ? ' Coin circulation was computed from a capped sample of balances and may undercount.' : ''),
       },
       {
         headers: {

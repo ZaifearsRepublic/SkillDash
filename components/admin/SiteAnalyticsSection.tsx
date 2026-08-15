@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState, type ReactNode, type MouseEvent } from 'react';
-import { Users, Clock, UserPlus, Coins, TrendingUp, TrendingDown, Compass, Activity } from 'lucide-react';
+import Link from 'next/link';
+import { Users, Clock, UserPlus, Coins, TrendingUp, TrendingDown, Compass, Activity, ArrowRight } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -522,6 +523,7 @@ function UserListCard({
   users,
   emptyText,
   metricLabel,
+  viewAllHref,
 }: {
   title: string;
   icon: ReactNode;
@@ -529,12 +531,20 @@ function UserListCard({
   users: UserRow[];
   emptyText: string;
   metricLabel: (u: UserRow) => string;
+  viewAllHref?: string;
 }) {
   return (
     <div className="bg-white dark:bg-[#1A1F26] border border-gray-100 dark:border-gray-800 rounded-3xl p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <div className={`w-7 h-7 rounded-full flex items-center justify-center ${ACCENT_CLASSES[accent]}`}>{icon}</div>
-        <h3 className="text-sm font-bold text-gray-900 dark:text-white">{title}</h3>
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2">
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center ${ACCENT_CLASSES[accent]}`}>{icon}</div>
+          <h3 className="text-sm font-bold text-gray-900 dark:text-white">{title}</h3>
+        </div>
+        {viewAllHref && (
+          <Link href={viewAllHref} className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:gap-1.5 transition-all shrink-0">
+            View all <ArrowRight className="w-3 h-3" />
+          </Link>
+        )}
       </div>
       {users.length === 0 ? (
         <p className="text-sm text-gray-400 dark:text-gray-500 py-2">{emptyText}</p>
@@ -561,14 +571,21 @@ function UserListCard({
   );
 }
 
-function CoinLeaderboardCard({ users }: { users: CoinRow[] }) {
+function CoinLeaderboardCard({ users, viewAllHref }: { users: CoinRow[]; viewAllHref?: string }) {
   return (
     <div className="bg-white dark:bg-[#1A1F26] border border-gray-100 dark:border-gray-800 rounded-3xl p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <div className={`w-7 h-7 rounded-full flex items-center justify-center ${ACCENT_CLASSES.amber}`}>
-          <Icon.Coin />
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2">
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center ${ACCENT_CLASSES.amber}`}>
+            <Icon.Coin />
+          </div>
+          <h3 className="text-sm font-bold text-gray-900 dark:text-white">Top Coin Holders</h3>
         </div>
-        <h3 className="text-sm font-bold text-gray-900 dark:text-white">Top Coin Holders</h3>
+        {viewAllHref && (
+          <Link href={viewAllHref} className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:gap-1.5 transition-all shrink-0">
+            View all <ArrowRight className="w-3 h-3" />
+          </Link>
+        )}
       </div>
       {users.length === 0 ? (
         <p className="text-sm text-gray-400 dark:text-gray-500 py-2">No users with coins yet</p>
@@ -732,6 +749,7 @@ export default function SiteAnalyticsSection({
             users={data.mostActiveUsers}
             emptyText="No visit data yet"
             metricLabel={(u) => `${u.visitCount} visits`}
+            viewAllHref="/admin/users/most-active"
           />
           <UserListCard
             title="Going Quiet"
@@ -740,8 +758,9 @@ export default function SiteAnalyticsSection({
             users={data.leastActiveUsers}
             emptyText="Not enough data yet"
             metricLabel={(u) => `${u.visitCount} visits`}
+            viewAllHref="/admin/users/going-quiet"
           />
-          <CoinLeaderboardCard users={data.topCoinHolders} />
+          <CoinLeaderboardCard users={data.topCoinHolders} viewAllHref="/admin/users/top-coin-holders" />
         </div>
       </div>
 
