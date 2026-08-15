@@ -3,20 +3,48 @@ import { MetadataRoute } from 'next';
 export default function robots(): MetadataRoute.Robots {
   const baseUrl = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'https://www.stocksimulator.tech';
 
+  // Every crawler - search engines, AI answer engines, and everything else -
+  // gets the exact same full access to content pages. No bot is singled out
+  // for a reduced crawl budget, so ChatGPT/Claude/Perplexity etc. can see and
+  // cite the site's content just as fully as Google can. /trade stays
+  // disallowed for everyone (including AI bots) - it's a live, per-request
+  // dynamic page, and repeated crawler hits on it churn ISR writes/revalidations
+  // for zero SEO benefit. /api/, /admin/, /profile/, /auth/ etc. stay
+  // disallowed too since they're non-content or login-gated.
+  const allow = ['/', '/about-us', '/blog/', '/stocks/'];
+  const disallow = ['/api/', '/admin/', '/profile/', '/coins/', '/_next/', '/auth/', '/trade'];
+
   return {
     rules: [
       {
         userAgent: '*',
-        // Allowed paths for human users
-        allow: ['/', '/trade', '/about-us', '/blog/', '/stocks/'],
-        disallow: ['/api/', '/admin/', '/profile/', '/coins/', '/_next/', '/auth/'],
+        allow,
+        disallow,
       },
       {
-        // Restricted paths for AI bots to save crawl budget
-        userAgent: ['GPTBot', 'PerplexityBot', 'Google-Extended', 'anthropic-ai', 'OAI-SearchBot'],
-        allow: ['/', '/about-us', '/blog/', '/stocks/'],
-        disallow: ['/api/', '/admin/', '/profile/', '/coins/', '/_next/', '/auth/', '/trade'],
-      }
+        // Explicitly named so it's unambiguous these are welcome, not just
+        // caught by the wildcard - OpenAI, Anthropic, Perplexity, Google AI
+        // training, and the common-crawl-derived corpora several other LLMs
+        // train/ground on.
+        userAgent: [
+          'GPTBot',
+          'ChatGPT-User',
+          'OAI-SearchBot',
+          'ClaudeBot',
+          'Claude-Web',
+          'Claude-User',
+          'anthropic-ai',
+          'PerplexityBot',
+          'Perplexity-User',
+          'Google-Extended',
+          'CCBot',
+          'Bytespider',
+          'Amazonbot',
+          'meta-externalagent',
+        ],
+        allow,
+        disallow,
+      },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
   };

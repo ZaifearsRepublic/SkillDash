@@ -36,7 +36,7 @@ class RateLimitCache {
   private cache = new Map<string, { count: number; resetTime: number }>();
 
   /** Returns true if the request is allowed by the in-memory gate. */
-  check(identifier: string, now: number): boolean {
+  check(identifier: string, now: number, maxRequests: number = MAX_REQUESTS): boolean {
     const entry = this.cache.get(identifier);
     if (!entry) return true; // no record → allow
     if (now >= entry.resetTime) {
@@ -44,7 +44,7 @@ class RateLimitCache {
       this.cache.delete(identifier);
       return true;
     }
-    return entry.count < MAX_REQUESTS;
+    return entry.count < maxRequests;
   }
 
   /** Record a successful (allowed) request. */
@@ -53,8 +53,8 @@ class RateLimitCache {
   }
 
   /** Mark identifier as fully blocked without touching Firestore. */
-  block(identifier: string, resetTime: number): void {
-    this.cache.set(identifier, { count: MAX_REQUESTS, resetTime });
+  block(identifier: string, resetTime: number, maxRequests: number = MAX_REQUESTS): void {
+    this.cache.set(identifier, { count: maxRequests, resetTime });
   }
 
   clear(): void {
@@ -77,11 +77,16 @@ const cache = new RateLimitCache();
  *   • Cheap  – blocked requests never hit Firestore
  *   • Fast   – in-memory gate answers in <1 ms for repeat offenders
  */
-export async function checkPersistentRateLimit(identifier: string): Promise<boolean> {
+export async function checkPersistentRateLimit(
+  identifier: string,
+  options?: { maxRequests?: number; windowMs?: number }
+): Promise<boolean> {
+  const maxRequests = options?.maxRequests ?? MAX_REQUESTS;
+  const windowMs = options?.windowMs ?? WINDOW_MS;
   const now = Date.now();
 
   // ── Gate 1: in-memory cache (free, instant) ──
-  if (!cache.check(identifier, now)) {
+  if (!cache.check(identifier, now, maxRequests)) {
     // Already blocked in memory → no Firestore cost
     return false;
   }
@@ -97,20 +102,20 @@ export async function checkPersistentRateLimit(identifier: string): Promise<bool
 
       // Case 1: No record or window expired → start fresh window
       if (!snap.exists || !data || now >= (data.resetTime ?? 0)) {
-        t.set(ref, { count: 1, resetTime: now + WINDOW_MS });
-        cache.record(identifier, 1, now + WINDOW_MS);
+        t.set(ref, { count: 1, resetTime: now + windowMs });
+        cache.record(identifier, 1, now + windowMs);
         return true;
       }
 
       // Case 2: Within window and under limit → atomic increment
-      if (data.count < MAX_REQUESTS) {
+      if (data.count < maxRequests) {
         t.update(ref, { count: FieldValue.increment(1) });
         cache.record(identifier, data.count + 1, data.resetTime);
         return true;
       }
 
       // Case 3: Limit reached → block (no write = no cost)
-      cache.block(identifier, data.resetTime);
+      cache.block(identifier, data.resetTime, maxRequests);
       return false;
     });
 

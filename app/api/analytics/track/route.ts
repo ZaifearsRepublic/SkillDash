@@ -20,6 +20,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getClientIP } from '@/lib/apiUtils';
 import { checkPersistentRateLimit } from '@/lib/utils/persistentRateLimit';
 import { getDhakaDateKey, getDhakaHour } from '@/lib/utils/dhakaTime';
+import { bucketGeoHeaders } from '@/lib/utils/geoBucket';
 
 // Ensure Firebase Admin is initialized with full credentials (side effect of import).
 import '@/lib/coinManagerServer';
@@ -34,6 +35,14 @@ const MAX_PAGE_COUNT = 2000;
 const SESSION_TTL_DAYS = 90; // for an optional Firestore TTL policy on `expiresAt`, if configured later
 const BOUNCE_MAX_PAGE_COUNT = 1;
 const BOUNCE_MAX_ACTIVE_SECONDS = 10;
+
+// checkPersistentRateLimit's default (10 req/min) is keyed per-IP, but Bangladeshi
+// mobile carriers (GP, Robi, Banglalink) carrier-NAT huge numbers of concurrent users
+// behind one public IP. At the default cap, a handful of real visitors sharing that
+// IP would silently 429 each other's 'start' beacons - undercounting visitCount for
+// swaths of the mobile user base. This endpoint is cheap and low-risk, so it gets a
+// much higher ceiling; it still blocks a genuine single-source flood.
+const ANALYTICS_RATE_LIMIT = { maxRequests: 300, windowMs: 60_000 };
 
 const SOCIAL_HOSTS = [
   'facebook.com', 'fb.com', 'instagram.com', 'twitter.com', 'x.com', 'linkedin.com',
@@ -101,7 +110,7 @@ function pathToDocId(path: string): string {
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIP(req);
-    const allowed = await checkPersistentRateLimit(`analytics:${ip}`);
+    const allowed = await checkPersistentRateLimit(`analytics:${ip}`, ANALYTICS_RATE_LIMIT);
     if (!allowed) {
       return NextResponse.json({ success: false, error: 'Rate limited' }, { status: 429 });
     }
@@ -145,6 +154,7 @@ export async function POST(req: NextRequest) {
         ownHostname = '';
       }
       const sourceBucket = categorizeReferrer(referrer, ownHostname);
+      const geoBucket = bucketGeoHeaders(req.headers);
 
       const dailyRef = db.collection('analytics_daily').doc(dateKey);
       const userRef = uid ? db.collection('users').doc(uid) : null;
@@ -217,6 +227,7 @@ export async function POST(req: NextRequest) {
             [`device_${deviceType}`]: FieldValue.increment(1),
             [`source_${sourceBucket}`]: FieldValue.increment(1),
             [`hour_${hour}`]: FieldValue.increment(1),
+            [`geo_${geoBucket}`]: FieldValue.increment(1),
             updatedAt: FieldValue.serverTimestamp(),
           },
           { merge: true }

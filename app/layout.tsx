@@ -40,7 +40,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: 'StockSimulatorBD: DSE Trading Simulator',
-  description: "Practice trading DSE stocks risk-free. Bangladesh's free simulator featuring real-time data, virtual currency, and T+1 settlement rules.",
+  description: "Practice DSE stock trading risk-free — built for students and for new investors moving beyond Sanchayapatra and fixed deposits into the stock market. Real-time data, virtual currency, T+1 rules.",
   applicationName: 'StockSimulatorBD',
   keywords: [
     "DSE simulator", "paper trading Bangladesh", "Dhaka Stock Exchange simulator",
@@ -50,6 +50,11 @@ export const metadata: Metadata = {
     "stock market learning", "DSE practice", "risk-free trading", "stock simulator bd",
     "stocks sim", "stock market game bd", "stock market game bangladesh", "stock market game",
     "BO account opening", "Bangladesh BO account", "open BO account Bangladesh",
+    "stock market for students Bangladesh", "student investing Bangladesh",
+    "new investor Bangladesh", "first time stock market investor Bangladesh",
+    "sanchayapatra to stock market", "government savings certificate to shares",
+    "safe investment to stock market Bangladesh", "how to start investing after graduation Bangladesh",
+    "beginner stock investor Bangladesh", "afraid to invest in stock market Bangladesh",
   ],
   authors: [{ name: 'Md Al Shahoriar Hossain', url: 'https://shahoriar.bd' }],
   creator: 'Md Al Shahoriar Hossain',
@@ -67,7 +72,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "StockSimulatorBD: DSE Trading Simulator — Practice Stock Trading Risk-Free",
-    description: "The only free paper trading simulator built for the Dhaka Stock Exchange. Trade 300+ DSE stocks with virtual currency, real-time market data, T+1 settlement rules, and 0.3% commission. Learn investing without financial risk.",
+    description: "The only free paper trading simulator built for the Dhaka Stock Exchange. Trade 300+ DSE stocks with virtual currency, real-time market data, T+1 settlement rules, and 0.3% commission. For students learning the market and for new investors moving beyond Sanchayapatra and fixed deposits into stocks — practice first, risk nothing.",
     url: process.env.NEXT_PUBLIC_MAIN_DOMAIN || "https://www.stocksimulator.tech",
     siteName: "StockSimulatorBD",
     type: "website",
@@ -84,7 +89,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'StockSimulatorBD: DSE Trading Simulator',
-    description: 'Practice trading Dhaka Stock Exchange stocks risk-free with virtual currency. Learn stock investing with real market data and realistic trading rules.',
+    description: 'Practice trading Dhaka Stock Exchange stocks risk-free with virtual currency. For students and for new investors moving from Sanchayapatra into the stock market — real market data, realistic trading rules.',
     images: [`${process.env.NEXT_PUBLIC_MAIN_DOMAIN || "https://www.stocksimulator.tech"}/og/og-image.png`],
     creator: '@StockSimulatorBD',
   },

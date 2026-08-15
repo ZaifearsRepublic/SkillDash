@@ -2,7 +2,8 @@
 
 import { useMemo, useState, type ReactNode, type MouseEvent } from 'react';
 import Link from 'next/link';
-import { Users, Clock, UserPlus, Coins, TrendingUp, TrendingDown, Compass, Activity, ArrowRight } from 'lucide-react';
+import { Users, Clock, UserPlus, Coins, TrendingUp, TrendingDown, Compass, Activity, ArrowRight, MapPin, Radio, ShieldAlert, Wallet, Repeat, Newspaper, LineChart } from 'lucide-react';
+import { BD_GEO_BUCKETS, type GeoBucketKey } from '@/lib/utils/geoBucket';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -47,19 +48,50 @@ interface TradingActivity {
   truncated: boolean;
 }
 
+interface RetentionBucket {
+  eligible: number;
+  retained: number;
+  rate: number;
+}
+
+interface RevenueData {
+  approvedAllTime: { bdt: number; coins: number; count: number };
+  approvedLast30Days: { bdt: number; count: number };
+  avgApprovedRechargeBdt: number;
+  pending: { count: number; bdt: number };
+  rejectedLast30Days: number;
+  rechargerCount: number;
+  conversionRatePercent: number;
+  truncated: boolean;
+}
+
+interface BalanceIntegrityData {
+  threshold: number;
+  flaggedCount: number;
+  watchlist: CoinRow[];
+}
+
 export interface SiteAnalyticsData {
+  activeRightNow: number;
   visitors: { today: number; last7Days: number; last30Days: number };
   avgSessionSeconds: { today: number; last7Days: number };
-  registrations: { today: number; last7Days: number; last30Days: number };
+  registrations: { today: number; last7Days: number; last30Days: number; totalAllTime: number };
   deviceBreakdown: { mobile: number; tablet: number; desktop: number; unknown: number };
+  geoBreakdown: Record<GeoBucketKey, number>;
   dailyTrend: DailyTrendPoint[];
   trafficSources: Record<'direct' | 'internal' | 'search_google' | 'search_other' | 'social' | 'other', number>;
   newVsReturning: { new: number; returning: number };
   bounceRate: number;
+  retention: { d1: RetentionBucket; d7: RetentionBucket; d30: RetentionBucket; sampledUsers: number; truncated: boolean };
   peakHours: { hour: number; sessions: number }[];
   topLandingPages: PageRow[];
+  topBlogPosts: PageRow[];
+  topStockPages: PageRow[];
   topCoinHolders: CoinRow[];
   totalCoinsInCirculation: number | null;
+  balanceIntegrity: BalanceIntegrityData;
+  revenue: RevenueData;
+  growthFunnel: { stage: string; value: number }[];
   mostActiveUsers: UserRow[];
   leastActiveUsers: UserRow[];
   trading: TradingActivity | null;
@@ -83,6 +115,10 @@ function formatDuration(totalSeconds: number): string {
   if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
   if (m > 0) return `${m}m ${String(s).padStart(2, '0')}s`;
   return `${s}s`;
+}
+
+function formatBdt(n: number): string {
+  return `৳${formatCompact(n)}`;
 }
 
 function timeAgo(iso: string | null | undefined): string {
@@ -351,6 +387,254 @@ function DeviceBreakdown({ breakdown }: { breakdown: SiteAnalyticsData['deviceBr
         { key: 'tablet', label: 'Tablet', value: breakdown.tablet, className: 'bg-emerald-500 dark:bg-emerald-400' },
       ]}
     />
+  );
+}
+
+// ── Bangladesh traffic map — bubble-scatter, not a traced coastline ──────
+// The 8 divisional-capital dots are placed at their real relative lat/lon
+// position within Bangladesh's bounding box (so the layout is geographically
+// meaningful), but the panel itself doesn't claim to be a precise coastline
+// trace — that's what the exact-count ranked list next to it is for.
+
+interface CityPoint {
+  key: Exclude<GeoBucketKey, 'other_bd' | 'outside_bd' | 'unknown'>;
+  label: string;
+  x: number; // % across the plotting area, derived from longitude
+  y: number; // % down the plotting area, derived from latitude
+}
+
+const GEO_CITY_POINTS: CityPoint[] = [
+  { key: 'rangpur', label: 'Rangpur', x: 26.0, y: 16.7 },
+  { key: 'sylhet', label: 'Sylhet', x: 80.6, y: 30.2 },
+  { key: 'rajshahi', label: 'Rajshahi', x: 12.5, y: 38.6 },
+  { key: 'mymensingh', label: 'Mymensingh', x: 50.0, y: 32.5 },
+  { key: 'dhaka', label: 'Dhaka', x: 50.2, y: 47.5 },
+  { key: 'khulna', label: 'Khulna', x: 32.5, y: 62.7 },
+  { key: 'barishal', label: 'Barishal', x: 49.4, y: 65.1 },
+  { key: 'chattogram', label: 'Chattogram', x: 78.8, y: 70.5 },
+];
+
+const GEO_LABELS: Record<GeoBucketKey, string> = Object.fromEntries(
+  BD_GEO_BUCKETS.map((b) => [b.key, b.label])
+) as Record<GeoBucketKey, string>;
+
+function BangladeshMap({ breakdown }: { breakdown: SiteAnalyticsData['geoBreakdown'] }) {
+  const width = 240;
+  const height = 315;
+  const maxValue = Math.max(...GEO_CITY_POINTS.map((p) => breakdown?.[p.key] || 0), 1);
+  const totalAll = Object.values(breakdown || {}).reduce((sum, v) => sum + (v || 0), 0);
+
+  const minR = 5;
+  const maxR = 26;
+  const radiusFor = (value: number) => (value <= 0 ? 3 : minR + (maxR - minR) * Math.sqrt(value / maxValue));
+
+  const rankedRows = [...BD_GEO_BUCKETS]
+    .map((b) => ({ label: b.label, value: breakdown?.[b.key] || 0 }))
+    .sort((a, b) => b.value - a.value);
+
+  if (totalAll === 0) {
+    return <p className="text-sm text-gray-400 dark:text-gray-500">No location data yet</p>;
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-5 items-start">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full max-w-[220px] mx-auto sm:mx-0"
+        role="img"
+        aria-label="Visits by Bangladesh city, last 30 days"
+      >
+        <rect
+          x={2}
+          y={2}
+          width={width - 4}
+          height={height - 4}
+          rx={16}
+          className="fill-blue-50/60 dark:fill-blue-500/5 stroke-blue-100 dark:stroke-blue-900/40"
+          strokeWidth={1.5}
+          strokeDasharray="3 4"
+        />
+        <text
+          x={width / 2}
+          y={height - 12}
+          textAnchor="middle"
+          className="fill-blue-300 dark:fill-blue-800"
+          fontSize="9"
+          fontStyle="italic"
+        >
+          Bay of Bengal
+        </text>
+        {GEO_CITY_POINTS.map((p) => {
+          const value = breakdown?.[p.key] || 0;
+          const r = radiusFor(value);
+          const cx = (p.x / 100) * width;
+          const cy = (p.y / 100) * height;
+          return (
+            <g key={p.key}>
+              <title>{`${p.label}: ${value.toLocaleString()} visits (30d)`}</title>
+              <circle
+                cx={cx}
+                cy={cy}
+                r={r}
+                className={value > 0 ? 'fill-blue-600/70 dark:fill-blue-400/60 stroke-blue-700 dark:stroke-blue-300' : 'fill-gray-300/50 dark:fill-gray-700/50 stroke-gray-300 dark:stroke-gray-700'}
+                strokeWidth={1}
+              />
+              <text
+                x={cx}
+                y={cy - r - 4}
+                textAnchor="middle"
+                className="fill-gray-600 dark:fill-gray-300 font-semibold"
+                fontSize="8.5"
+              >
+                {p.label}
+              </text>
+              {value > 0 && (
+                <text x={cx} y={cy + 3} textAnchor="middle" className="fill-white" fontSize="8" fontWeight={700}>
+                  {formatCompact(value)}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+      <ul className="space-y-2">
+        {rankedRows.map((r) => {
+          const pct = totalAll > 0 ? Math.round((r.value / totalAll) * 100) : 0;
+          return (
+            <li key={r.label} className="flex items-center gap-3">
+              <span className="text-xs text-gray-500 dark:text-gray-400 w-28 shrink-0 truncate">{r.label}</span>
+              <div className="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-blue-600 dark:bg-blue-500"
+                  style={{ width: `${Math.max(pct, r.value > 0 ? 3 : 0)}%` }}
+                />
+              </div>
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 w-16 text-right shrink-0">
+                {formatCompact(r.value)} · {pct}%
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+// ── Growth funnel — each stage as a percentage of the first stage ────────
+
+function FunnelBars({ stages }: { stages: SiteAnalyticsData['growthFunnel'] }) {
+  const base = stages[0]?.value || 0;
+  if (base === 0) {
+    return <p className="text-sm text-gray-400 dark:text-gray-500">No visitor data yet</p>;
+  }
+  return (
+    <ul className="space-y-3">
+      {stages.map((s, i) => {
+        const pct = base > 0 ? Math.round((s.value / base) * 100) : 0;
+        return (
+          <li key={s.stage}>
+            <div className="flex items-baseline justify-between mb-1">
+              <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">{s.stage}</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                {formatCompact(s.value)} {i > 0 && <span>· {pct}% of visitors</span>}
+              </span>
+            </div>
+            <div className="h-2.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400"
+                style={{ width: `${Math.max(pct, s.value > 0 ? 2 : 0)}%` }}
+              />
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+// ── Retention — D1/D7/D30, approximated from last-visit vs signup date ───
+
+function RetentionRow({ retention }: { retention: SiteAnalyticsData['retention'] }) {
+  const buckets: { label: string; data: { eligible: number; retained: number; rate: number } }[] = [
+    { label: 'D1', data: retention.d1 },
+    { label: 'D7', data: retention.d7 },
+    { label: 'D30', data: retention.d30 },
+  ];
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {buckets.map((b) => (
+        <div key={b.label} className="text-center">
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            {b.data.eligible > 0 ? `${b.data.rate}%` : '—'}
+          </p>
+          <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mt-0.5">
+            {b.label} retention
+          </p>
+          <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-1">
+            {b.data.retained}/{b.data.eligible} eligible
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Balance integrity watchlist — accounts sitting on an implausibly large
+// balance, worth a human glance given this site's history with tampered
+// balances (see app/api/simulator/trade's SANE_BALANCE_CAP).
+
+function BalanceIntegrityCard({ data }: { data: SiteAnalyticsData['balanceIntegrity'] }) {
+  const isClean = data.flaggedCount === 0;
+  return (
+    <div
+      className={`rounded-3xl p-5 border ${
+        isClean
+          ? 'bg-white dark:bg-[#1A1F26] border-gray-100 dark:border-gray-800'
+          : 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30'
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-7 h-7 rounded-full flex items-center justify-center ${
+              isClean ? ACCENT_CLASSES.green : 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400'
+            }`}
+          >
+            <ShieldAlert className="w-4 h-4" />
+          </div>
+          <h3 className="text-sm font-bold text-gray-900 dark:text-white">Balance Integrity</h3>
+        </div>
+        <Link
+          href="/admin/users/top-coin-holders"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:gap-1.5 transition-all shrink-0"
+        >
+          Review <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
+      {isClean ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          No balances above {formatCompact(data.threshold)} coins right now — nothing flagged for review.
+        </p>
+      ) : (
+        <>
+          <p className="text-sm text-amber-800 dark:text-amber-300 mb-3">
+            <strong>{data.flaggedCount}</strong> account{data.flaggedCount === 1 ? '' : 's'} above{' '}
+            {formatCompact(data.threshold)} coins — worth a manual check.
+          </p>
+          <ul className="space-y-1">
+            {data.watchlist.map((u, i) => (
+              <li key={u.uid} className="flex items-center justify-between gap-3 py-1.5 border-b border-amber-100 dark:border-amber-500/20 last:border-0">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{u.name}</p>
+                  {u.email && <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">{u.email}</p>}
+                </div>
+                <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 shrink-0">{formatCompact(u.coins)}</p>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -644,10 +928,16 @@ export default function SiteAnalyticsSection({
     <div className="space-y-8">
       {/* Visits KPI row */}
       <div>
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <Icon.TrendUp />
-          Site Visits
-        </h2>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Icon.TrendUp />
+            Site Visits
+          </h2>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 dark:bg-green-500/10 border border-green-100 dark:border-green-500/20 text-green-700 dark:text-green-400 text-xs font-bold">
+            <Radio className="w-3 h-3 animate-pulse" />
+            {data.activeRightNow.toLocaleString()} online now
+          </span>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatTile label="Visits today" value={formatCompact(data.visitors.today)} accent="blue" icon={<Icon.Users />} />
           <StatTile label="Last 7 days" value={formatCompact(data.visitors.last7Days)} accent="blue" icon={<Icon.Users />} />
@@ -671,6 +961,17 @@ export default function SiteAnalyticsSection({
         <div className="bg-white dark:bg-[#1A1F26] border border-gray-100 dark:border-gray-800 rounded-3xl p-5">
           <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Device split (30d)</h3>
           <DeviceBreakdown breakdown={data.deviceBreakdown} />
+        </div>
+      </div>
+
+      {/* Visitor location — Bangladesh divisional cities */}
+      <div>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <MapPin className="w-4 h-4" />
+          Visitor Location (30d)
+        </h2>
+        <div className="bg-white dark:bg-[#1A1F26] border border-gray-100 dark:border-gray-800 rounded-3xl p-5">
+          <BangladeshMap breakdown={data.geoBreakdown} />
         </div>
       </div>
 
@@ -722,17 +1023,108 @@ export default function SiteAnalyticsSection({
         />
       </div>
 
+      {/* Content performance — which blog posts and stock pages pull traffic */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <RankedListCard
+          title="Top Blog Posts"
+          icon={<Newspaper className="w-4 h-4" />}
+          accent="indigo"
+          rows={data.topBlogPosts.map((p) => ({ label: p.path.replace(/^\/blog\//, ''), value: formatCompact(p.views) }))}
+          emptyText="No blog view data yet"
+        />
+        <RankedListCard
+          title="Top Stock Pages"
+          icon={<LineChart className="w-4 h-4" />}
+          accent="blue"
+          rows={data.topStockPages.map((p) => ({ label: p.path.replace(/^\/stocks\//, '').toUpperCase(), value: formatCompact(p.views) }))}
+          emptyText="No stock page view data yet"
+        />
+      </div>
+
       {/* Registrations KPI row */}
       <div>
         <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
           <Icon.UserPlus />
           New Registrations
         </h2>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatTile label="Today" value={formatCompact(data.registrations.today)} accent="indigo" icon={<Icon.UserPlus />} />
           <StatTile label="Last 7 days" value={formatCompact(data.registrations.last7Days)} accent="indigo" icon={<Icon.UserPlus />} />
           <StatTile label="Last 30 days" value={formatCompact(data.registrations.last30Days)} accent="indigo" icon={<Icon.UserPlus />} />
+          <StatTile label="All-time users" value={formatCompact(data.registrations.totalAllTime)} accent="purple" icon={<Icon.UserPlus />} />
         </div>
+      </div>
+
+      {/* Retention + growth funnel */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white dark:bg-[#1A1F26] border border-gray-100 dark:border-gray-800 rounded-3xl p-5">
+          <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Retention</h3>
+          <RetentionRow retention={data.retention} />
+          <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-4">
+            % of eligible accounts whose most recent visit landed N+ days after signup. Sampled from {formatCompact(data.retention.sampledUsers)} accounts
+            {data.retention.truncated ? ' (capped sample)' : ''}.
+          </p>
+        </div>
+        <div className="bg-white dark:bg-[#1A1F26] border border-gray-100 dark:border-gray-800 rounded-3xl p-5">
+          <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Growth Funnel (30d)</h3>
+          <FunnelBars stages={data.growthFunnel} />
+        </div>
+      </div>
+
+      {/* Balance integrity watchlist */}
+      <BalanceIntegrityCard data={data.balanceIntegrity} />
+
+      {/* Revenue & recharges */}
+      <div>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <Wallet className="w-4 h-4" />
+          Revenue &amp; Recharges
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <StatTile
+            label="Approved (30d)"
+            value={formatBdt(data.revenue.approvedLast30Days.bdt)}
+            sublabel={`${formatCompact(data.revenue.approvedLast30Days.count)} recharges`}
+            accent="green"
+            icon={<Wallet className="w-4 h-4" />}
+          />
+          <StatTile
+            label="Approved (all-time)"
+            value={formatBdt(data.revenue.approvedAllTime.bdt)}
+            sublabel={`${formatCompact(data.revenue.approvedAllTime.count)} recharges`}
+            accent="green"
+            icon={<Wallet className="w-4 h-4" />}
+          />
+          <StatTile
+            label="Avg recharge"
+            value={formatBdt(data.revenue.avgApprovedRechargeBdt)}
+            accent="blue"
+            icon={<Repeat className="w-4 h-4" />}
+          />
+          <StatTile
+            label="Recharge conversion"
+            value={`${data.revenue.conversionRatePercent}%`}
+            sublabel={`${formatCompact(data.revenue.rechargerCount)} of ${formatCompact(data.registrations.totalAllTime)} users`}
+            accent="indigo"
+            icon={<Icon.UserPlus />}
+          />
+        </div>
+        {data.revenue.pending.count > 0 && (
+          <Link
+            href="/admin/recharge/pending"
+            className="flex items-center justify-between gap-3 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 rounded-2xl px-5 py-4 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300"
+          >
+            <span className="text-sm text-orange-800 dark:text-orange-300">
+              <strong>{data.revenue.pending.count}</strong> recharge{data.revenue.pending.count === 1 ? '' : 's'} awaiting approval — {formatBdt(data.revenue.pending.bdt)} total
+            </span>
+            <ArrowRight className="w-4 h-4 text-orange-600 dark:text-orange-400 shrink-0" />
+          </Link>
+        )}
+        {data.revenue.truncated && (
+          <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-2">
+            Revenue figures were computed from a capped sample of recharge requests and may undercount.
+          </p>
+        )}
       </div>
 
       {/* Engagement — who's active, who's gone quiet, who's rich */}

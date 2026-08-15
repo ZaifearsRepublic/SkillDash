@@ -3,10 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import Footer from '@/components/shared/Footer';
-import { 
-  TrendingUp, Shield, BookOpen, Target, 
+import {
+  TrendingUp, Shield, BookOpen, Target,
   BarChart3, Clock, Wallet, ArrowRight,
-  CheckCircle2, AlertTriangle, Activity
+  CheckCircle2, AlertTriangle, Activity,
+  GraduationCap, PiggyBank
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -88,6 +89,42 @@ export default function HomePage() {
             Start Trading Now
             <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
           </Link>
+        </div>
+      </section>
+
+      {/* ✅ WHO THIS IS FOR — students & new investors moving from safe savings */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-[#090E17]">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4">
+              Built for Every <span className="text-blue-600 dark:text-blue-400">First-Time Investor</span>
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg max-w-2xl mx-auto">
+              Wherever you&apos;re starting from, StockSimulatorBD gives you a safe place to learn before real money is on the line.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div className="bg-gray-50 dark:bg-[#1A1F26] border border-gray-100 dark:border-gray-800 rounded-3xl p-6 sm:p-8 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-6 border border-blue-200 dark:border-blue-800/50">
+                <GraduationCap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Students & First-Time Learners</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                Curious about the stock market but don&apos;t have capital to risk yet? Learn how prices move, how orders work, and how a portfolio actually behaves — with real DSE data and zero cost.
+              </p>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-[#1A1F26] border border-gray-100 dark:border-gray-800 rounded-3xl p-6 sm:p-8 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+              <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mb-6 border border-emerald-200 dark:border-emerald-800/50">
+                <PiggyBank className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Moving Beyond Sanchayapatra & Fixed Deposits</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                Comfortable with government savings certificates or FDRs, but the stock market feels intimidating? Practice with virtual money first — no pressure, no real risk — so the market feels familiar before your actual savings do.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 

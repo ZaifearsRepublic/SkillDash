@@ -34,7 +34,7 @@ export default function AboutUsPage() {
               Why We Built <span className="text-blue-600 dark:text-blue-400">StockSimulatorBD</span>
             </h2>
             <p className="max-w-3xl mx-auto text-base sm:text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
-              We built the ultimate paper trading platform for the Dhaka Stock Exchange. Whether you are a beginner looking to understand market dynamics or an experienced trader testing new strategies, our simulator provides a 100% risk-free environment to hone your investing skills.
+              We built the ultimate paper trading platform for the Dhaka Stock Exchange. Whether you&apos;re a student just discovering the market, a new investor moving beyond Sanchayapatra or fixed deposits and feeling unsure about stocks, or an experienced trader testing new strategies, our simulator provides a 100% risk-free environment to hone your investing skills.
             </p>
           </div>
           

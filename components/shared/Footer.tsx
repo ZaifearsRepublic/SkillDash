@@ -60,8 +60,10 @@ const Footer = memo(function Footer() {
             </Link>
 
             <p className="mt-4 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-              Helping students learn DSE-style stock market concepts through
-              virtual trading, market education, and portfolio practice.
+              Helping students and new investors — including those moving from
+              Sanchayapatra and fixed deposits into the stock market — learn
+              DSE-style trading through virtual trading, market education, and
+              portfolio practice.
             </p>
           </div>
 
