@@ -1,7 +1,7 @@
 import type { Document } from '@contentful/rich-text-types';
 import { contentfulClient } from '@/lib/contentful';
 
-const BLOG_CONTENT_TYPE = 'stockSimulatorBdBlogPost';
+export const BLOG_CONTENT_TYPE = 'stockSimulatorBdBlogPost';
 
 type ArticleType = 'BlogPosting' | 'Guide' | 'HowTo' | 'NewsArticle';
 
