@@ -50,7 +50,7 @@ function daysLabel(days: number | null): string {
 const SHARED_ENGAGEMENT_COLUMNS: CsvColumn[] = [
   { key: 'name', header: 'Name' },
   { key: 'email', header: 'Email' },
-  { key: 'visitCount', header: 'Visits' },
+  { key: 'visitCount', header: 'Visits (All-Time)' },
   { key: 'totalActiveSeconds', header: 'Total Active Seconds' },
   { key: 'lastVisitAt', header: 'Last Visit' },
   { key: 'createdAt', header: 'Joined' },

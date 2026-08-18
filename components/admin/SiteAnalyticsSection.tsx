@@ -1140,7 +1140,7 @@ export default function SiteAnalyticsSection({
             accent="green"
             users={data.mostActiveUsers}
             emptyText="No visit data yet"
-            metricLabel={(u) => `${u.visitCount} visits`}
+            metricLabel={(u) => `${u.visitCount} visits total`}
             viewAllHref="/admin/users/most-active"
           />
           <UserListCard
@@ -1149,7 +1149,7 @@ export default function SiteAnalyticsSection({
             accent="amber"
             users={data.leastActiveUsers}
             emptyText="Not enough data yet"
-            metricLabel={(u) => `${u.visitCount} visits`}
+            metricLabel={(u) => `${u.visitCount} visits total`}
             viewAllHref="/admin/users/going-quiet"
           />
           <CoinLeaderboardCard users={data.topCoinHolders} viewAllHref="/admin/users/top-coin-holders" />
