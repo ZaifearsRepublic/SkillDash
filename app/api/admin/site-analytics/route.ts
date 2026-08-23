@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import { verifyAdminAccess } from '@/lib/utils/adminVerification';
 import {
   getDhakaDateKey,
@@ -53,6 +54,10 @@ const BALANCE_INTEGRITY_WATCHLIST_LIMIT = 10;
 // getAllUserBalances / the user-list export route).
 const RETENTION_USER_SCAN_CAP = 20_000;
 const DAY_MS = 86400000;
+// Firebase Auth listUsers() pages at 1000; cap the walk so this endpoint
+// stays bounded as the user base grows (reports `truncated` if it stops early).
+const AUTH_LIST_MAX_PAGES = 20;
+const ACCOUNT_INTEGRITY_LIST_LIMIT = 25;
 
 const SOURCE_BUCKETS = ['direct', 'internal', 'search_google', 'search_other', 'social', 'other'] as const;
 
@@ -171,15 +176,78 @@ export async function GET(req: NextRequest) {
     const topBlogPosts = allPages.filter((p) => p.path.startsWith('/blog/') && p.path !== '/blog/').slice(0, TOP_PAGES_LIMIT);
     const topStockPages = allPages.filter((p) => p.path.startsWith('/stocks/') && p.path !== '/stocks/').slice(0, TOP_PAGES_LIMIT);
 
-    // ── Registrations (existing users.createdAt field, no new tracking) ─
+    // ── Registrations ────────────────────────────────────────────────────
+    // Sourced from Firebase Auth, NOT from `users` documents.
+    //
+    // These used to be count() queries over `users.createdAt`, which
+    // disagreed with the Firebase console in three separate ways:
+    //   1. `users.createdAt` is written client-side at signup and can differ
+    //      from the account's real Auth creation time.
+    //   2. An Auth account whose `users` doc was never written is invisible
+    //      (measured: 9 such accounts, 1 of them inside the last-7-day
+    //      window — so "last 7 days" read 21 when Auth held 23).
+    //   3. A `users` doc left behind by a deleted Auth account still counts.
+    // On top of that, `createdAt` is stored as an ISO string on 464 docs but
+    // as a Timestamp on 1 and is absent on 2 — and Firestore orders by type
+    // before value, so a Timestamp-typed createdAt is silently EXCLUDED from
+    // a `>=` string comparison rather than sorted late. That is a latent
+    // undercount that grows the moment anything writes a Date there.
+    //
+    // Firebase Auth's creationTime is the actual source of truth for "an
+    // account was created", so every registration figure now derives from
+    // one Auth listing — which also means these numbers reconcile exactly
+    // with what the Firebase console shows.
+    //
+    // Note: two Auth accounts sharing one email (a concurrent double-submit
+    // signup) legitimately count as two accounts here, matching the console.
+    // accountIntegrity.duplicateEmails surfaces those separately.
     const usersCol = db.collection('users');
-    const [regToday, reg7, reg30, totalUsersCountSnap] = await Promise.all([
+
+    const authAccounts: Array<{ uid: string; email: string | null; providers: string[]; createdAtMs: number; createdAt: string }> = [];
+    let authListError: string | null = null;
+    let authListTruncated = false;
+    try {
+      let pageToken: string | undefined;
+      let pages = 0;
+      do {
+        const res = await getAuth().listUsers(1000, pageToken);
+        for (const u of res.users) {
+          authAccounts.push({
+            uid: u.uid,
+            email: u.email ?? null,
+            providers: u.providerData.map((p) => p.providerId),
+            createdAtMs: Date.parse(u.metadata.creationTime) || 0,
+            createdAt: u.metadata.creationTime,
+          });
+        }
+        pageToken = res.pageToken;
+        pages += 1;
+      } while (pageToken && pages < AUTH_LIST_MAX_PAGES);
+      authListTruncated = !!pageToken;
+    } catch (err: any) {
+      console.error('❌ Firebase Auth listing unavailable:', err);
+      authListError = 'Could not read Firebase Auth — registration counts fell back to Firestore user documents, which drift from the real account count.';
+    }
+
+    const countAuthSince = (iso: string) => {
+      const cutoff = Date.parse(iso);
+      return authAccounts.filter((u) => u.createdAtMs >= cutoff).length;
+    };
+
+    // Firestore fallback, used only if the Auth listing failed outright.
+    const [regTodayDocs, reg7Docs, reg30Docs, totalUsersCountSnap] = await Promise.all([
       usersCol.where('createdAt', '>=', dhakaDateKeyToUtcMidnightISO(todayKey)).count().get(),
       usersCol.where('createdAt', '>=', dhakaDateKeyToUtcMidnightISO(last7Keys[0])).count().get(),
       usersCol.where('createdAt', '>=', dhakaDateKeyToUtcMidnightISO(trendKeys[0])).count().get(),
       usersCol.count().get(),
     ]);
-    const totalRegisteredUsers = totalUsersCountSnap.data().count;
+    const totalUserDocs = totalUsersCountSnap.data().count;
+
+    const useAuth = !authListError && authAccounts.length > 0;
+    const registrationsToday = useAuth ? countAuthSince(dhakaDateKeyToUtcMidnightISO(todayKey)) : regTodayDocs.data().count;
+    const registrations7 = useAuth ? countAuthSince(dhakaDateKeyToUtcMidnightISO(last7Keys[0])) : reg7Docs.data().count;
+    const registrations30 = useAuth ? countAuthSince(dhakaDateKeyToUtcMidnightISO(trendKeys[0])) : reg30Docs.data().count;
+    const totalRegisteredUsers = useAuth ? authAccounts.length : totalUserDocs;
 
     // ── Live right now — sessions that pinged within the last 5 minutes and
     // haven't ended, deduped by identity (uid, else the session itself for
@@ -300,6 +368,23 @@ export async function GET(req: NextRequest) {
     const retentionSnap = await usersCol.select('createdAt', 'lastVisitAt').limit(RETENTION_USER_SCAN_CAP).get();
     const retentionDocs = retentionSnap.docs;
     const nowMs = Date.now();
+
+    // Accounts that predate visit tracking have no `lastVisitAt` at all, so
+    // they can never satisfy the "retained" test — but they were previously
+    // still counted in the denominator, which dragged every retention rate
+    // toward zero. (Measured: 435 of 467 accounts had no lastVisitAt, so the
+    // reported rates were computed against a denominator that was ~93%
+    // unanswerable.) Only accounts created after tracking began can be
+    // honestly judged, so the cohort starts there.
+    const trackingStartMs = (() => {
+      let earliest = Infinity;
+      for (const doc of retentionDocs) {
+        const v = toMillis(doc.data().lastVisitAt);
+        if (v && v < earliest) earliest = v;
+      }
+      return Number.isFinite(earliest) ? earliest : 0;
+    })();
+
     const retentionFor = (days: number) => {
       let eligible = 0;
       let retained = 0;
@@ -307,6 +392,9 @@ export async function GET(req: NextRequest) {
         const data = doc.data();
         const createdMs = toMillis(data.createdAt);
         if (!createdMs || nowMs - createdMs < days * DAY_MS) continue;
+        // Signed up before tracking existed — no data either way, so this
+        // account is excluded rather than silently counted as "churned".
+        if (createdMs < trackingStartMs) continue;
         eligible += 1;
         const lastVisitMs = toMillis(data.lastVisitAt);
         if (lastVisitMs && lastVisitMs - createdMs >= days * DAY_MS) retained += 1;
@@ -318,8 +406,75 @@ export async function GET(req: NextRequest) {
       d7: retentionFor(7),
       d30: retentionFor(30),
       sampledUsers: retentionDocs.length,
+      // Accounts excluded because they predate visit tracking — surfaced so
+      // the cohort size behind these rates is never invisible.
+      cohortStartIso: trackingStartMs ? new Date(trackingStartMs).toISOString() : null,
+      excludedPreTracking: retentionDocs.filter((d) => {
+        const c = toMillis(d.data().createdAt);
+        return c > 0 && c < trackingStartMs;
+      }).length,
       truncated: retentionSnap.size >= RETENTION_USER_SCAN_CAP,
     };
+
+    // ── Account integrity — Firebase Auth vs the `users` collection ──────
+    // "Total registered users" was previously just a count() of `users`
+    // docs, which is NOT the same as the number of real accounts: deleting
+    // an Auth account leaves its Firestore doc behind, and some Auth
+    // accounts never got a doc written. Observed drift: 467 docs vs 430 Auth
+    // accounts (46 orphaned docs, 9 accounts with no doc) — an ~8% overcount
+    // reported as fact.
+    //
+    // This also surfaces duplicate-email accounts: two UIDs sharing one
+    // email means a signup fired twice concurrently (see the synchronous
+    // in-flight guard in app/auth/page.tsx). Auth normally rejects a
+    // duplicate password-provider email, so any hit here is a real race, not
+    // a user signing up with two providers — providers are reported so a
+    // legitimate google.com + password pair can be told apart at a glance.
+    let accountIntegrity: any = null;
+    if (authListError) {
+      accountIntegrity = { error: authListError };
+    } else try {
+      const authUsers = authAccounts;
+
+      const authUids = new Set(authUsers.map((u) => u.uid));
+      // Reuse the retention scan's docs instead of re-reading the collection.
+      const docUids = new Set(retentionDocs.map((d) => d.id));
+
+      const orphanedDocs = [...docUids].filter((uid) => !authUids.has(uid));
+      const missingDocs = authUsers.filter((u) => !docUids.has(u.uid));
+
+      const byEmail = new Map<string, typeof authUsers>();
+      for (const u of authUsers) {
+        if (!u.email) continue;
+        const key = u.email.toLowerCase();
+        const list = byEmail.get(key) || [];
+        list.push(u);
+        byEmail.set(key, list);
+      }
+      const duplicateEmails = [...byEmail.entries()]
+        .filter(([, list]) => list.length > 1)
+        .map(([email, list]) => ({
+          email,
+          count: list.length,
+          accounts: list.map((u) => ({ uid: u.uid, providers: u.providers, createdAt: u.createdAt })),
+        }))
+        .slice(0, ACCOUNT_INTEGRITY_LIST_LIMIT);
+
+      accountIntegrity = {
+        authAccountCount: authUsers.length,
+        userDocCount: retentionDocs.length,
+        orphanedDocCount: orphanedDocs.length,
+        orphanedDocUids: orphanedDocs.slice(0, ACCOUNT_INTEGRITY_LIST_LIMIT),
+        missingDocCount: missingDocs.length,
+        missingDocs: missingDocs.slice(0, ACCOUNT_INTEGRITY_LIST_LIMIT),
+        duplicateEmailCount: duplicateEmails.length,
+        duplicateEmails,
+        truncated: authListTruncated,
+      };
+    } catch (err: any) {
+      console.error('❌ Account integrity check unavailable:', err);
+      accountIntegrity = { error: 'Account integrity check unavailable right now.' };
+    }
 
     // ── Revenue / recharge analytics — recharge_requests is written by the
     // client (app/coins/page.tsx) and approved/rejected by
@@ -455,7 +610,7 @@ export async function GET(req: NextRequest) {
     // registering → placing a trade → putting real money behind it.
     const growthFunnel = [
       { stage: 'Visitors', value: visitorsLast30 },
-      { stage: 'Registrations', value: reg30.data().count },
+      { stage: 'Registrations', value: registrations30 },
       { stage: 'Active traders', value: trading?.activeTraders.last30Days ?? 0 },
       { stage: 'Rechargers', value: rechargerUids30.size },
     ];
@@ -467,11 +622,20 @@ export async function GET(req: NextRequest) {
         visitors: { today: visitorsToday, last7Days: visitorsLast7, last30Days: visitorsLast30 },
         avgSessionSeconds: { today: avgSeconds([todayKey]), last7Days: avgSeconds(last7Keys) },
         registrations: {
-          today: regToday.data().count,
-          last7Days: reg7.data().count,
-          last30Days: reg30.data().count,
+          // All four now come from the same source (Firebase Auth unless it
+          // was unreachable), so they reconcile with the Firebase console
+          // and with each other.
+          today: registrationsToday,
+          last7Days: registrations7,
+          last30Days: registrations30,
           totalAllTime: totalRegisteredUsers,
+          // Firestore `users` doc count, kept for reference — this is the
+          // number the dashboard used to report as "users".
+          totalUserDocs,
+          source: useAuth ? 'firebase-auth' : 'firestore-user-docs',
+          sourceWarning: authListError,
         },
+        accountIntegrity,
         deviceBreakdown,
         geoBreakdown,
         dailyTrend,

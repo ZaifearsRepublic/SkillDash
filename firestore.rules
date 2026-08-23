@@ -12,11 +12,13 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
+    // Admin status comes from the signed custom claim only. The previous
+    // `get(users/$(uid)).data.role == 'admin'` fallback made admin depend on
+    // a mutable Firestore field (and cost a document read on every rule
+    // evaluation that referenced it). A custom claim can only be set with
+    // service-account credentials, so no client write can forge one.
     function isAdmin() {
-      return isAuthenticated() && (
-        request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-      );
+      return isAuthenticated() && request.auth.token.admin == true;
     }
     
     function hasRequiredFields(fields) {
@@ -67,33 +69,45 @@ service cloud.firestore {
     match /artifacts/{appId}/users/{userId}/simulator/state {
       allow read: if isOwner(userId);
 
-      // 🔒 Trade execution moved server-side (app/api/simulator/trade), which
-      // writes via the Admin SDK and bypasses these rules entirely — so the
-      // client no longer needs (or gets) ongoing write access. The only
-      // client write left is the brand-new-user zero-balance doc created by
-      // hooks/useSimulator.ts's onSnapshot "not found" fallback, and it must
-      // match that exact zero-value shape.
-      allow create: if isOwner(userId)
-        && request.resource.data.keys().hasOnly(['balance', 'portfolio', 'totalInvested', 'realizedGainLoss'])
-        && request.resource.data.balance == 0
-        && request.resource.data.portfolio == []
-        && request.resource.data.totalInvested == 0
-        && request.resource.data.realizedGainLoss == 0;
-      allow update, delete: if false;
+      // 🔒 Trade execution (app/api/simulator/trade) and brand-new-user
+      // state creation (app/api/simulator/ensure-state) both moved
+      // server-side and write via the Admin SDK, which bypasses these rules
+      // entirely — so the client gets no write access here at all, not even
+      // `create`.
+      //
+      // A `create`-only exception used to exist here for a client-side
+      // "onSnapshot says doc not found -> setDoc the zero-value doc"
+      // fallback in hooks/useSimulator.ts. That fallback could fire on a
+      // stale/cached "not found" read that raced a real trade, and this
+      // rule could not tell that apart from a genuinely brand-new user —
+      // both are a `create` from the rules engine's point of view the
+      // instant the fallback fires before the real doc's existence is
+      // reflected locally. Several real accounts got their balance and
+      // portfolio wiped to zero this way. The fallback and this exception
+      // are both removed; ensure-state now does the same "create if
+      // missing" job atomically inside one Admin SDK transaction, closing
+      // the client-side race entirely rather than relying on rules to catch
+      // it after the fact.
+      allow create, update, delete: if false;
     }
     
 // ===== TRADE HISTORY =====
+    // 🔒 Trade execution (app/api/simulator/trade) writes these records via
+    // the Admin SDK, which bypasses these rules entirely — the client never
+    // needs to write here. The previous `allow create: if isOwner(userId)`
+    // let any authenticated user forge arbitrary trade records (fake
+    // symbol/price/quantity/type) directly through the client SDK, with no
+    // validation at all; closing it off the same way simulator/state was.
     match /artifacts/{appId}/users/{userId}/trade_history/{tradeId} {
       allow read: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update, delete: if false;
+      allow create, update, delete: if false;
     }
 
-    // trade_history nested under simulator/state (legacy path fallback)
+    // trade_history nested under simulator/state (the path the trade route
+    // actually writes to — see app/api/simulator/trade/route.ts)
     match /artifacts/{appId}/users/{userId}/simulator/state/trade_history/{tradeId} {
       allow read: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update, delete: if false;
+      allow create, update, delete: if false;
     }
     
     // ===== MARKET DATA (read-only) =====

@@ -5,7 +5,6 @@ import {
   getFirestore,
   doc,
   onSnapshot,
-  setDoc,
   getDoc,
   Unsubscribe
 } from 'firebase/firestore';
@@ -90,6 +89,7 @@ export const useSimulator = () => {
   const marketUnsubscribe = useRef<Unsubscribe | null>(null);
   const categoriesUnsubscribe = useRef<Unsubscribe | null>(null);
   const stateUnsubscribe = useRef<Unsubscribe | null>(null);
+  const ensureStateAttempted = useRef(false);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
 
   // ── 1. Load Bangladesh Holidays ──
@@ -191,10 +191,11 @@ export const useSimulator = () => {
   // ── 4. Simulator State Listener ──
   useEffect(() => {
     if (!user) { setLoading(false); return; }
+    ensureStateAttempted.current = false;
     try {
       const appId = process.env.NEXT_PUBLIC_SIMULATOR_APP_ID || 'stocksimulatorbd-dse-v1';
       const stateRef = doc(db, 'artifacts', appId, 'users', user.uid, 'simulator', 'state');
-      
+
       stateUnsubscribe.current = onSnapshot(stateRef, async (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.data() as Omit<SimulatorState, 'totalCurrentValue' | 'totalGainLoss' | 'gainLossPercent'>;
@@ -206,9 +207,22 @@ export const useSimulator = () => {
             totalGainLoss: calculateGainLoss(data.portfolio || [], marketInfo?.stocks || []),
             gainLossPercent: calculateGainLossPercent(data.portfolio || [], marketInfo?.stocks || [])
           }));
-        } else {
-          const initialState = { balance: 0, portfolio: [], totalInvested: 0, realizedGainLoss: 0 };
-          await setDoc(stateRef, initialState, { merge: true });
+        } else if (!snapshot.metadata.fromCache && !ensureStateAttempted.current) {
+          // Only treat this as a genuinely new user once Firestore has
+          // confirmed "not found" from the server (not a stale local cache
+          // read racing a concurrent trade), and only try once per mount.
+          // The actual creation happens server-side in one atomic
+          // transaction (see app/api/simulator/ensure-state) so there is no
+          // client-side window where an existing user's real balance and
+          // portfolio could be overwritten by this fallback — a bug that
+          // previously wiped several real accounts to zero.
+          ensureStateAttempted.current = true;
+          try {
+            await fetchWithFreshToken('/api/simulator/ensure-state', { method: 'POST' });
+          } catch (err) {
+            console.warn('Failed to initialize simulator state:', err);
+            ensureStateAttempted.current = false;
+          }
         }
         setLoading(false);
       });

@@ -60,25 +60,24 @@ export async function verifyAdminAccess(req: NextRequest): Promise<
       };
     }
 
-    // Check for admin custom claim.
+    // Admin status comes from the signed custom claim ONLY.
+    //
+    // This used to fall back to reading `users/{uid}.role === 'admin'` from
+    // Firestore when the claim was absent — which meant the entire admin
+    // boundary rested on one mutable document field, protected only by a
+    // firestore.rules clause. That is a weaker guarantee than a claim baked
+    // into a cryptographically signed token: rules can regress (and in this
+    // project a rules regression sat undeployed in production for weeks),
+    // Admin SDK writes bypass rules entirely, and any future code path that
+    // writes to a user document becomes a potential privilege-escalation
+    // vector. A custom claim can only be set with service-account
+    // credentials — no client-side write can ever produce one.
+    //
+    // Grant the claim with set_admin_claim.mjs (or setAdminClaim below).
+    // Note: a claim change only lands in a user's token when that token is
+    // reissued — they must sign out and back in.
     if (decodedToken.admin !== true) {
-      
-      // Fallback: Check the Firestore Database for role == 'admin'
-      try {
-        const db = getFirestore(adminApp);
-        const userDoc = await db.collection('users').doc(decodedToken.uid).get();
-        
-        if (userDoc.exists && userDoc.data()?.role === 'admin') {
-          return {
-            isAdmin: true,
-            uid: decodedToken.uid,
-          };
-        }
-      } catch (dbError) {
-        console.error('Error checking Firestore for admin role:', dbError);
-      }
-
-      console.warn(`⚠️ User ${decodedToken.uid} attempted admin access without admin claim or database role`);
+      console.warn(`⚠️ User ${decodedToken.uid} attempted admin access without the admin claim`);
       return {
         isAdmin: false,
         error: 'User does not have admin privileges',

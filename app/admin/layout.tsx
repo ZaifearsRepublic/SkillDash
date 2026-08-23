@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { checkAdmin } from '@/lib/admin';
 import { LoadingScreen } from '@/lib/components/shared';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -21,7 +20,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return;
       }
 
-      // Double-check with ID token claim for stronger server-verified admin check
+      // Admin status comes from the signed custom claim only — matching
+      // lib/utils/adminVerification.ts and firestore.rules' isAdmin().
+      // This gate only decides whether to render the admin shell; every
+      // admin API re-verifies the same claim server-side, so a bypass here
+      // reveals an empty UI, not data.
       try {
         const tokenResult = await user.getIdTokenResult();
         if (tokenResult.claims.admin === true) {
@@ -30,19 +33,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           return;
         }
       } catch (err) {
-        console.warn('Failed to verify admin via token claims, falling back to Firestore:', err);
+        console.warn('Failed to verify admin via token claims:', err);
       }
 
-      // Fall back to Firestore check (still useful if custom claims aren't set up)
-      const adminStatus = await checkAdmin(user.uid);
-      
-      if (!adminStatus) {
-        router.replace('/');
-        return;
-      }
-
-      setIsAdmin(true);
-      setChecking(false);
+      router.replace('/');
     };
 
     verifyAdmin();

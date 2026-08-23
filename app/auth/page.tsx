@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback, Component } from 'react'
+import React, { useState, useEffect, useCallback, useRef, Component } from 'react'
 import { onAuthStateChanged, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
 import { auth, signUpWithEmailPasswordAndProfile, googleProvider, githubProvider, signInWithSocialProviderAndCreateProfile, isInAppBrowser } from '../../lib/firebase'
 import { useRouter } from 'next/navigation'
@@ -39,6 +39,14 @@ function AuthPageContent({ recaptchaEnabled }: { recaptchaEnabled: boolean }) {
   // flow is already in flight — avoids a race between two sign-in attempts.
   const [hasExistingSession, setHasExistingSession] = useState(false)
   const [oauthRedirectPending, setOauthRedirectPending] = useState(false)
+  // Synchronous in-flight guard for credential submits. `isLoading` cannot do
+  // this job: it is React state, so it only takes effect on the next render,
+  // and handleSignUp/handleSignIn both `await` (reCAPTCHA) *before* setting
+  // it — leaving a window where a second click re-enters the handler and
+  // fires a second createUserWithEmailAndPassword concurrently. Two accounts
+  // for sheikhtawhid7788@gmail.com were created that way, same email, same
+  // second, two UIDs. A ref flips synchronously, closing that window.
+  const submitInFlightRef = useRef(false)
   const router = useRouter()
   const { verifyRecaptcha: verifyRecaptchaToken, isReady: isRecaptchaReady, isConfigured } = useRecaptcha()
   const enforceRecaptcha = recaptchaEnabled && process.env.NODE_ENV === 'production'
@@ -140,6 +148,11 @@ function AuthPageContent({ recaptchaEnabled }: { recaptchaEnabled: boolean }) {
   }, [])
 
   const handleSignUp = async () => {
+    // Must be the very first thing, before any await — see submitInFlightRef.
+    if (submitInFlightRef.current) return
+    submitInFlightRef.current = true
+
+    try {
     if (!rateLimit(`signup:${formData.email}`)) {
       setError('Too many signup attempts. Please try again later.')
       return
@@ -193,9 +206,17 @@ function AuthPageContent({ recaptchaEnabled }: { recaptchaEnabled: boolean }) {
     } finally {
       setIsLoading(false)
     }
+    } finally {
+      submitInFlightRef.current = false
+    }
   }
 
   const handleSignIn = async () => {
+    // Must be the very first thing, before any await — see submitInFlightRef.
+    if (submitInFlightRef.current) return
+    submitInFlightRef.current = true
+
+    try {
     if (!rateLimit(`signin:${formData.email}`)) {
       setError('Too many login attempts. Please try again later.')
       return
@@ -222,6 +243,9 @@ function AuthPageContent({ recaptchaEnabled }: { recaptchaEnabled: boolean }) {
       setError(humanizeAuthError(err))
     } finally {
       setIsLoading(false)
+    }
+    } finally {
+      submitInFlightRef.current = false
     }
   }
 

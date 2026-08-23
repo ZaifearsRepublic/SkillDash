@@ -75,7 +75,15 @@ export interface SiteAnalyticsData {
   activeRightNow: number;
   visitors: { today: number; last7Days: number; last30Days: number };
   avgSessionSeconds: { today: number; last7Days: number };
-  registrations: { today: number; last7Days: number; last30Days: number; totalAllTime: number };
+  registrations: {
+    today: number;
+    last7Days: number;
+    last30Days: number;
+    totalAllTime: number;
+    totalUserDocs: number;
+    source: 'firebase-auth' | 'firestore-user-docs';
+    sourceWarning: string | null;
+  };
   deviceBreakdown: { mobile: number; tablet: number; desktop: number; unknown: number };
   geoBreakdown: Record<GeoBucketKey, number>;
   dailyTrend: DailyTrendPoint[];
@@ -90,6 +98,24 @@ export interface SiteAnalyticsData {
   topCoinHolders: CoinRow[];
   totalCoinsInCirculation: number | null;
   balanceIntegrity: BalanceIntegrityData;
+  accountIntegrity:
+    | {
+        authAccountCount: number;
+        userDocCount: number;
+        orphanedDocCount: number;
+        orphanedDocUids: string[];
+        missingDocCount: number;
+        missingDocs: { uid: string; email: string | null; providers: string[]; createdAt: string }[];
+        duplicateEmailCount: number;
+        duplicateEmails: {
+          email: string;
+          count: number;
+          accounts: { uid: string; providers: string[]; createdAt: string }[];
+        }[];
+        truncated: boolean;
+      }
+    | { error: string }
+    | null;
   revenue: RevenueData;
   growthFunnel: { stage: string; value: number }[];
   mostActiveUsers: UserRow[];
@@ -638,6 +664,92 @@ function BalanceIntegrityCard({ data }: { data: SiteAnalyticsData['balanceIntegr
   );
 }
 
+// ── Account integrity — Firebase Auth vs the `users` collection. These two
+// drift apart silently: deleting an Auth account leaves its Firestore doc
+// behind, and some accounts never get a doc written, so a raw doc count
+// overstates how many real users exist. Duplicate emails (two UIDs, one
+// address) indicate a signup that fired twice concurrently.
+function AccountIntegrityCard({ data }: { data: SiteAnalyticsData['accountIntegrity'] }) {
+  if (!data || 'error' in data) {
+    return (
+      <div className="rounded-3xl p-5 border bg-white dark:bg-[#1A1F26] border-gray-100 dark:border-gray-800">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-2">Account Integrity</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {(data as any)?.error || 'Unavailable right now.'}
+        </p>
+      </div>
+    );
+  }
+
+  const isClean = data.orphanedDocCount === 0 && data.missingDocCount === 0 && data.duplicateEmailCount === 0;
+
+  return (
+    <div
+      className={`rounded-3xl p-5 border ${
+        isClean
+          ? 'bg-white dark:bg-[#1A1F26] border-gray-100 dark:border-gray-800'
+          : 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30'
+      }`}
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <div
+          className={`w-7 h-7 rounded-full flex items-center justify-center ${
+            isClean ? ACCENT_CLASSES.green : 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400'
+          }`}
+        >
+          <ShieldAlert className="w-4 h-4" />
+        </div>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-white">Account Integrity</h3>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Firebase Auth accounts</p>
+          <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCompact(data.authAccountCount)}</p>
+        </div>
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Firestore user docs</p>
+          <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCompact(data.userDocCount)}</p>
+        </div>
+      </div>
+
+      {isClean ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Auth and Firestore are in sync — no orphaned docs, missing docs, or duplicate emails.
+        </p>
+      ) : (
+        <ul className="space-y-1.5 text-sm">
+          {data.orphanedDocCount > 0 && (
+            <li className="text-amber-800 dark:text-amber-300">
+              <strong>{data.orphanedDocCount}</strong> user doc{data.orphanedDocCount === 1 ? '' : 's'} with no Auth
+              account — leftovers from deleted accounts, counted as users by older stats.
+            </li>
+          )}
+          {data.missingDocCount > 0 && (
+            <li className="text-amber-800 dark:text-amber-300">
+              <strong>{data.missingDocCount}</strong> Auth account{data.missingDocCount === 1 ? '' : 's'} with no user
+              doc — invisible to every admin list below.
+            </li>
+          )}
+          {data.duplicateEmailCount > 0 && (
+            <li className="text-amber-800 dark:text-amber-300">
+              <strong>{data.duplicateEmailCount}</strong> email
+              {data.duplicateEmailCount === 1 ? '' : 's'} with more than one account:
+              <ul className="mt-1 space-y-1">
+                {data.duplicateEmails.map((d) => (
+                  <li key={d.email} className="text-[11px] text-gray-600 dark:text-gray-400 break-all">
+                    {d.email} — {d.count} accounts ({d.accounts.map((a) => a.providers.join('/') || 'unknown').join(', ')})
+                  </li>
+                ))}
+              </ul>
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function NewVsReturningBar({ data }: { data: SiteAnalyticsData['newVsReturning'] }) {
   return (
     <SegmentBar
@@ -1043,15 +1155,36 @@ export default function SiteAnalyticsSection({
 
       {/* Registrations KPI row */}
       <div>
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
           <Icon.UserPlus />
           New Registrations
         </h2>
+        {/* State the source explicitly: these counts come from Firebase Auth,
+            so they should match the Firebase console exactly. */}
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+          {data.registrations.source === 'firebase-auth' ? (
+            <>Counted from Firebase Auth — matches the Firebase console.</>
+          ) : (
+            <span className="text-amber-600 dark:text-amber-400">
+              {data.registrations.sourceWarning || 'Falling back to Firestore user documents.'}
+            </span>
+          )}
+        </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatTile label="Today" value={formatCompact(data.registrations.today)} accent="indigo" icon={<Icon.UserPlus />} />
           <StatTile label="Last 7 days" value={formatCompact(data.registrations.last7Days)} accent="indigo" icon={<Icon.UserPlus />} />
           <StatTile label="Last 30 days" value={formatCompact(data.registrations.last30Days)} accent="indigo" icon={<Icon.UserPlus />} />
-          <StatTile label="All-time users" value={formatCompact(data.registrations.totalAllTime)} accent="purple" icon={<Icon.UserPlus />} />
+          <StatTile
+            label="All-time accounts"
+            value={formatCompact(data.registrations.totalAllTime)}
+            sublabel={
+              data.registrations.totalUserDocs !== data.registrations.totalAllTime
+                ? `${formatCompact(data.registrations.totalUserDocs)} user docs`
+                : undefined
+            }
+            accent="purple"
+            icon={<Icon.UserPlus />}
+          />
         </div>
       </div>
 
@@ -1071,8 +1204,9 @@ export default function SiteAnalyticsSection({
         </div>
       </div>
 
-      {/* Balance integrity watchlist */}
+      {/* Integrity checks — balances, then Auth/Firestore account drift */}
       <BalanceIntegrityCard data={data.balanceIntegrity} />
+      <AccountIntegrityCard data={data.accountIntegrity} />
 
       {/* Revenue & recharges */}
       <div>

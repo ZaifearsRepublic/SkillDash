@@ -283,6 +283,14 @@ export async function POST(req: NextRequest) {
       activeSeconds: FieldValue.increment(delta),
     };
     if (lastPath) sessionUpdate.lastPath = lastPath;
+
+    // analytics_pages used to increment ONLY on the session's entry path, so
+    // it measured landing pages while the dashboard presented slices of it as
+    // blog- and stock-page popularity. A blog post reached by navigating from
+    // the homepage was never counted at all. Counting a view whenever the
+    // reported path differs from the session's last known path closes that
+    // gap without double-counting the ~25s heartbeats that sit on one page.
+    const isNavigation = !!lastPath && lastPath !== session.lastPath;
     if (incomingPageCount > (session.pageCount || 0)) sessionUpdate.pageCount = incomingPageCount;
     if (action === 'end') sessionUpdate.endedAt = FieldValue.serverTimestamp();
 
@@ -303,16 +311,57 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // An 'end' beacon is NOT naturally idempotent: `pagehide` can fire more
+    // than once for the same session (bfcache restore, mobile tab switching,
+    // a visibilitychange→hidden immediately followed by pagehide), and each
+    // one used to increment `completedSessions` again. That silently inflated
+    // the denominator behind avgSessionSeconds and bounceRate — analytics_daily
+    // was observed with completedSessions (89) exceeding totalSessions (83)
+    // on the same day, which is structurally impossible.
+    //
+    // So the 'end' path now runs in a transaction that re-reads the session
+    // and only counts the completion if this is the first time the session is
+    // being ended. Heartbeats stay on the cheaper batch path — they only
+    // accumulate additive time, which double-firing cannot corrupt the same way.
+    const dailyRef = db.collection('analytics_daily').doc(dateKey);
+    const userTimeRef = session.uid && delta > 0 ? db.collection('users').doc(session.uid) : null;
+    const navPageRef = isNavigation ? db.collection('analytics_pages').doc(pathToDocId(lastPath!)) : null;
+    const navPageUpdate = {
+      path: lastPath,
+      views: FieldValue.increment(1),
+      lastDateKey: dateKey,
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    if (action === 'end') {
+      await db.runTransaction(async (tx) => {
+        const fresh = await tx.get(sessionRef);
+        const alreadyEnded = fresh.exists && !!fresh.data()?.endedAt;
+
+        if (alreadyEnded) {
+          // Re-fired end beacon: still record any trailing active time, but
+          // never re-count the session as completed (or re-count a bounce).
+          delete dailyUpdate.completedSessions;
+          delete dailyUpdate.bounces;
+        }
+
+        tx.set(sessionRef, sessionUpdate, { merge: true });
+        tx.set(dailyRef, dailyUpdate, { merge: true });
+        if (userTimeRef) {
+          tx.set(userTimeRef, { totalActiveSeconds: FieldValue.increment(delta) }, { merge: true });
+        }
+        if (navPageRef) tx.set(navPageRef, navPageUpdate, { merge: true });
+      });
+      return NextResponse.json({ success: true });
+    }
+
     const batch = db.batch();
     batch.set(sessionRef, sessionUpdate, { merge: true });
-    batch.set(db.collection('analytics_daily').doc(dateKey), dailyUpdate, { merge: true });
-    if (session.uid && delta > 0) {
-      batch.set(
-        db.collection('users').doc(session.uid),
-        { totalActiveSeconds: FieldValue.increment(delta) },
-        { merge: true }
-      );
+    batch.set(dailyRef, dailyUpdate, { merge: true });
+    if (userTimeRef) {
+      batch.set(userTimeRef, { totalActiveSeconds: FieldValue.increment(delta) }, { merge: true });
     }
+    if (navPageRef) batch.set(navPageRef, navPageUpdate, { merge: true });
     await batch.commit();
 
     return NextResponse.json({ success: true });
