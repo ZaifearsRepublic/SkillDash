@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { ReactNode } from 'react';
+import { absoluteUrl } from '@/lib/siteUrl';
 
 export const metadata: Metadata = {
   title: 'DSE Stock Simulator - Practice Trading with Virtual Currency | Stock Simulator BD',
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'DSE Stock Simulator | Stock Simulator BD - Practice Trading Risk-Free',
     description: 'Practice trading Dhaka Stock Exchange stocks with virtual currency. Real-time market data, 0.4% commission, T+1 settlement rules. No real money involved.',
-    url: 'https://www.stocksimulator.tech/trade',
+    url: absoluteUrl('/trade'),
     type: 'website',
     images: [
       {

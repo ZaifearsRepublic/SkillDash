@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import AboutHero from '@/components/AboutHero';
 import Footer from '@/components/shared/Footer';
 
@@ -96,6 +97,20 @@ export default function AboutUsPage() {
               <a href="https://linkedin.com/in/shahoriarhossain" target="_blank" rel="noopener noreferrer" className="hover:text-blue-500 dark:hover:text-blue-400 transition-colors">LinkedIn</a>
               <span>·</span>
               <a href="https://github.com/zaifears" target="_blank" rel="noopener noreferrer" className="hover:text-blue-500 dark:hover:text-blue-400 transition-colors">GitHub</a>
+            </div>
+          </div>
+
+          {/* Solidarity statement */}
+          <div className="mb-20">
+            <div className="mx-auto max-w-lg sm:max-w-xl rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6 dark:border-gray-800">
+              <Image
+                src="/free_palestine.png"
+                alt="Free Palestine"
+                width={1200}
+                height={627}
+                sizes="(max-width: 640px) 90vw, 576px"
+                className="h-auto w-full rounded-xl"
+              />
             </div>
           </div>
 

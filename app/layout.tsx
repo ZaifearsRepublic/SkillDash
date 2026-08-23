@@ -14,6 +14,7 @@ import ServiceWorkerCleanup from '@/components/ServiceWorkerCleanup'
 import Script from 'next/script'
 import { GoogleAnalytics } from '@next/third-parties/google'
 import VisitTracker from '@/components/VisitTracker'
+import { SITE_URL, absoluteUrl } from '@/lib/siteUrl'
 
 const GTM_ID = 'GTM-PS2HRL37'
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim()
@@ -73,13 +74,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: "StockSimulatorBD: DSE Trading Simulator. Practice Stock Trading Risk-Free",
     description: "The only free paper trading simulator built for the Dhaka Stock Exchange. Trade 300+ DSE stocks with virtual currency, real-time market data, T+1 settlement rules, and 0.4% commission. Built for students learning the market and for new investors moving beyond Sanchayapatra and fixed deposits into stocks. Practice first, risk nothing.",
-    url: process.env.NEXT_PUBLIC_MAIN_DOMAIN || "https://www.stocksimulator.tech",
+    url: SITE_URL,
     siteName: "StockSimulatorBD",
     type: "website",
     locale: "en_US",
     images: [
       {
-        url: `${process.env.NEXT_PUBLIC_MAIN_DOMAIN || "https://www.stocksimulator.tech"}/og/og-image.png`,
+        url: absoluteUrl("/og/og-image.png"),
         width: 1200,
         height: 630,
         alt: "StockSimulatorBD: DSE Trading Simulator",
@@ -90,7 +91,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'StockSimulatorBD: DSE Trading Simulator',
     description: 'Practice trading Dhaka Stock Exchange stocks risk-free with virtual currency. For students and for new investors moving from Sanchayapatra into the stock market, with real market data and realistic trading rules.',
-    images: [`${process.env.NEXT_PUBLIC_MAIN_DOMAIN || "https://www.stocksimulator.tech"}/og/og-image.png`],
+    images: [absoluteUrl("/og/og-image.png")],
     creator: '@StockSimulatorBD',
   },
   icons: {
@@ -129,7 +130,7 @@ export const metadata: Metadata = {
     ],
   },
   manifest: '/site.webmanifest',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'https://www.stocksimulator.tech'),
+  metadataBase: new URL(SITE_URL),
   alternates: {
     // './' resolves against metadataBase per route, so every page self-canonicalises.
     // An absolute URL here would make every child page declare the homepage as its
@@ -186,7 +187,7 @@ export default function RootLayout({
         {RECAPTCHA_SITE_KEY && <link rel="preconnect" href="https://www.gstatic.com" crossOrigin="anonymous" />}
         
         {/* Sitemap Link for Search Engines */}
-        <link rel="sitemap" type="application/xml" href="https://www.stocksimulator.tech/sitemap.xml" />
+        <link rel="sitemap" type="application/xml" href={absoluteUrl("/sitemap.xml")} />
         
         {/* Enhanced Structured Data */}
         <script
@@ -202,23 +203,17 @@ export default function RootLayout({
                 "Stocks Sim BD"
               ],
               "description": "Practice trading Dhaka Stock Exchange stocks risk-free with virtual currency.",
-              "url": "https://www.stocksimulator.tech",
+              "url": SITE_URL,
               "sameAs": [
-                "https://www.facebook.com/stocksimulatorbd",
-                "https://skilldash.live",
+                "https://www.facebook.com/stocksimulatorbd"
               ],
-              "potentialAction": {
-                "@type": "SearchAction",
-                "target": "https://www.stocksimulator.tech/discover?q={search_term_string}",
-                "query-input": "required name=search_term_string"
-              },
               "publisher": {
                 "@type": "Organization",
                 "name": "StockSimulatorBD",
-                "url": "https://www.stocksimulator.tech",
+                "url": SITE_URL,
                 "logo": {
                   "@type": "ImageObject",
-                  "url": "https://www.stocksimulator.tech/web-app-manifest-512x512.png",
+                  "url": absoluteUrl("/web-app-manifest-512x512.png"),
                   "width": 512,
                   "height": 512
                 },
@@ -241,8 +236,8 @@ export default function RootLayout({
               "@type": "EducationalOrganization",
               "name": "StockSimulatorBD",
               "description": "Paper trading simulator platform for Bangladesh investors",
-              "url": "https://www.stocksimulator.tech",
-              "logo": "https://www.stocksimulator.tech/web-app-manifest-512x512.png",
+              "url": SITE_URL,
+              "logo": absoluteUrl("/web-app-manifest-512x512.png"),
               "educationalCredentialAwarded": "Trading Experience",
               "offers": [
                 {
@@ -264,7 +259,7 @@ export default function RootLayout({
               "@type": "SoftwareApplication",
               "name": "StockSimulatorBD",
               "alternateName": ["Stock Market Game BD", "Stocks Sim"],
-              "url": "https://www.stocksimulator.tech",
+              "url": SITE_URL,
               "applicationCategory": "FinanceApplication",
               "operatingSystem": "Web",
               "browserRequirements": "Requires JavaScript",

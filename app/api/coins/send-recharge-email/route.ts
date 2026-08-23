@@ -3,12 +3,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { SITE_URL } from '@/lib/siteUrl';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Admin email from environment
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'niqqahigga1@gmail.com';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.stocksimulator.tech';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
 
 interface EmailData {
   requestId: string;

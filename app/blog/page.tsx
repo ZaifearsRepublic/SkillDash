@@ -1,16 +1,13 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import {
-  ArrowRight,
-  CalendarDays,
-  Clock,
-  ShieldCheck,
-} from 'lucide-react';
+import { ArrowRight, ShieldCheck } from 'lucide-react';
 import Footer from '@/components/shared/Footer';
+import BlogExplorer, { type ExplorerPost } from '@/components/blog/BlogExplorer';
 import { getBlogPosts, type BlogPost } from '@/lib/contentful-blog';
+import { SITE_URL } from '@/lib/siteUrl';
 
-const baseUrl = 'https://www.stocksimulator.tech';
+const baseUrl = SITE_URL;
 
 export const revalidate = 3600;
 
@@ -41,14 +38,6 @@ export const metadata: Metadata = {
   },
 };
 
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
 function estimateReadingTime(post: BlogPost): number {
   const approximateWordCount = post.excerpt.trim().split(/\s+/).length * 8;
 
@@ -57,6 +46,28 @@ function estimateReadingTime(post: BlogPost): number {
 
 export default async function BlogPage() {
   const posts = await getBlogPosts();
+
+  // Only what the client explorer needs. Rich text, FAQ and source payloads stay
+  // on the server rather than being serialised into the page.
+  const explorerPosts: ExplorerPost[] = posts.map((post) => ({
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt,
+    category: post.category,
+    tags: post.tags,
+    publishedAt: post.publishedAt,
+    featured: post.featured,
+    readingTime: estimateReadingTime(post),
+    coverImage: post.coverImage
+      ? {
+          url: post.coverImage.url,
+          width: post.coverImage.width,
+          height: post.coverImage.height,
+        }
+      : null,
+    coverImageAlt: post.coverImageAlt,
+  }));
 
   const blogListSchema = {
     '@context': 'https://schema.org',
@@ -122,7 +133,7 @@ export default async function BlogPage() {
       />
 
       <section className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
-        <div className="mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6 sm:pt-10 lg:px-8 lg:pb-16 lg:pt-10">
+        <div className="mx-auto max-w-7xl px-4 pb-12 pt-36 sm:px-6 sm:pt-40 lg:px-8 lg:pb-16 lg:pt-40">
           <nav
             aria-label="Breadcrumb"
             className="mb-6 text-sm text-slate-500 dark:text-slate-400"
@@ -131,7 +142,7 @@ export default async function BlogPage() {
               <li>
                 <Link
                   href="/"
-                  className="transition hover:text-emerald-700 dark:hover:text-emerald-400"
+                  className="inline-block py-2 transition hover:text-emerald-700 dark:hover:text-emerald-400"
                 >
                   Home
                 </Link>
@@ -195,84 +206,7 @@ export default async function BlogPage() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-7 md:grid-cols-2 xl:grid-cols-3">
-            {posts.map((post) => {
-              const readingTime = estimateReadingTime(post);
-
-              return (
-                <article
-                  key={post.id}
-                  className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <Link
-                    href={`/blog/${post.slug}`}
-                    className="relative block aspect-[16/9] overflow-hidden bg-slate-100 dark:bg-slate-800"
-                    aria-label={`Read ${post.title}`}
-                  >
-                    {post.coverImage ? (
-                      <Image
-                        src={post.coverImage.url}
-                        alt={post.coverImageAlt}
-                        width={post.coverImage.width}
-                        height={post.coverImage.height}
-                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-600 to-teal-700 p-6 text-center text-lg font-bold text-white">
-                        StockSimulatorBD
-                      </div>
-                    )}
-                  </Link>
-
-                  <div className="flex flex-1 flex-col p-6">
-                    <div className="mb-4 flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
-                        {post.category}
-                      </span>
-                      {post.featured && (
-                        <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-                          Featured
-                        </span>
-                      )}
-                    </div>
-
-                    <h2 className="text-xl font-bold leading-snug tracking-tight">
-                      <Link
-                        href={`/blog/${post.slug}`}
-                        className="transition-colors group-hover:text-emerald-700 dark:group-hover:text-emerald-400"
-                      >
-                        {post.title}
-                      </Link>
-                    </h2>
-
-                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      {post.excerpt}
-                    </p>
-
-                    <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="inline-flex items-center gap-1.5">
-                        <CalendarDays className="h-3.5 w-3.5" />
-                        {formatDate(post.publishedAt)}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5" />
-                        {readingTime} min read
-                      </span>
-                    </div>
-
-                    <Link
-                      href={`/blog/${post.slug}`}
-                      className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 transition hover:gap-3 dark:text-emerald-400"
-                    >
-                      Read guide
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+          <BlogExplorer posts={explorerPosts} />
         )}
       </section>
 

@@ -28,8 +28,9 @@ import {
   getBlogSlugs,
   type BlogPost,
 } from '@/lib/contentful-blog';
+import { SITE_URL } from '@/lib/siteUrl';
 
-const baseUrl = 'https://www.stocksimulator.tech';
+const baseUrl = SITE_URL;
 
 export const revalidate = 3600;
 
@@ -410,7 +411,7 @@ export default async function BlogArticlePage({
 
       <article>
         <header className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950">
-          <div className="mx-auto max-w-4xl px-4 pb-10 pt-8 sm:px-6 sm:pt-10 lg:px-8 lg:pb-12 lg:pt-10">
+          <div className="mx-auto max-w-4xl px-4 pb-10 pt-36 sm:px-6 sm:pt-40 lg:px-8 lg:pb-12 lg:pt-40">
             <nav
               aria-label="Breadcrumb"
               className="mb-8 text-sm text-slate-500 dark:text-slate-400"
@@ -482,7 +483,7 @@ export default async function BlogArticlePage({
           </div>
         </header>
 
-        <div className="mx-auto max-w-4xl px-4 pb-10 pt-8 sm:px-6 sm:pt-10 lg:px-8 lg:pb-12 lg:pt-10">
+        <div className="mx-auto max-w-4xl px-4 pb-10 pt-36 sm:px-6 sm:pt-40 lg:px-8 lg:pb-12 lg:pt-40">
           {post.coverImage && (
             <figure className="mb-12">
               <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">

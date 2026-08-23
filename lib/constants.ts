@@ -1,3 +1,5 @@
+import { SITE_URL } from './siteUrl';
+
 // ✅ SAFE: Extract repeated constants
 export const LIMITS = {
   MAX_MESSAGE_LENGTH: 500,
@@ -15,14 +17,16 @@ export const MESSAGES = {
 export const ROUTES = {
   AUTH: '/auth',
   COINS: '/coins',
-  SIMULATOR: '/simulator',
+  // The trading terminal lives at /trade. There is no /simulator route; the old
+  // SIMULATOR key pointed at one and would have 404'd anyone who used it.
+  TRADE: '/trade',
 } as const;
 
-// Domain Configuration - Works across skill-dash.vercel.app and stocksimulatorbd.vercel.app
-// Note: skill-dash.vercel.app is the primary default (Vercel is maintained indefinitely)
-// stocksimulatorbd.vercel.app is kept as fallback but could expire
+// Domain configuration. Prefer importing SITE_URL from '@/lib/siteUrl' directly;
+// this alias exists for older call sites. See REDIRECT.md for the planned move
+// off stocksimulator.tech before it expires on 2027-06-18.
 export const DOMAINS = {
-  MAIN: process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'https://stocksimulatorbd.vercel.app',
+  MAIN: SITE_URL,
 } as const;
 
 /**

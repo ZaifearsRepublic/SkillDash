@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { ReactNode } from 'react';
+import { absoluteUrl } from '@/lib/siteUrl';
 
 export const metadata: Metadata = {
   title: 'Coins - Your Trading Balance | Stock Simulator BD',
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Coins - Your Trading Balance | Stock Simulator BD',
     description: 'View your Coin balance, recharge via bKash, and trade DSE stocks. 10 BDT = 10,000 Coins.',
-    url: 'https://www.stocksimulator.tech/coins',
+    url: absoluteUrl('/coins'),
     type: 'website',
     images: [
       {

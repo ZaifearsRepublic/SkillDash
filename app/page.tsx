@@ -2,9 +2,10 @@ import React from 'react';
 import Link from 'next/link';
 import Footer from '@/components/shared/Footer';
 import { OpenRemark } from '@/components/OpenRemark';
+import { SITE_URL } from '@/lib/siteUrl';
 import { ArrowRight, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
 
-const SITE = 'https://www.stocksimulator.tech';
+const SITE = SITE_URL;
 
 const floorRules = [
   { label: 'Trading hours', value: '10:00 to 14:15' },
@@ -148,7 +149,7 @@ export default function HomePage() {
       />
 
       {/* HERO */}
-      <section className="relative w-full pt-16 pb-14 sm:pt-24 sm:pb-20 overflow-hidden border-b border-gray-200 dark:border-gray-800/60">
+      <section className="relative w-full pt-36 pb-14 sm:pt-40 sm:pb-20 overflow-hidden border-b border-gray-200 dark:border-gray-800/60">
         <div
           className="absolute inset-0 bg-[linear-gradient(to_right,#80808010_1px,transparent_1px),linear-gradient(to_bottom,#80808010_1px,transparent_1px)] bg-[size:32px_32px] dark:bg-[linear-gradient(to_right,#3b82f612_1px,transparent_1px),linear-gradient(to_bottom,#3b82f612_1px,transparent_1px)]"
           aria-hidden="true"

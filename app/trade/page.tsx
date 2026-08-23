@@ -49,7 +49,7 @@ export default function SimulatorTradePage() {
     if (!user && !isRedirecting) {
       setIsRedirecting(true);
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem('redirectAfterLogin', '/simulator/trade');
+        sessionStorage.setItem('redirectAfterLogin', '/trade');
         sessionStorage.setItem('redirectMessage', 'Please sign in to access the trading simulator');
       }
       router.push('/auth');

@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
+import { SITE_URL } from '@/lib/siteUrl';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'https://www.stocksimulator.tech';
+  const baseUrl = SITE_URL;
 
   // Every crawler - search engines, AI answer engines, and everything else -
   // gets the exact same full access to content pages. No bot is singled out

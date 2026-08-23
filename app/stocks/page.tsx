@@ -1,6 +1,7 @@
 import { getAllDseStocks } from '@/lib/dseStocks';
 import StockGrid from '@/components/stocks/StockGrid';
 import { Metadata } from 'next';
+import { absoluteUrl } from '@/lib/siteUrl';
 
 export const metadata: Metadata = {
   title: 'DSE Stock Directory | Dhaka Stock Exchange Ticker List',
@@ -8,11 +9,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'DSE Stock Directory | Dhaka Stock Exchange Ticker List',
     description: 'Explore the full list of Dhaka Stock Exchange (DSE) stocks. Research tickers, view market data, and practice trading risk-free on StockSimulatorBD.',
-    url: 'https://www.stocksimulator.tech/stocks',
+    url: absoluteUrl('/stocks'),
     siteName: 'StockSimulatorBD',
   },
   alternates: {
-    canonical: 'https://www.stocksimulator.tech/stocks',
+    canonical: absoluteUrl('/stocks'),
   },
 };
 

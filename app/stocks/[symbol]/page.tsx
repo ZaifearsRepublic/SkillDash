@@ -6,6 +6,7 @@ import { getAllDseStocks as fetchAllStocks, type DseStock } from '@/lib/dseStock
 import { classifyInstrument, getInstrumentProfile, pickFitting } from '@/lib/dseInstrumentTypes';
 import StockChart from '@/components/StockChart';
 import StockTradingSection from '@/components/StockTradingSection';
+import { SITE_URL } from '@/lib/siteUrl';
 
 const getAllDseStocks = cache(fetchAllStocks);
 
@@ -21,7 +22,7 @@ export const revalidate = 86400; // 24 hours
 // notFound() because the roster itself is the gate.
 export const dynamicParams = true;
 
-const BASE_URL = (process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'https://www.stocksimulator.tech').replace(/\/$/, '');
+const BASE_URL = SITE_URL;
 
 type RouteParams = {
   symbol: string;
@@ -223,7 +224,7 @@ export default async function StockDetailsPage({ params }: StockPageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-36 pb-8 sm:pt-40 sm:pb-12">
 
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="mb-5 text-sm">
