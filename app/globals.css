@@ -167,10 +167,7 @@ body, html {
     scroll-behavior: auto !important;
   }
   
-  .animate-bounce-slow,
-  .animate-bounce-medium,
-  .animate-bounce-fast,
-  .animate-optimized-bounce {
+  .animate-ambient-drift {
     animation: none !important;
     opacity: 0.3;
   }
@@ -201,7 +198,7 @@ body, html {
   }
 }
 
-@keyframes optimized-bounce {
+@keyframes ambient-drift {
   0%, 20%, 50%, 80%, 100% {
     transform: translateY(0) translateX(0);
   }
@@ -248,8 +245,8 @@ body, html {
   animation: fade-in-up 0.6s ease-out forwards;
 }
 
-.animate-optimized-bounce {
-  animation: optimized-bounce 4s ease-in-out infinite;
+.animate-ambient-drift {
+  animation: ambient-drift 4s ease-in-out infinite;
 }
 
 .animate-optimized-pulse {
@@ -263,9 +260,9 @@ body, html {
 }
 
 /* Staggered animation delays for performance */
-.animate-optimized-bounce:nth-child(2) { animation-duration: 3.5s; }
-.animate-optimized-bounce:nth-child(3) { animation-duration: 5s; }
-.animate-optimized-bounce:nth-child(4) { animation-duration: 4.5s; }
+.animate-ambient-drift:nth-child(2) { animation-duration: 3.5s; }
+.animate-ambient-drift:nth-child(3) { animation-duration: 5s; }
+.animate-ambient-drift:nth-child(4) { animation-duration: 4.5s; }
 
 /* ============================================
    IMPROVED CONTRAST BADGES
@@ -477,14 +474,14 @@ button:disabled {
    RESPONSIVE OPTIMIZATIONS
    ============================================ */
 @media (max-width: 768px) {
-  .animate-optimized-bounce {
+  .animate-ambient-drift {
     transform: scale(0.7);
     animation-duration: 150% !important;
   }
 }
 
 @media (max-width: 640px) {
-  .animate-optimized-bounce {
+  .animate-ambient-drift {
     opacity: 0.25;
   }
 }
@@ -517,7 +514,7 @@ button:disabled {
     transition: none !important;
   }
   
-  .animate-optimized-bounce,
+  .animate-ambient-drift,
   .backdrop-blur-xl {
     display: none !important;
   }
@@ -538,16 +535,6 @@ button:disabled {
   66% { transform: translate(-20px, 20px) scale(0.9); }
 }
 
-/* Add this to app/globals.css */
-@keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in-up {
-  animation: fade-in-up 0.6s ease-out forwards;
-}
-
 .animate-blob {
   animation: blob 7s infinite;
 }
@@ -558,4 +545,76 @@ button:disabled {
 
 .animation-delay-4000 {
   animation-delay: 4s;
+}
+/* ============================================
+   BROWSER SURFACES
+   The parts we did not draw still carry the design.
+   ============================================ */
+::selection {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  ::selection {
+    background-color: #3b82f6;
+    color: #090e17;
+  }
+}
+
+input,
+textarea {
+  caret-color: #2563eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  input,
+  textarea {
+    caret-color: #60a5fa;
+  }
+}
+
+a {
+  text-underline-offset: 0.2em;
+}
+
+/* ============================================
+   HERO ENTRANCE
+   One authored moment, exponential ease-out.
+   Uses fill-mode `both` so staggered delays do not flash.
+   ============================================ */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-rise {
+  animation: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Links get the same themed focus ring as buttons */
+a:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+  a:focus-visible {
+    outline-color: #60a5fa;
+  }
 }

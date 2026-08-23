@@ -249,7 +249,7 @@ export default function StockChart({ symbol }: { symbol: string }) {
   if (error) {
     return (
       <div className="flex h-64 sm:h-96 w-full items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-900">
-        <p className="text-red-500 font-medium">Error: {error}</p>
+        <p className="text-red-700 dark:text-red-400 font-medium">Error: {error}</p>
       </div>
     );
   }

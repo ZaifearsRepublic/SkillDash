@@ -145,3 +145,8 @@ vite.config.ts.timestamp-*
 
 __pycache__/
 *.py[cod]
+# Local agent tooling (vendored skills, hook state, editor launch config)
+.agents/
+.claude/
+.codex/
+.impeccable/

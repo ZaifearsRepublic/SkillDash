@@ -73,12 +73,12 @@ const Footer = memo(function Footer() {
                 Platform
               </h2>
 
-              <ul className="space-y-3 text-sm">
+              <ul className="space-y-1 text-sm">
                 {PLATFORM_LINKS.map((link) => (
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="font-medium text-gray-600 transition-colors duration-300 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                      className="inline-flex min-h-[44px] items-center font-medium text-gray-600 transition-colors duration-300 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
                     >
                       {link.label}
                     </Link>
@@ -92,7 +92,7 @@ const Footer = memo(function Footer() {
                 Connect
               </h2>
 
-              <ul className="space-y-3 text-sm">
+              <ul className="space-y-1 text-sm">
                 {SOCIAL_LINKS.map((link) => (
                   <li key={link.href}>
                     <a
@@ -100,7 +100,7 @@ const Footer = memo(function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={link.ariaLabel}
-                      className="inline-flex items-center gap-2 font-medium text-gray-600 transition-colors duration-300 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                      className="inline-flex min-h-[44px] items-center gap-2 font-medium text-gray-600 transition-colors duration-300 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
                     >
                       <span aria-hidden="true" className="text-gray-400 dark:text-gray-500">
                         {link.icon}
@@ -114,7 +114,7 @@ const Footer = memo(function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col gap-3 border-t border-gray-100 pt-6 text-center text-xs text-gray-500 dark:border-gray-800/60 dark:text-gray-500 sm:mt-14 sm:flex-row sm:items-center sm:justify-between sm:text-left">
+        <div className="mt-12 flex flex-col gap-3 border-t border-gray-100 pt-6 text-center text-xs text-gray-500 dark:border-gray-800/60 dark:text-gray-400 sm:mt-14 sm:flex-row sm:items-center sm:justify-between sm:text-left">
           <span>
             &copy; {currentYear} StockSimulatorBD. All rights reserved.
           </span>

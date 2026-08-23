@@ -17,8 +17,8 @@ export default function AboutUsPage() {
         {/* Ambient Glows */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-[300px] bg-blue-500/10 dark:bg-blue-600/20 blur-[100px] rounded-full"></div>
-          <div className="absolute top-40 left-10 w-64 h-64 bg-purple-500/10 dark:bg-purple-600/15 rounded-full blur-[100px] animate-optimized-bounce"></div>
-          <div className="absolute top-60 right-10 w-72 h-72 bg-emerald-500/5 dark:bg-emerald-600/10 rounded-full blur-[100px] animate-optimized-bounce" style={{animationDelay: '2s'}}></div>
+          <div className="absolute top-40 left-10 w-64 h-64 bg-purple-500/10 dark:bg-purple-600/15 rounded-full blur-[100px] animate-ambient-drift"></div>
+          <div className="absolute top-60 right-10 w-72 h-72 bg-emerald-500/5 dark:bg-emerald-600/10 rounded-full blur-[100px] animate-ambient-drift" style={{animationDelay: '2s'}}></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 animate-fade-in-up">

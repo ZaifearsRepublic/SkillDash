@@ -215,7 +215,7 @@ export default function TradeModal({
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-500 dark:text-gray-400">Commission (0.4%)</span>
-                  <span className="font-mono text-amber-600 dark:text-amber-400">{tradeType === 'buy' ? '+' : '-'}৳{tradeSummary.commission.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="font-mono text-amber-700 dark:text-amber-400">{tradeType === 'buy' ? '+' : '-'}৳{tradeSummary.commission.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between pt-1.5 border-t border-gray-200 dark:border-gray-700">
                   <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{tradeType === 'buy' ? 'Total Cost' : 'You Receive'}</span>

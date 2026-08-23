@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { OpenRemark } from '@/components/OpenRemark';
 import {
   ArrowLeft,
   ArrowRight,
@@ -545,6 +546,22 @@ export default async function BlogArticlePage({
             </section>
           )}
 
+          <section
+            aria-labelledby="comments-heading"
+            className="mt-16 border-t border-slate-200 pt-10 dark:border-slate-800"
+          >
+            <h2 id="comments-heading" className="text-2xl font-bold tracking-tight">
+              Comments
+            </h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+              Questions about this guide are welcome. Please do not share your BO account
+              number, broker credentials or any personal financial details here.
+            </p>
+            <div className="mt-6">
+              <OpenRemark />
+            </div>
+          </section>
+
           {sourceItems.length > 0 && (
             <section
               aria-labelledby="sources-heading"
@@ -683,7 +700,7 @@ export default async function BlogArticlePage({
             <h2 className="text-2xl font-bold">
               Practise before risking real money.
             </h2>
-            <p className="mt-3 max-w-2xl text-slate-300">
+            <p className="mt-3 max-w-2xl text-slate-300 dark:text-emerald-100/85">
               Use StockSimulatorBD to practise DSE-style trading concepts with
               virtual money, track a portfolio, and learn through simulation.
             </p>

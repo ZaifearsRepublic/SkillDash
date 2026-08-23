@@ -79,7 +79,7 @@ export default function TradeExecutionPanel({
       {/* ── Price & Holdings ── */}
       <div className="flex justify-between items-end mb-6 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
         <div>
-          <p className="text-sm text-slate-500 mb-1">Market Price</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Market Price</p>
           <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">৳{currentPrice.toFixed(2)}</p>
         </div>
         {isAuthenticated && (

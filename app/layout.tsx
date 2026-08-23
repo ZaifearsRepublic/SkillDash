@@ -40,7 +40,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: 'StockSimulatorBD: DSE Trading Simulator',
-  description: "Practice DSE stock trading risk-free — built for students and for new investors moving beyond Sanchayapatra and fixed deposits into the stock market. Real-time data, virtual currency, T+1 rules.",
+  description: "Free paper trading simulator for the Dhaka Stock Exchange. Practice DSE share trading with live prices, real market hours, T+1 rules and virtual money.",
   applicationName: 'StockSimulatorBD',
   keywords: [
     "DSE simulator", "paper trading Bangladesh", "Dhaka Stock Exchange simulator",
@@ -71,8 +71,8 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "StockSimulatorBD: DSE Trading Simulator — Practice Stock Trading Risk-Free",
-    description: "The only free paper trading simulator built for the Dhaka Stock Exchange. Trade 300+ DSE stocks with virtual currency, real-time market data, T+1 settlement rules, and 0.3% commission. For students learning the market and for new investors moving beyond Sanchayapatra and fixed deposits into stocks — practice first, risk nothing.",
+    title: "StockSimulatorBD: DSE Trading Simulator. Practice Stock Trading Risk-Free",
+    description: "The only free paper trading simulator built for the Dhaka Stock Exchange. Trade 300+ DSE stocks with virtual currency, real-time market data, T+1 settlement rules, and 0.4% commission. Built for students learning the market and for new investors moving beyond Sanchayapatra and fixed deposits into stocks. Practice first, risk nothing.",
     url: process.env.NEXT_PUBLIC_MAIN_DOMAIN || "https://www.stocksimulator.tech",
     siteName: "StockSimulatorBD",
     type: "website",
@@ -89,7 +89,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'StockSimulatorBD: DSE Trading Simulator',
-    description: 'Practice trading Dhaka Stock Exchange stocks risk-free with virtual currency. For students and for new investors moving from Sanchayapatra into the stock market — real market data, realistic trading rules.',
+    description: 'Practice trading Dhaka Stock Exchange stocks risk-free with virtual currency. For students and for new investors moving from Sanchayapatra into the stock market, with real market data and realistic trading rules.',
     images: [`${process.env.NEXT_PUBLIC_MAIN_DOMAIN || "https://www.stocksimulator.tech"}/og/og-image.png`],
     creator: '@StockSimulatorBD',
   },
@@ -131,7 +131,10 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest',
   metadataBase: new URL(process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'https://www.stocksimulator.tech'),
   alternates: {
-    canonical: process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'https://www.stocksimulator.tech',
+    // './' resolves against metadataBase per route, so every page self-canonicalises.
+    // An absolute URL here would make every child page declare the homepage as its
+    // canonical, which de-indexes /about-us, /coins, /blog, /trade and every post.
+    canonical: './',
   },
   verification: {
     google: 'NRcmZt1gkRaisYql52KCRUqEJCyGeTGyXsntWkqYFFk',
@@ -265,7 +268,7 @@ export default function RootLayout({
               "applicationCategory": "FinanceApplication",
               "operatingSystem": "Web",
               "browserRequirements": "Requires JavaScript",
-              "description": "The only free DSE paper trading simulator for the Dhaka Stock Exchange. Trade 300+ stocks with virtual currency, real-time market data, T+1 settlement rules, and 0.3% commission simulation.",
+              "description": "The only free DSE paper trading simulator for the Dhaka Stock Exchange. Trade 300+ stocks with virtual currency, real-time market data, T+1 settlement rules, and 0.4% commission simulation.",
               "offers": {
                 "@type": "Offer",
                 "price": "0",
@@ -284,7 +287,7 @@ export default function RootLayout({
               "featureList": [
                 "Real-time DSE market data",
                 "T+1 settlement simulation",
-                "0.3% commission simulation",
+                "0.4% commission simulation",
                 "Virtual portfolio tracking",
                 "300+ DSE stocks"
               ]
