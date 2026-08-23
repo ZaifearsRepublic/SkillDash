@@ -143,6 +143,13 @@ vite.config.ts.timestamp-*
 .vercel
 .env*
 
+# Android app signing credentials (PWABuilder/Play Store packages) — these
+# are the cryptographic identity of the Android app; never commit them, this
+# repo is public.
+*.keystore
+*.jks
+signing-key-info.txt
+
 __pycache__/
 *.py[cod]
 # Local agent tooling (vendored skills, hook state, editor launch config)
