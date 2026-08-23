@@ -306,12 +306,26 @@ export const handleRedirectResult = async () => {
 };
 
 // 🔒 Email signup: coins: 0 (requires verification for coins)
+//
+// The users/{uid} doc write happens FIRST, right after the Auth account
+// itself commits, with its own retry — not after updateProfile. Previously
+// updateProfile ran first, adding a whole extra network round-trip before
+// the doc write even started. createUserWithEmailAndPassword resolving is
+// what actually creates the Auth account (permanent from that instant); if
+// the tab closes or the connection drops before the LATER doc write
+// finishes, the account exists with no profile forever — the app's other
+// safety net (contexts/AuthContext.tsx's onAuthStateChanged fallback) only
+// gets a chance to backfill it if that person ever signs back in, and
+// several real accounts were found stuck exactly this way, having never
+// returned after their first (interrupted) session. Doing the doc write
+// immediately, with a retry, shrinks that window to as small as this
+// client can make it.
 export const signUpWithEmailPasswordAndProfile = async (profileData: SignUpProfileData, password: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, profileData.email, password);
     const user = userCredential.user;
-    await updateProfile(user, { displayName: profileData.name });
+
     const userDocRef = doc(db, 'users', user.uid);
-    await setDoc(userDocRef, {
+    const profileDoc = {
         name: profileData.name,
         age: profileData.age,
         status: profileData.status,
@@ -319,7 +333,19 @@ export const signUpWithEmailPasswordAndProfile = async (profileData: SignUpProfi
         email: profileData.email,
         provider: 'password',
         createdAt: new Date().toISOString()
-    });
+    };
+    try {
+        await setDoc(userDocRef, profileDoc);
+    } catch (err) {
+        // One retry for a transient blip (the common case on the mobile
+        // networks this app's users are on) — not a full backoff loop, since
+        // the goal is to survive a single dropped packet, not to keep
+        // retrying while the user has already navigated away.
+        console.warn('Profile doc write failed, retrying once:', err);
+        await setDoc(userDocRef, profileDoc);
+    }
+
+    await updateProfile(user, { displayName: profileData.name });
     await sendEmailVerification(user);
     return user;
 };

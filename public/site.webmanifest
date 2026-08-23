@@ -3,12 +3,42 @@
   "name": "StockSimulatorBD",
   "short_name": "StockSim",
   "description": "Practice trading Dhaka Stock Exchange stocks risk-free with virtual currency.",
+  "lang": "en",
+  "dir": "ltr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
   "orientation": "portrait",
   "theme_color": "#ffffff",
   "background_color": "#ffffff",
   "categories": ["finance", "education", "business"],
+  "shortcuts": [
+    {
+      "name": "Trade",
+      "short_name": "Trade",
+      "description": "Open the DSE trading terminal",
+      "url": "/trade",
+      "icons": [{ "src": "/web-app-manifest-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Stocks",
+      "short_name": "Stocks",
+      "description": "Browse the DSE stock directory",
+      "url": "/stocks",
+      "icons": [{ "src": "/web-app-manifest-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Coins",
+      "short_name": "Coins",
+      "description": "View balance and recharge",
+      "url": "/coins",
+      "icons": [{ "src": "/web-app-manifest-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
   "icons": [
     {
       "src": "/logo/android/launchericon-48x48.png",
@@ -67,14 +97,39 @@
   ],
   "screenshots": [
     {
-      "src": "/screenshots/desktop-dashboard.png",
+      "src": "/screenshots/Desktop.png",
       "sizes": "1920x1080",
-      "type": "image/png"
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "StockSimulatorBD homepage on desktop"
     },
     {
-      "src": "/screenshots/mobile-home.png",
+      "src": "/screenshots/1.png",
       "sizes": "1080x1920",
-      "type": "image/png"
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Homepage on mobile"
+    },
+    {
+      "src": "/screenshots/2.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Trading dashboard with live balance and buying power"
+    },
+    {
+      "src": "/screenshots/3.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "DSE stock directory"
+    },
+    {
+      "src": "/screenshots/4.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Coin balance and recharge"
     }
   ],
   "related_applications": [
