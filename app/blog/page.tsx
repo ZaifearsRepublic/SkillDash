@@ -134,29 +134,6 @@ export default async function BlogPage() {
 
       <section className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
         <div className="mx-auto max-w-7xl px-4 pb-12 pt-36 sm:px-6 sm:pt-40 lg:px-8 lg:pb-16 lg:pt-40">
-          <nav
-            aria-label="Breadcrumb"
-            className="mb-6 text-sm text-slate-500 dark:text-slate-400"
-          >
-            <ol className="flex items-center gap-2">
-              <li>
-                <Link
-                  href="/"
-                  className="inline-block py-2 transition hover:text-emerald-700 dark:hover:text-emerald-400"
-                >
-                  Home
-                </Link>
-              </li>
-              <li aria-hidden="true">/</li>
-              <li
-                aria-current="page"
-                className="font-medium text-slate-700 dark:text-slate-200"
-              >
-                Blog
-              </li>
-            </ol>
-          </nav>
-
           <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)] lg:gap-12">
             <div className="max-w-3xl">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
