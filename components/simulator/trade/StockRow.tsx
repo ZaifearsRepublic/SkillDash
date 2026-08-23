@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { getCompanyName } from '@/lib/dseCompanyNames';
 import type { Stock, PortfolioItem } from '@/hooks/useSimulator';
+import NotTradedInfo from './NotTradedInfo';
 
 const getCategoryColor = (category?: string) => {
   switch(category) {
@@ -26,9 +27,15 @@ export default function StockRow({ stock, portfolioItem, marketOpen, variant, on
   const isUp = stock.change >= 0;
   const companyName = getCompanyName(stock.symbol);
 
+  const isTraded = stock.traded !== false;
+
   if (variant === 'portfolio' && portfolioItem) {
     const avgCost = portfolioItem.averageBuyPrice;
-    const currentValue = stock.ltp * portfolioItem.quantity;
+    // Not traded today: fall back to last close for valuation so the
+    // position doesn't read as a 100% loss just because nobody traded it
+    // today. Buy/Sell stay gated on isTraded regardless of this fallback.
+    const valuationPrice = isTraded ? stock.ltp : (stock.ycp || stock.ltp);
+    const currentValue = valuationPrice * portfolioItem.quantity;
     const investedValue = avgCost * portfolioItem.quantity;
     const pnl = currentValue - investedValue;
     const pnlPercent = investedValue > 0 ? (pnl / investedValue) * 100 : 0;
@@ -49,7 +56,16 @@ export default function StockRow({ stock, portfolioItem, marketOpen, variant, on
         </td>
         <td className="px-5 py-3 text-right"><span className="font-mono font-semibold text-gray-900 dark:text-gray-100">{portfolioItem.quantity}</span></td>
         <td className="px-5 py-3 text-right"><span className="font-mono text-gray-700 dark:text-gray-300">৳{avgCost.toFixed(2)}</span></td>
-        <td className="px-5 py-3 text-right"><span className="font-mono font-medium text-gray-900 dark:text-gray-100">৳{stock.ltp.toFixed(2)}</span></td>
+        <td className="px-5 py-3 text-right">
+          {isTraded ? (
+            <span className="font-mono font-medium text-gray-900 dark:text-gray-100">৳{stock.ltp.toFixed(2)}</span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-400 dark:text-gray-500">
+              Not traded
+              <NotTradedInfo lastClose={stock.ycp} />
+            </span>
+          )}
+        </td>
         <td className="px-5 py-3 text-right">
           <div className={`inline-flex flex-col items-end ${isUp ? 'text-emerald-500' : 'text-rose-500'}`}>
             <span className="font-mono font-bold text-xs flex items-center gap-0.5">
@@ -67,8 +83,8 @@ export default function StockRow({ stock, portfolioItem, marketOpen, variant, on
         <td className="px-5 py-3 text-right">
           <div className="flex justify-end gap-1.5">
             <Link href={`/stocks/${stock.symbol}`} className="px-3 py-1.5 rounded text-xs font-semibold transition-all bg-blue-500/10 hover:bg-blue-500 text-blue-600 hover:text-white">Chart</Link>
-            <button onClick={() => onTrade(stock.symbol, 'buy')} disabled={!marketOpen} className={`px-3 py-1.5 rounded text-xs font-semibold transition-all ${marketOpen ? 'bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 hover:text-white cursor-pointer' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>Buy</button>
-            <button onClick={() => onTrade(stock.symbol, 'sell')} disabled={!marketOpen} className={`px-3 py-1.5 rounded text-xs font-semibold transition-all ${marketOpen ? 'bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-white cursor-pointer' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>Sell</button>
+            <button onClick={() => onTrade(stock.symbol, 'buy')} disabled={!marketOpen || !isTraded} className={`px-3 py-1.5 rounded text-xs font-semibold transition-all ${marketOpen && isTraded ? 'bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 hover:text-white cursor-pointer' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>Buy</button>
+            <button onClick={() => onTrade(stock.symbol, 'sell')} disabled={!marketOpen || !isTraded} className={`px-3 py-1.5 rounded text-xs font-semibold transition-all ${marketOpen && isTraded ? 'bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-white cursor-pointer' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>Sell</button>
           </div>
         </td>
       </tr>
@@ -83,7 +99,16 @@ export default function StockRow({ stock, portfolioItem, marketOpen, variant, on
           {companyName && <span className="text-[10px] text-gray-400 truncate max-w-[200px]" title={companyName}>{companyName}</span>}
         </div>
       </td>
-      <td className="px-6 py-4 text-right"><span className="font-mono font-medium text-gray-900 dark:text-gray-100">৳{stock.ltp.toFixed(2)}</span></td>
+      <td className="px-6 py-4 text-right">
+        {isTraded ? (
+          <span className="font-mono font-medium text-gray-900 dark:text-gray-100">৳{stock.ltp.toFixed(2)}</span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-400 dark:text-gray-500">
+            Not traded
+            <NotTradedInfo lastClose={stock.ycp} />
+          </span>
+        )}
+      </td>
       <td className="px-6 py-4 text-right">
         <div className={`inline-flex flex-col items-end ${isUp ? 'text-emerald-500' : 'text-rose-500'}`}>
           <span className="font-mono font-bold text-xs flex items-center gap-1">
@@ -101,8 +126,8 @@ export default function StockRow({ stock, portfolioItem, marketOpen, variant, on
       <td className="px-6 py-4 text-right">
         <div className="flex justify-end gap-2">
           <Link href={`/stocks/${stock.symbol}`} className="px-3 py-1.5 rounded text-xs font-semibold transition-all bg-blue-500/10 hover:bg-blue-500 text-blue-600 hover:text-white">Chart</Link>
-          <button onClick={() => onTrade(stock.symbol, 'buy')} disabled={!marketOpen} className={`px-3 py-1.5 rounded text-xs font-semibold transition-all ${marketOpen ? 'bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 hover:text-white cursor-pointer' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>Buy</button>
-          <button onClick={() => onTrade(stock.symbol, 'sell')} disabled={!marketOpen} className={`px-3 py-1.5 rounded text-xs font-semibold transition-all ${marketOpen ? 'bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-white cursor-pointer' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>Sell</button>
+          <button onClick={() => onTrade(stock.symbol, 'buy')} disabled={!marketOpen || !isTraded} className={`px-3 py-1.5 rounded text-xs font-semibold transition-all ${marketOpen && isTraded ? 'bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 hover:text-white cursor-pointer' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>Buy</button>
+          <button onClick={() => onTrade(stock.symbol, 'sell')} disabled={!marketOpen || !isTraded} className={`px-3 py-1.5 rounded text-xs font-semibold transition-all ${marketOpen && isTraded ? 'bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-white cursor-pointer' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>Sell</button>
         </div>
       </td>
     </tr>

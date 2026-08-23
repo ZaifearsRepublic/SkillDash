@@ -81,6 +81,7 @@ Phase 3.
 | Firebase Auth | Firebase console | Add the new domain to Authorized Domains **before** the switch or Google sign-in breaks |
 | Google Search Console | console | New property, see Phase 3 |
 | Contentful | webhook config | Any revalidate webhook pointing at the old domain |
+| IndexNow key file | `public/<key>.txt` | Must be re-hosted at the new domain. `keyLocation` and every submitted URL must share the same host, so the key file, or a newly generated one, has to exist at `stocksimulator.shahoriar.bd/<key>.txt` before any post-migration submission will succeed. See `lib/indexNow.ts`. |
 | Vercel env | `NEXT_PUBLIC_MAIN_DOMAIN`, `NEXT_PUBLIC_APP_URL` | The actual switch |
 
 ### The APK is the biggest non-web risk

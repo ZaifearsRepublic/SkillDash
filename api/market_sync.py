@@ -42,6 +42,19 @@ class DSEMarketParser(HTMLParser):
                         # Calculate change percent safely
                         changePercent = round((change / ycp) * 100, 2) if ycp > 0 else 0
 
+                        # A stock with zero matched trades today reads as LTP 0
+                        # on this page (verified against the live board: every
+                        # row with trade==0 also has ltp==0, and vice versa,
+                        # with no exceptions across the full ~400-symbol list).
+                        # YCP still carries the real last-known price in that
+                        # case, so it's kept as-is rather than zeroed, letting
+                        # consumers show "last close ৳X" instead of "৳0.00".
+                        # `traded` is the single signal every consumer should
+                        # gate on — trading, P&L math, and display all read
+                        # this rather than re-deriving "no price" from ltp
+                        # themselves.
+                        traded = trade > 0
+
                         self.stocks.append({
                             "symbol": symbol,
                             "ltp": ltp,
@@ -53,7 +66,8 @@ class DSEMarketParser(HTMLParser):
                             "changePercent": changePercent,
                             "trade": trade,
                             "value": value,
-                            "volume": volume
+                            "volume": volume,
+                            "traded": traded
                         })
                     except ValueError:
                         pass 

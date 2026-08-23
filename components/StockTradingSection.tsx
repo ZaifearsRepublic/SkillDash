@@ -24,6 +24,13 @@ export default function StockTradingSection({ symbol, fallbackPrice }: StockTrad
   // Extract the live polled price if available, otherwise use the server-side fallback price
   const liveStock = marketInfo?.stocks?.find(s => s.symbol.toUpperCase() === symbol.toUpperCase());
   const currentPrice = liveStock && liveStock.ltp > 0 ? liveStock.ltp : fallbackPrice;
+  // Before live data arrives, don't block on a signal we don't have yet;
+  // once we have it, a stock with zero trades today (ltp 0) has no live
+  // price and trading must be disabled — this mirrors the same gate used
+  // on the main trade page and the server-side check in
+  // app/api/simulator/trade/route.ts.
+  const isTraded = liveStock ? liveStock.traded !== false : true;
+  const lastClose = liveStock?.ycp;
 
   // Extract user holdings for this asset
   const portfolioItem = simulatorState.portfolio.find(p => p.symbol.toUpperCase() === symbol.toUpperCase());
@@ -34,6 +41,8 @@ export default function StockTradingSection({ symbol, fallbackPrice }: StockTrad
       <TradeExecutionPanel
         symbol={symbol}
         currentPrice={currentPrice}
+        isTraded={isTraded}
+        lastClose={lastClose}
         availableBalance={simulatorState.balance}
         currentHoldings={currentHoldings}
         isMarketOpen={isMarketOpen()}

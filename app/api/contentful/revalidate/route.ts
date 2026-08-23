@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { timingSafeEqual } from 'crypto';
 import { BLOG_CONTENT_TYPE } from '@/lib/contentful-blog';
+import { submitUrlToIndexNow } from '@/lib/indexNow';
+import { absoluteUrl } from '@/lib/siteUrl';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -94,5 +96,17 @@ export async function POST(req: NextRequest) {
   revalidatePath(`/blog/${slug}`);
   revalidatePath('/blog');
 
-  return NextResponse.json({ revalidated: true, slug });
+  // Best-effort: tell IndexNow-participating engines (Bing, Yandex, Seznam,
+  // Naver) the post changed. Never fails the webhook — Contentful only
+  // cares that this route returns 200, and a rejected/unreachable IndexNow
+  // call shouldn't make Contentful think the revalidate itself failed.
+  let indexNow: { ok: boolean; status: number } | null = null;
+  try {
+    const result = await submitUrlToIndexNow(absoluteUrl(`/blog/${slug}`));
+    indexNow = { ok: result.ok, status: result.status };
+  } catch {
+    indexNow = { ok: false, status: 0 };
+  }
+
+  return NextResponse.json({ revalidated: true, slug, indexNow });
 }

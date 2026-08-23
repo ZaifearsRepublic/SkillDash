@@ -122,10 +122,20 @@ export async function POST(req: NextRequest) {
     if (!marketSnap.exists) {
       return NextResponse.json({ success: false, error: 'Market data not available' }, { status: 503 });
     }
-    const stocks = (marketSnap.data()?.stocks || []) as Array<{ symbol: string; ltp: number }>;
+    const stocks = (marketSnap.data()?.stocks || []) as Array<{ symbol: string; ltp: number; traded?: boolean }>;
     const stock = stocks.find((s) => s.symbol === symbol);
-    if (!stock || typeof stock.ltp !== 'number' || !Number.isFinite(stock.ltp) || stock.ltp <= 0) {
-      return NextResponse.json({ success: false, error: 'Stock not found or invalid price' }, { status: 400 });
+    if (!stock) {
+      return NextResponse.json({ success: false, error: 'Stock not found' }, { status: 400 });
+    }
+    // A stock with zero matched trades today has no live price (ltp is 0 —
+    // see api/market_sync.py's `traded` field). Reject rather than let a
+    // trade execute against a non-price; this is the server-side backstop
+    // behind the client's own disabled Buy/Sell state.
+    if (typeof stock.ltp !== 'number' || !Number.isFinite(stock.ltp) || stock.ltp <= 0) {
+      return NextResponse.json(
+        { success: false, error: 'This stock has not traded today, so there is no live price to trade at.' },
+        { status: 400 }
+      );
     }
 
     const stateRef = db.doc(`artifacts/${appId}/users/${uid}/simulator/state`);

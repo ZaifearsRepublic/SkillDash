@@ -3,10 +3,15 @@
 import { useState } from 'react';
 import { Plus, Minus } from 'lucide-react';
 import Link from 'next/link';
+import NotTradedInfo from './trade/NotTradedInfo';
 
 interface TradeExecutionPanelProps {
   symbol: string;
   currentPrice: number;
+  /** False when the stock has had zero matched trades today — no live price to trade at. */
+  isTraded?: boolean;
+  /** Yesterday's closing price, shown when isTraded is false so the price line doesn't just read ৳0.00. */
+  lastClose?: number;
   availableBalance: number; 
   currentHoldings: number; 
   isMarketOpen: boolean;
@@ -17,6 +22,8 @@ interface TradeExecutionPanelProps {
 export default function TradeExecutionPanel({
   symbol,
   currentPrice,
+  isTraded = true,
+  lastClose,
   availableBalance,
   currentHoldings,
   isMarketOpen,
@@ -37,8 +44,8 @@ export default function TradeExecutionPanel({
   const totalSellRevenue = grossValue - commission;
 
   // Logic checks
-  const canBuy = qtyNum > 0 && totalBuyCost <= availableBalance;
-  const canSell = qtyNum > 0 && qtyNum <= currentHoldings;
+  const canBuy = qtyNum > 0 && isTraded && totalBuyCost <= availableBalance;
+  const canSell = qtyNum > 0 && isTraded && qtyNum <= currentHoldings;
   const isInputDisabled = submittingType !== null || !isMarketOpen || !isAuthenticated;
 
   const handleTrade = async (type: 'BUY' | 'SELL') => {
@@ -80,7 +87,14 @@ export default function TradeExecutionPanel({
       <div className="flex justify-between items-end mb-6 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
         <div>
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Market Price</p>
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">৳{currentPrice.toFixed(2)}</p>
+          {isTraded ? (
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">৳{currentPrice.toFixed(2)}</p>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <p className="text-lg font-bold text-slate-400 dark:text-slate-500">Not traded today</p>
+              <NotTradedInfo lastClose={lastClose} />
+            </div>
+          )}
         </div>
         {isAuthenticated && (
           <div className="text-right">
@@ -96,6 +110,13 @@ export default function TradeExecutionPanel({
           <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">
             You must log in to trade stocks
           </p>
+        </div>
+      ) : !isTraded ? (
+        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg flex items-center justify-center gap-1.5">
+          <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+            This stock hasn&apos;t traded today
+          </p>
+          <NotTradedInfo lastClose={lastClose} />
         </div>
       ) : !isMarketOpen ? (
         <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg flex items-center justify-center">

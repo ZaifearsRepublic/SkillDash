@@ -1,6 +1,7 @@
 import React, { useMemo, useDeferredValue } from 'react';
 import { X, Minus, Plus, RefreshCw, AlertCircle, ArrowUpRight } from 'lucide-react';
 import type { MarketInfo, SimulatorState } from '@/hooks/useSimulator';
+import NotTradedInfo from './NotTradedInfo';
 
 interface Props {
   selectedStock: string;
@@ -33,6 +34,8 @@ export default function TradeModal({
   const tradeSummary = useMemo(() => {
     const qty = typeof deferredTradeQuantity === 'number' && deferredTradeQuantity > 0 ? deferredTradeQuantity : 0;
     const selectedStockData = selectedStock ? stockBySymbol.get(selectedStock) : undefined;
+    const isTraded = selectedStockData ? selectedStockData.traded !== false : true;
+    const lastClose = selectedStockData?.ycp;
     const stockPrice = selectedStockData?.ltp || 0;
     const subtotal = stockPrice * qty;
     const commission = Math.round(subtotal * COMMISSION_RATE * 100) / 100;
@@ -60,8 +63,8 @@ export default function TradeModal({
     const canSellQty = qty <= sellableQty;
 
     return {
-      qty, stockPrice, subtotal, commission, total, availableBalance, canAfford, holdingQty, sellableQty, canSellQty, shortage, hasT1Restriction, notEnoughOwned,
-      isDisabled: transactionStatus === 'processing' || !marketOpen || qty <= 0 || (tradeType === 'buy' && !canAfford) || (tradeType === 'sell' && !canSellQty),
+      qty, stockPrice, subtotal, commission, total, availableBalance, canAfford, holdingQty, sellableQty, canSellQty, shortage, hasT1Restriction, notEnoughOwned, isTraded, lastClose,
+      isDisabled: transactionStatus === 'processing' || !marketOpen || !isTraded || qty <= 0 || (tradeType === 'buy' && !canAfford) || (tradeType === 'sell' && !canSellQty),
     };
   }, [deferredTradeQuantity, selectedStock, stockBySymbol, tradeType, simulatorState.balance, portfolioBySymbol, transactionStatus, marketOpen]);
 
@@ -174,6 +177,16 @@ export default function TradeModal({
                 <button type="button" onClick={() => setTradeType('sell')} className={`py-2 text-sm font-bold rounded-md transition-all ${tradeType === 'sell' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>Sell</button>
               </div>
 
+              {!tradeSummary.isTraded && (
+                <div className="px-2.5 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300 flex-1">
+                    This stock hasn&apos;t traded today, so trading is disabled.
+                  </p>
+                  <NotTradedInfo lastClose={tradeSummary.lastClose} />
+                </div>
+              )}
+
               {tradeType === 'sell' && tradeSummary.hasT1Restriction && (
                 <div className="px-2.5 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg flex items-center gap-1.5">
                   <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
@@ -210,7 +223,9 @@ export default function TradeModal({
 
               <div className="space-y-1.5 pt-2 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-500 dark:text-gray-400">৳{tradeSummary.stockPrice.toFixed(2)} × {tradeSummary.qty}</span>
+                  <span className="text-gray-500 dark:text-gray-400">
+                    {tradeSummary.isTraded ? `৳${tradeSummary.stockPrice.toFixed(2)} × ${tradeSummary.qty}` : 'Not traded today'}
+                  </span>
                   <span className="font-mono text-gray-900 dark:text-white">৳{tradeSummary.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between text-xs">

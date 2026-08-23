@@ -28,6 +28,16 @@ export interface Stock {
   change: number;
   changePercent: number;
   category?: string;
+  /**
+   * False when the stock has had zero matched trades today (see
+   * api/market_sync.py). ltp is 0 in that case — it is not a real price, so
+   * every consumer must gate on `traded`, not on `ltp > 0`, before treating
+   * the price as tradeable or using it for valuation math.
+   */
+  traded?: boolean;
+  /** Yesterday's closing price. Stays populated even when traded is false,
+   * so UI can show "last close ৳X" instead of a misleading ৳0.00. */
+  ycp?: number;
 }
 
 export interface PortfolioItem {
