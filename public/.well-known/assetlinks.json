@@ -3,9 +3,9 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "tech.stocksimulator.bd",
+      "package_name": "tech.stocksimulator.zaifears",
       "sha256_cert_fingerprints": [
-        "75:0C:26:7F:1A:EA:4D:9F:51:36:2A:BF:04:18:22:59:0F:7B:CA:DF:D5:12:3B:9F:5B:E1:F3:83:9F:14:C3:30"
+        "CE:0B:94:DC:64:5B:FE:09:16:1B:B4:B4:2D:D9:DE:4F:77:12:2E:FB:12:29:33:B1:02:A0:AE:A5:FD:BF:F8:D3"
       ]
     }
   }

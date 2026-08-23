@@ -135,8 +135,8 @@
   "related_applications": [
     {
       "platform": "play",
-      "url": "https://www.stocksimulator.tech/stocksimulator_bd.apk",
-      "id": "tech.stocksimulator.bd"
+      "url": "https://github.com/zaifears/StockSimulatorBD/releases/download/APK_v2.0/StockSimulatorBD.apk",
+      "id": "tech.stocksimulator.zaifears"
     }
   ],
   "prefer_related_applications": true
