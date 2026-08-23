@@ -95,6 +95,11 @@ export async function POST(req: NextRequest) {
 
   revalidatePath(`/blog/${slug}`);
   revalidatePath('/blog');
+  // app/sitemap.ts fetches posts live and isn't baked in at build time, but it
+  // still carries its own `revalidate = 3600` ISR cache — without this, a
+  // newly published post wouldn't appear in /sitemap.xml for up to an hour
+  // after publish, even though the post's own page and /blog update instantly.
+  revalidatePath('/sitemap.xml');
 
   // Best-effort: tell IndexNow-participating engines (Bing, Yandex, Seznam,
   // Naver) the post changed. Never fails the webhook — Contentful only
