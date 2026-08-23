@@ -9,7 +9,7 @@
   <br/>
 
   <a href="https://www.stocksimulator.tech/trade"><img src="https://img.shields.io/badge/🚀_Live_Demo-stocksimulatorbd-8b5cf6?style=for-the-badge" alt="Live Demo"/></a>
-  <a href="https://www.stocksimulator.tech/stocksimulator_bd.apk"><img src="https://img.shields.io/badge/📱_Download-APK-34D399?style=for-the-badge" alt="Download APK"/></a>
+  <a href="https://github.com/zaifears/StockSimulatorBD/releases/latest/download/StockSimulatorBD.apk"><img src="https://img.shields.io/badge/📱_Download-APK-34D399?style=for-the-badge" alt="Download APK"/></a>
 
   <br/><br/>
 
@@ -39,11 +39,11 @@ StockSimulatorBD is a **risk-free paper-trading simulator** for the Dhaka Stock 
 
 ## 📱 Download the App
 
-> The web app is a full PWA. A TWA-wrapped Android APK is also published directly from `/public` for a native-feeling install.
+> The web app is a full PWA. A TWA-wrapped Android APK is also published as a [GitHub Release](https://github.com/zaifears/StockSimulatorBD/releases) for a native-feeling install — search this repo's Releases page, or use the badge below, to get it.
 
 <div align="center">
   <br/>
-  <a href="https://www.stocksimulator.tech/stocksimulator_bd.apk">
+  <a href="https://github.com/zaifears/StockSimulatorBD/releases/latest/download/StockSimulatorBD.apk">
     <img src="https://img.shields.io/badge/📥_Download_StockSimulatorBD-APK-8b5cf6?style=for-the-badge&logoColor=white" alt="Download APK" />
   </a>
   <br/><br/>
@@ -52,7 +52,8 @@ StockSimulatorBD is a **risk-free paper-trading simulator** for the Dhaka Stock 
 | | |
 |---|---|
 | **Requirements** | Android 8.0+ |
-| **Notes** | The APK is a static file served from `/public/stocksimulator_bd.apk` — not built by this repo's own build pipeline. |
+| **Package** | `tech.stocksimulator.zaifears` |
+| **Notes** | Not built by this repo's own build pipeline — packaged via [PWABuilder](https://www.pwabuilder.com/) as a Trusted Web Activity and distributed through this repo's [Releases](https://github.com/zaifears/StockSimulatorBD/releases). The badge link above always resolves to the newest release. |
 
 <br/>
 

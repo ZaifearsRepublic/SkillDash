@@ -75,7 +75,7 @@ Phase 3.
 | LLM site guide | `public/llms.txt` | Canonical domain + every example URL |
 | LLM full context | `public/llms-full.txt` | Canonical domain + every example URL + citation examples |
 | PWA manifest | `public/site.webmanifest` | Check `id`, `start_url`, `screenshots` |
-| Android APK | `public/stocksimulator_bd.apk` | **Hardcoded to the old origin. Must be rebuilt.** See below. |
+| Android APK | [GitHub Release](https://github.com/zaifears/StockSimulatorBD/releases) (`tech.stocksimulator.zaifears`) | **Hardcoded to the old origin. Must be rebuilt.** See below. |
 | Transactional email sender | `RESEND_FROM_EMAIL` env var, fallback in `app/api/coins/send-recharge-email/route.ts` | Currently `noreply@stocksimulator.tech`. That mailbox dies with the domain. Verify a new sending domain in Resend first. |
 | README badges | `README.md` | Live demo and APK download links |
 | Firebase Auth | Firebase console | Add the new domain to Authorized Domains **before** the switch or Google sign-in breaks |
@@ -86,15 +86,19 @@ Phase 3.
 
 ### The APK is the biggest non-web risk
 
-`public/stocksimulator_bd.apk` is a TWA wrapping a specific origin. When
-`stocksimulator.tech` stops resolving, **every installed copy breaks** and shows
-an error or whatever the new domain owner serves. The manifest declares package
-id `tech.stocksimulator.bd`.
+The Android APK (package id `tech.stocksimulator.zaifears`, distributed via
+[GitHub Releases](https://github.com/zaifears/StockSimulatorBD/releases)) is a
+TWA wrapping a specific origin. When `stocksimulator.tech` stops resolving,
+**every installed copy breaks** and shows an error or whatever the new domain
+owner serves.
 
-The APK must be rebuilt against the new origin with new Digital Asset Links, and
-because it is distributed as a direct download rather than through Play, existing
-installs will not auto-update. Plan an in-app notice for app users well before
-the switch.
+The APK must be rebuilt against the new origin with new Digital Asset Links
+(`public/.well-known/assetlinks.json`), and because it is distributed as a
+direct download rather than through Play, existing installs will not
+auto-update. Plan an in-app notice for app users well before the switch. The
+signing keystore for this package lives outside this repo — whoever holds it
+is the only one who can publish a rebuilt version that Android will accept as
+a legitimate update.
 
 ---
 

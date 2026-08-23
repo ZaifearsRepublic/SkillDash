@@ -97,7 +97,7 @@ This exists because of a real incident: `firestore.rules` used to allow direct c
 
 - `@google/generative-ai`, `groq-sdk`, `@perplexity-ai/perplexity_ai`, `@ai-sdk/perplexity` are installed dependencies **not imported anywhere in the app**. No AI-analysis feature currently exists despite `coinManagerServer.ts` having an `'ai_analysis'`-flavored gating concept in its history.
 - `firestore.rules` has a `short_links/{code}` collection with rules, but there's no app route or component that reads/writes it — the URL-shortener feature referenced in old docs isn't actually implemented.
-- No Capacitor dependency exists despite the Android APK — the APK at `public/stocksimulator_bd.apk` is a static file (likely a TWA build via external tooling), not something this repo's build produces.
+- No Capacitor dependency exists despite the Android APK — it's a Trusted Web Activity built externally via [PWABuilder](https://www.pwabuilder.com/), not something this repo's build produces. Distributed as a GitHub Release asset (not `/public` — see README's Download section), package id `tech.stocksimulator.zaifears`. The signing keystore lives outside this repo entirely (gitignored, never committed) — whoever owns it is the only one who can publish an update under this exact package id.
 - `app/debug` and `app/api/debug-info` were removed (dead, non-functional, unlinked) in a prior cleanup — don't recreate a `/debug` route without gating it behind real admin auth on both the page and the API.
 
 ## Verifying changes without a full build
