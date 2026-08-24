@@ -26,13 +26,30 @@
     --bg-primary: #000000;  /* ✅ Pure black */
     --bg-secondary: #1a1a1a;
     --navbar-height: 64px; /* 4rem to match h-16 */
-  .pb-safe {
+  }
+}
+
+/* Safe-area helpers. These were previously nested inside the :root block of
+   the dark-mode media query above, which meant they resolved (via CSS
+   nesting) to `:root .pb-safe` in dark mode only — so the mobile bottom tab
+   bar got no safe-area padding at all in light mode and sat under the iOS
+   home indicator. They belong at the top level, theme-independent. */
+.pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
 .pt-safe {
   padding-top: env(safe-area-inset-top);
 }
-  }
+
+/* Horizontal figure rails in the app shell (components/app/MarketStrip.tsx)
+   scroll rather than truncate, but a visible scrollbar inside a 36px-tall
+   status bar reads as a rendering fault. Hide the bar, keep the scrolling. */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
 
 /* Optimized HTML and Body */

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import NavbarWrapper from '../components/NavbarWrapper'
+import SiteMain from '../components/SiteMain'
 import { AuthProvider } from '../contexts/AuthContext'
 import EmailVerificationBanner from '../components/auth/EmailVerificationBanner'
 import SparkEffectInitializer from '@/components/SparkEffectInitializer'
@@ -361,7 +362,7 @@ export default function RootLayout({
           
           <div className="relative min-h-screen">
             <NavbarWrapper />
-            <main role="main" className="lg:pb-0 pb-16">{children}</main>
+            <SiteMain>{children}</SiteMain>
           </div>
         </AuthProvider>
         

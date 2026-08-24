@@ -37,6 +37,22 @@ export interface Stock {
   /** Yesterday's closing price. Stays populated even when traded is false,
    * so UI can show "last close ৳X" instead of a misleading ৳0.00. */
   ycp?: number;
+  // ── Fields below are all written by api/market_sync.py and stored verbatim
+  // by app/api/stock-sync/route.ts, but went undeclared here for a long time,
+  // so every component silently lost them. They are what a broker-style quote
+  // panel needs; do not drop them from this interface again.
+  /** Session high. 0 when the stock never traded today. */
+  high?: number;
+  /** Session low. 0 when the stock never traded today. */
+  low?: number;
+  /** Today's closing price as published by DSE. */
+  close?: number;
+  /** Number of matched trades today. `traded` is derived from this > 0. */
+  trade?: number;
+  /** Turnover in BDT ("TK" on DSE boards). */
+  value?: number;
+  /** Shares traded today. */
+  volume?: number;
 }
 
 export interface PortfolioItem {

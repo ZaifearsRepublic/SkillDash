@@ -1,0 +1,170 @@
+'use client';
+
+// components/app/MarketStrip.tsx
+// The always-on status bar of the app shell, modelled on the top strip every
+// BD broker terminal carries: account figures on the left, market state on
+// the right, live at all times regardless of which screen you're on.
+//
+// Deliberately absent: a DSEX/DS30 index value. Those are NOT in the data we
+// scrape (api/market_sync.py pulls the per-symbol board only), and printing a
+// number we derived ourselves next to real prices would read as the official
+// index. Market breadth (advancing vs declining) is shown instead — it comes
+// straight from the same board data and is honestly ours to compute.
+import React, { useMemo } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Search, Coins } from 'lucide-react';
+import { useSharedSimulator } from '@/contexts/SimulatorContext';
+import { getPortfolioTotals, getMarketBreadth } from '@/lib/utils/portfolio';
+
+const fmtMoney = (n: number, dp = 2) =>
+  n.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
+
+const fmtCompact = (n: number) => {
+  if (n >= 10_000_000) return `${(n / 10_000_000).toFixed(2)} cr`;
+  if (n >= 100_000) return `${(n / 100_000).toFixed(2)} lac`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return n.toFixed(0);
+};
+
+const mmss = (seconds: number) => {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+};
+
+interface Props {
+  /** Focuses the market board's search field when the shell is on a screen
+   * that has one; otherwise the icon routes to the board. */
+  onSearchClick?: () => void;
+}
+
+export default function MarketStrip({ onSearchClick }: Props) {
+  const { marketInfo, simulatorState, isMarketOpen, nextUpdateIn } = useSharedSimulator();
+  const marketOpen = isMarketOpen();
+
+  const totals = useMemo(
+    () => getPortfolioTotals(simulatorState.portfolio, marketInfo?.stocks || []),
+    [simulatorState.portfolio, marketInfo?.stocks]
+  );
+
+  const breadth = useMemo(() => getMarketBreadth(marketInfo?.stocks || []), [marketInfo?.stocks]);
+
+  const unrealised = totals.unrealisedPnl;
+  const dayPnl = totals.dayPnl;
+
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 pt-safe bg-white/95 dark:bg-[#0B0E11]/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
+      {/* Row 1 — identity, market state, utilities */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-2 h-12">
+          <Link href="/" className="flex items-center gap-1.5 shrink-0" aria-label="StockSimulatorBD home">
+            <Image src="/favicon.svg" alt="" width={24} height={24} className="h-6 w-6" priority />
+            <span className="hidden sm:inline text-sm font-bold tracking-tight text-gray-900 dark:text-white">
+              StockSimulator<span className="text-blue-600 dark:text-blue-400">BD</span>
+            </span>
+          </Link>
+
+          {/* Market state — the single most important thing on this bar */}
+          <div
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold tabular-nums shrink-0 ${
+              marketOpen
+                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                : 'bg-gray-500/10 text-gray-600 dark:text-gray-400'
+            }`}
+            title={marketOpen ? 'Market open — 10:00 to 14:15 Dhaka time' : 'Market closed'}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                marketOpen ? 'bg-emerald-500 motion-safe:animate-pulse' : 'bg-gray-400'
+              }`}
+              aria-hidden="true"
+            />
+            {marketOpen ? 'OPEN' : 'CLOSED'}
+            {marketOpen && <span className="font-mono opacity-70">{mmss(nextUpdateIn)}</span>}
+          </div>
+
+          <div className="flex-1" />
+
+          {/* Board breadth — real, derived from the symbols we actually have */}
+          <div
+            className="flex items-center gap-1.5 text-xs font-mono font-bold shrink-0"
+            title={`${breadth.advancing} advancing, ${breadth.declining} declining, ${breadth.unchanged} unchanged, ${breadth.notTraded} not traded`}
+          >
+            <span className="text-emerald-600 dark:text-emerald-400">▲{breadth.advancing}</span>
+            <span className="text-rose-600 dark:text-rose-400">▼{breadth.declining}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={onSearchClick}
+            aria-label="Search stocks"
+            className="p-2 -mr-1 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-all shrink-0"
+          >
+            <Search className="w-[18px] h-[18px]" />
+          </button>
+
+          <Link
+            href="/coins"
+            aria-label="Add trading credit"
+            className="p-2 rounded-lg text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 active:scale-95 transition-all shrink-0"
+          >
+            <Coins className="w-[18px] h-[18px]" />
+          </Link>
+        </div>
+      </div>
+
+      {/* Row 2 — live account figures. Scrolls horizontally on narrow phones
+          rather than truncating any number, since a half-shown balance is
+          worse than one the user has to nudge into view. */}
+      <div className="border-t border-gray-100 dark:border-gray-800/60 bg-gray-50/80 dark:bg-black/20">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <dl className="flex items-center gap-4 sm:gap-6 h-9 overflow-x-auto scrollbar-none">
+            <Figure label="Cash" value={`৳${fmtMoney(simulatorState.balance, 0)}`} />
+            <Figure
+              label="UnRe Gain"
+              value={`${unrealised >= 0 ? '+' : '−'}৳${fmtMoney(Math.abs(unrealised))}`}
+              tone={unrealised > 0 ? 'up' : unrealised < 0 ? 'down' : 'flat'}
+            />
+            <Figure
+              label="Day P&L"
+              value={`${dayPnl >= 0 ? '+' : '−'}৳${fmtMoney(Math.abs(dayPnl))}`}
+              tone={dayPnl > 0 ? 'up' : dayPnl < 0 ? 'down' : 'flat'}
+            />
+            <Figure label="Holdings" value={String(simulatorState.portfolio.length)} />
+            <Figure
+              label="Turnover"
+              value={`৳${fmtCompact((marketInfo?.stocks || []).reduce((s, x) => s + (x.value || 0), 0))}`}
+            />
+          </dl>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function Figure({
+  label,
+  value,
+  tone = 'neutral',
+}: {
+  label: string;
+  value: string;
+  tone?: 'up' | 'down' | 'flat' | 'neutral';
+}) {
+  const toneClass =
+    tone === 'up'
+      ? 'text-emerald-600 dark:text-emerald-400'
+      : tone === 'down'
+        ? 'text-rose-600 dark:text-rose-400'
+        : 'text-gray-900 dark:text-gray-100';
+
+  return (
+    <div className="flex items-baseline gap-1.5 shrink-0">
+      <dt className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+        {label}
+      </dt>
+      <dd className={`text-xs font-mono font-bold tabular-nums ${toneClass}`}>{value}</dd>
+    </div>
+  );
+}

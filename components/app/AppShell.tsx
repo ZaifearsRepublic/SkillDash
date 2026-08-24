@@ -1,0 +1,167 @@
+'use client';
+
+// components/app/AppShell.tsx
+// The chrome every authenticated trading surface renders inside: one shared
+// simulator subscription, the persistent market strip, the bottom tab bar on
+// phones and an equivalent rail on desktop.
+//
+// Marketing pages (/, /blog, /about-us, /policy) deliberately do NOT use this
+// — they keep the standard site navbar and their SEO layout. The shell is for
+// screens where the user is trading, not reading.
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  ReactNode,
+} from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { ArrowLeftRight } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { SimulatorProvider } from '@/contexts/SimulatorContext';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import MarketStrip from './MarketStrip';
+import AppTabBar, { APP_TABS } from './AppTabBar';
+
+/**
+ * Lets whichever screen owns a search field claim the strip's search button.
+ * Screens without one fall through to navigating to the market board.
+ */
+const SearchFocusContext = createContext<{
+  register: (fn: (() => void) | null) => void;
+} | null>(null);
+
+/** Call from a screen with a search input to make the strip's magnifier focus it. */
+export function useRegisterSearchFocus(fn: () => void) {
+  const ctx = useContext(SearchFocusContext);
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
+
+  useEffect(() => {
+    if (!ctx) return;
+    const stable = () => fnRef.current();
+    ctx.register(stable);
+    return () => ctx.register(null);
+  }, [ctx]);
+}
+
+interface Props {
+  children: ReactNode;
+  /** Where to send the user back after signing in. */
+  redirectPath: string;
+  redirectMessage?: string;
+}
+
+export default function AppShell({ children, redirectPath, redirectMessage }: Props) {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user && !isRedirecting) {
+      setIsRedirecting(true);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('redirectAfterLogin', redirectPath);
+        sessionStorage.setItem(
+          'redirectMessage',
+          redirectMessage || 'Please sign in to access the trading simulator'
+        );
+      }
+      router.push('/auth');
+    }
+  }, [user, authLoading, router, isRedirecting, redirectPath, redirectMessage]);
+
+  if (authLoading || isRedirecting || !user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-white dark:bg-[#0B0E11]">
+        <LoadingSpinner />
+        <p className="text-gray-500 dark:text-gray-400 text-sm">
+          {authLoading || isRedirecting ? 'Checking authorization…' : 'Loading…'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <SimulatorProvider>
+      <ShellChrome>{children}</ShellChrome>
+    </SimulatorProvider>
+  );
+}
+
+function ShellChrome({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname() || '';
+  const searchFocusRef = useRef<(() => void) | null>(null);
+
+  const register = useCallback((fn: (() => void) | null) => {
+    searchFocusRef.current = fn;
+  }, []);
+
+  const handleSearchClick = useCallback(() => {
+    if (searchFocusRef.current) {
+      searchFocusRef.current();
+    } else {
+      router.push('/trade');
+    }
+  }, [router]);
+
+  return (
+    <SearchFocusContext.Provider value={{ register }}>
+      <div className="min-h-screen bg-gray-50 dark:bg-[#090E17] text-gray-900 dark:text-gray-100">
+        <MarketStrip onSearchClick={handleSearchClick} />
+
+        {/* Desktop navigation rail — the tab bar's counterpart above lg */}
+        <nav
+          aria-label="Primary"
+          className="hidden lg:block fixed top-[84px] left-0 right-0 z-40 bg-white/95 dark:bg-[#0B0E11]/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800"
+        >
+          <div className="max-w-7xl mx-auto px-8">
+            <div className="flex items-center gap-1 h-11">
+              {APP_TABS.map((tab) => {
+                const Icon = tab.icon;
+                const active = tab.match(pathname);
+                return (
+                  <Link
+                    key={tab.href}
+                    href={tab.href}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex items-center gap-2 px-4 h-full text-sm font-bold border-b-2 transition-colors ${
+                      active
+                        ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {tab.name}
+                  </Link>
+                );
+              })}
+              <Link
+                href="/trade/order"
+                className={`ml-auto flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold text-white transition-colors active:scale-95 ${
+                  pathname.startsWith('/trade/order')
+                    ? 'bg-blue-700'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                <ArrowLeftRight className="w-4 h-4" strokeWidth={2.5} />
+                Place order
+              </Link>
+            </div>
+          </div>
+        </nav>
+
+        {/* Top padding clears the two-row strip (84px), plus the desktop rail
+            above lg. Bottom padding clears the tab bar and its safe area. */}
+        <main className="pt-[84px] lg:pt-[128px] pb-[72px] lg:pb-8">{children}</main>
+
+        <AppTabBar />
+      </div>
+    </SearchFocusContext.Provider>
+  );
+}
