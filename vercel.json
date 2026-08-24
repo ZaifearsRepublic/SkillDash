@@ -5,6 +5,9 @@
     },
     "api/market_sync.py": {
       "maxDuration": 60
+    },
+    "api/category_sync.py": {
+      "maxDuration": 60
     }
   },
   "headers": [

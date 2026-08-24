@@ -29,6 +29,7 @@ app/
 api/                            Vercel PYTHON serverless functions (NOT under app/api) —
   dse_chart.py                  scrapes dsebd.org day-end archive for chart candles
   market_sync.py                live price sync
+  category_sync.py              DSE market-category (A/B/G/N/Z) sync — see note below
   run_market.py, run_chart.py   related sync entry points
 components/
   admin/                        SiteAnalyticsSection.tsx, UserExportList.tsx, RechargeList.tsx
@@ -87,6 +88,14 @@ This exists because of a real incident: `firestore.rules` used to allow direct c
 - `main` is the real branch; `preview` exists for `preview.stocksimulator.tech` but has drifted behind `main` before (missed several security-relevant commits) — check `git log main..preview` / `preview..main` before assuming preview reflects current code.
 - Vercel auto-deploys on push. **`firestore.rules` does not** — changes need a manual `firebase deploy --only firestore:rules` from someone with the Firebase CLI logged in; this repo's Claude Code sessions haven't had `firebase` CLI available.
 - `preview.stocksimulator.tech` previously had Vercel Deployment Protection (SSO gate) enabled, which silently 302'd every API call including chart data — if "X doesn't work on preview but works on prod" comes up again, check that setting first before assuming a code bug.
+
+## Stock market category (A/B/G/N/Z)
+
+- `stock.category` (rendered as badges throughout the UI — `GP[A]`, holding rows, the Portfolio diversification breakdown) comes from `artifacts/{appId}/public/data/market_info/categories`, merged onto each stock client-side in `hooks/useSimulator.ts` (`categoryMap[stock.symbol] || stock.category`).
+- **This Firestore doc had no writer for a long time.** `api/market_sync.py` never scraped a category field, and nothing else wrote to that path (`firestore.rules` denies the client write, same as `market_info/latest`) — every category badge in the app rendered nothing until `api/category_sync.py` + `app/api/category-sync/route.ts` were added (2026-08-24) to fix it.
+- Source: `https://www.dsebd.org/latest_share_price_scroll_group.php?group={A,B,G,N,Z}` — DSE's own category board, one request per category. Its HTML is malformed (a single `<tbody>` opener followed by a stray `</tbody>` after nearly every row, never reopened), so `category_sync.py`'s parser deliberately does **not** track `<tbody>` boundaries — it scopes itself to the one `<table class="...shares-table...">` via `<table>`/`</table>` only, which round-trip correctly.
+- Verified against the live site: ~395 symbols total across all five categories, zero symbols in more than one category. G and N were both empty (0 symbols) on the verification date — that's a legitimate DSE state (few/no newly-listed or "G"-category names at the time), not a scrape failure.
+- `app/api/category-sync/route.ts` mirrors `app/api/stock-sync/route.ts`'s exact `CRON_SECRET` auth pattern, so it's a drop-in addition to whatever external scheduler already calls `/api/stock-sync` — just point one more entry at `/api/category-sync`, same secret. Unlike price sync's 3-minute cadence, category is a slow-moving administrative fact; once daily is more than enough, and hitting DSE's category board every few minutes would be pointless load on their server.
 
 ## Money/date formatting
 
