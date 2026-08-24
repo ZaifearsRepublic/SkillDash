@@ -61,6 +61,29 @@ export function getDayChange(stock: Stock | undefined): number {
   return stock.change || 0;
 }
 
+/**
+ * A holding's contribution to today's P&L. `stock.change` is LTP minus
+ * YESTERDAY's close — correct for shares that were already held at
+ * yesterday's close, but wrong for shares bought TODAY, whose real
+ * "since-owned" baseline is their purchase price, not YCP. Naively
+ * multiplying the whole quantity by `stock.change` overstates or understates
+ * a fresh buy's day P&L by the gap between YCP and the actual buy price.
+ *
+ * Lots only record quantity + purchaseDate (see getLots), not a per-lot
+ * price, so today's-lot cost can't be recovered exactly when it's blended
+ * with an older lot. `averageBuyPrice` is used as the best available stand-in
+ * for today's portion — exact for a same-day-only holding, an approximation
+ * only when today's purchase topped up an existing pre-today position.
+ */
+export function getDayPnl(item: PortfolioItem, stock: Stock | undefined, now: Date = new Date()): number {
+  if (!stock || stock.traded === false) return 0;
+  const saleable = getSaleableQuantity(item, now); // held before today
+  const boughtToday = item.quantity - saleable;
+  const fromOlderShares = moneyMultiply(getDayChange(stock), saleable);
+  const fromTodaysShares = moneyMultiply(stock.ltp - item.averageBuyPrice, boughtToday);
+  return roundMoney(moneyAdd(fromOlderShares, fromTodaysShares));
+}
+
 export interface HoldingMetrics {
   symbol: string;
   quantity: number;
@@ -91,7 +114,6 @@ export function getHoldingMetrics(
   const marketValue = roundMoney(moneyMultiply(valuationPrice, item.quantity));
   const cost = roundMoney(item.totalCost);
   const pnl = roundMoney(marketValue - cost);
-  const dayChange = getDayChange(stock);
   const saleable = getSaleableQuantity(item, now);
 
   return {
@@ -106,7 +128,7 @@ export function getHoldingMetrics(
     marketValue,
     pnl,
     pnlPercent: cost > 0 ? roundMoney((pnl / cost) * 100) : 0,
-    dayPnl: roundMoney(moneyMultiply(dayChange, item.quantity)),
+    dayPnl: getDayPnl(item, stock, now),
     dayChangePercent: stock && stock.traded !== false ? stock.changePercent : 0,
     traded: stock?.traded !== false,
     category: stock?.category,
@@ -161,6 +183,78 @@ export function getPortfolioTotals(
     losers,
     unchanged,
     holdings,
+  };
+}
+
+export interface PortfolioInsights {
+  /** Realized + unrealized — the true lifetime trading result, cash-in-hand aside. */
+  totalPnl: number;
+  realizedGainLoss: number;
+  /** Largest single holding as a share of total holdings value — a concentration/risk signal. */
+  topHolding: { symbol: string; percent: number } | null;
+  /** Holdings value grouped by DSE market category (A/B/N/Z), as a percent of total. */
+  categoryBreakdown: { category: string; percent: number; value: number }[];
+  /** Sum of every commission paid across all executed trades — the real cost of activity. */
+  lifetimeCommission: number;
+  bestMoverToday: { symbol: string; dayPnl: number } | null;
+  worstMoverToday: { symbol: string; dayPnl: number } | null;
+}
+
+/**
+ * Second-order figures for the Portfolio screen, computed from data already
+ * on hand: `getPortfolioTotals`' holdings, the account's persisted
+ * `realizedGainLoss` (app/api/simulator/trade/route.ts is the only writer),
+ * and trade history for lifetime commission. None of this requires new
+ * backend work — it was sitting unused in fields the UI already fetches.
+ */
+export function getPortfolioInsights(
+  totals: PortfolioTotals,
+  realizedGainLoss: number,
+  trades: { commission: number }[]
+): PortfolioInsights {
+  const { holdings, currentValue } = totals;
+
+  let topHolding: PortfolioInsights['topHolding'] = null;
+  if (holdings.length > 0 && currentValue > 0) {
+    const top = holdings.reduce((max, h) => (h.marketValue > max.marketValue ? h : max), holdings[0]);
+    topHolding = { symbol: top.symbol, percent: roundMoney((top.marketValue / currentValue) * 100) };
+  }
+
+  const byCategory = new Map<string, number>();
+  for (const h of holdings) {
+    const key = h.category || 'Other';
+    byCategory.set(key, (byCategory.get(key) || 0) + h.marketValue);
+  }
+  const categoryBreakdown = Array.from(byCategory.entries())
+    .map(([category, value]) => ({
+      category,
+      value: roundMoney(value),
+      percent: currentValue > 0 ? roundMoney((value / currentValue) * 100) : 0,
+    }))
+    .sort((a, b) => b.value - a.value);
+
+  const lifetimeCommission = roundMoney(trades.reduce((sum, t) => moneyAdd(sum, t.commission || 0), 0));
+
+  let bestMoverToday: PortfolioInsights['bestMoverToday'] = null;
+  let worstMoverToday: PortfolioInsights['worstMoverToday'] = null;
+  for (const h of holdings) {
+    if (!h.traded) continue;
+    if (!bestMoverToday || h.dayPnl > bestMoverToday.dayPnl) bestMoverToday = { symbol: h.symbol, dayPnl: h.dayPnl };
+    if (!worstMoverToday || h.dayPnl < worstMoverToday.dayPnl) worstMoverToday = { symbol: h.symbol, dayPnl: h.dayPnl };
+  }
+  // A single mover shouldn't be reported as both best and worst.
+  if (bestMoverToday && worstMoverToday && bestMoverToday.symbol === worstMoverToday.symbol) {
+    worstMoverToday = null;
+  }
+
+  return {
+    totalPnl: roundMoney(totals.unrealisedPnl + realizedGainLoss),
+    realizedGainLoss: roundMoney(realizedGainLoss),
+    topHolding,
+    categoryBreakdown,
+    lifetimeCommission,
+    bestMoverToday,
+    worstMoverToday,
   };
 }
 

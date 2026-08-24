@@ -9,14 +9,15 @@ import AppShell from '@/components/app/AppShell';
 import { useSharedSimulator } from '@/contexts/SimulatorContext';
 import { useTradeModal } from '@/hooks/useTradeModal';
 import { useTradeHistory } from '@/hooks/useTradeHistory';
-import { getPortfolioTotals } from '@/lib/utils/portfolio';
+import { getPortfolioTotals, getPortfolioInsights } from '@/lib/utils/portfolio';
 import PortfolioSummary from '@/components/portfolio/PortfolioSummary';
+import PortfolioInsights from '@/components/portfolio/PortfolioInsights';
 import HoldingRow from '@/components/portfolio/HoldingRow';
 import TradeModal from '@/components/simulator/trade/TradeModal';
-import { Briefcase, Receipt, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Briefcase, BarChart3, Receipt, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import Link from 'next/link';
 
-type ViewTab = 'holdings' | 'orders';
+type ViewTab = 'holdings' | 'insights' | 'orders';
 
 export default function PortfolioPage() {
   return (
@@ -43,6 +44,14 @@ function PortfolioScreen() {
     [simulatorState.portfolio, marketInfo?.stocks]
   );
 
+  // Loaded once here rather than inside OrdersList, since the Insights tab
+  // also needs it (lifetime commission) — one listener instead of two.
+  const { trades, loading: tradesLoading, error: tradesError } = useTradeHistory();
+  const insights = useMemo(
+    () => getPortfolioInsights(totals, simulatorState.realizedGainLoss || 0, trades),
+    [totals, simulatorState.realizedGainLoss, trades]
+  );
+
   return (
     <div className="max-w-3xl mx-auto px-0 sm:px-4">
       <div className="px-4 sm:px-0 pt-4 pb-3 flex items-center justify-between">
@@ -59,19 +68,24 @@ function PortfolioScreen() {
       {/* Tabs */}
       <div className="flex items-center gap-1 px-4 sm:px-0 mb-2">
         <TabButton active={tab === 'holdings'} onClick={() => setTab('holdings')} icon={Briefcase} label="Holdings" />
+        <TabButton active={tab === 'insights'} onClick={() => setTab('insights')} icon={BarChart3} label="Insights" />
         <TabButton active={tab === 'orders'} onClick={() => setTab('orders')} icon={Receipt} label="Orders" />
       </div>
 
-      {tab === 'holdings' ? (
+      {tab === 'holdings' && (
         <HoldingsList
           portfolio={simulatorState.portfolio}
           stockBySymbol={stockBySymbol}
           marketOpen={marketOpen}
           onTrade={(sym, type) => modal.openTradeModal(sym, type, resetTransaction)}
         />
-      ) : (
-        <OrdersList />
       )}
+      {tab === 'insights' && (
+        <div className="px-4 sm:px-0">
+          <PortfolioInsights insights={insights} />
+        </div>
+      )}
+      {tab === 'orders' && <OrdersList trades={trades} loading={tradesLoading} error={tradesError} />}
 
       {modal.showTradeModal && modal.selectedStock && (
         <TradeModal
@@ -176,9 +190,15 @@ function HoldingsList({
   );
 }
 
-function OrdersList() {
-  const { trades, loading, error } = useTradeHistory();
-
+function OrdersList({
+  trades,
+  loading,
+  error,
+}: {
+  trades: import('@/hooks/useTradeHistory').TradeRecord[];
+  loading: boolean;
+  error: string | null;
+}) {
   if (loading) {
     return (
       <div className="px-4 sm:px-0">

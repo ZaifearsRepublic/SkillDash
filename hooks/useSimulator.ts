@@ -251,11 +251,22 @@ export const useSimulator = () => {
   }, [user, db, marketInfo]);
 
   // ── 5. Math Calculations ──
+  // Bug fixed 2026-08-24: this used to skip any holding whose stock had
+  // `traded === false` entirely (ltp is 0 on a no-match day — see
+  // api/market_sync.py), valuing it at ৳0 instead of its last close. On any
+  // day where even one held stock went untraded, this silently understated
+  // totalCurrentValue/totalGainLoss/gainLossPercent for every consumer of
+  // this hook. Now falls back to `ycp` exactly like
+  // lib/utils/portfolio.ts's getValuationPrice, which the Portfolio/Market
+  // screens already use.
+  const SANE_PRICE_CAP = 1_000_000; // defensive ceiling against a corrupted scrape value, not a real DSE price
   const calculatePortfolioValue = (portfolio: PortfolioItem[], stocks: Stock[]): number => {
     const total = portfolio.reduce((sum, item) => {
       const stock = stocks.find(s => s.symbol === item.symbol);
-      if (!stock || !stock.ltp || stock.ltp <= 0 || stock.ltp > 100000) return sum;
-      return moneyAdd(sum, moneyMultiply(stock.ltp, item.quantity));
+      if (!stock) return sum;
+      const price = stock.traded !== false && stock.ltp > 0 ? stock.ltp : (stock.ycp || 0);
+      if (price <= 0 || price > SANE_PRICE_CAP) return sum;
+      return moneyAdd(sum, moneyMultiply(price, item.quantity));
     }, 0);
     return roundMoney(total);
   };

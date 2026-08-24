@@ -54,7 +54,7 @@ export default function MarketStrip({ onSearchClick }: Props) {
   const dayPnl = totals.dayPnl;
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 pt-safe bg-white/95 dark:bg-[#0B0E11]/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
+    <header className="fixed top-0 left-0 right-0 z-40 pt-safe bg-white/95 dark:bg-[#0B0E11]/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
       {/* Row 1 — identity, market state, utilities */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 h-12">
