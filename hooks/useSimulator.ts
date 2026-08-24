@@ -27,6 +27,10 @@ export interface Stock {
   change: number;
   changePercent: number;
   category?: string;
+  /** Industry/sector (e.g. "Bank", "Pharmaceuticals & Chemicals"), sourced
+   * from lankabd.com — see api/lanka_sector_sync.py. DSE's own boards don't
+   * publish this field, so unlike `category` it has no dsebd.org fallback. */
+  sector?: string;
   /**
    * False when the stock has had zero matched trades today (see
    * api/market_sync.py). ltp is 0 in that case — it is not a real price, so
@@ -104,9 +108,11 @@ export const useSimulator = () => {
   
   const marketUnsubscribe = useRef<Unsubscribe | null>(null);
   const categoriesUnsubscribe = useRef<Unsubscribe | null>(null);
+  const sectorsUnsubscribe = useRef<Unsubscribe | null>(null);
   const stateUnsubscribe = useRef<Unsubscribe | null>(null);
   const ensureStateAttempted = useRef(false);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
+  const [sectorMap, setSectorMap] = useState<Record<string, string>>({});
 
   // ── 1. Load Bangladesh Holidays ──
   useEffect(() => {
@@ -146,7 +152,8 @@ export const useSimulator = () => {
             return {
               ...stock,
               changePercent: calculatedChangePercent,
-              category: categoryMap[stock.symbol] || stock.category
+              category: categoryMap[stock.symbol] || stock.category,
+              sector: sectorMap[stock.symbol] || stock.sector
             };
           });
           setMarketInfo({ ...data, stocks: mergedStocks });
@@ -188,7 +195,7 @@ export const useSimulator = () => {
       clearInterval(timerId); 
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [user, db, categoryMap]);
+  }, [user, db, categoryMap, sectorMap]);
 
   // ── 3. Categories Listener ──
   useEffect(() => {
@@ -202,6 +209,20 @@ export const useSimulator = () => {
     } catch (err) { console.warn('Categories listener error:', err); }
 
     return () => { if (categoriesUnsubscribe.current) categoriesUnsubscribe.current(); };
+  }, [user, db]);
+
+  // ── 3b. Sectors Listener ── (see api/lanka_sector_sync.py)
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const appId = process.env.NEXT_PUBLIC_SIMULATOR_APP_ID || 'stocksimulatorbd-dse-v1';
+      const sectorsRef = doc(db, 'artifacts', appId, 'public', 'data', 'market_info', 'sectors');
+      sectorsUnsubscribe.current = onSnapshot(sectorsRef, (snapshot) => {
+        if (snapshot.exists()) setSectorMap(snapshot.data().sectors || {});
+      });
+    } catch (err) { console.warn('Sectors listener error:', err); }
+
+    return () => { if (sectorsUnsubscribe.current) sectorsUnsubscribe.current(); };
   }, [user, db]);
 
   // ── 4. Simulator State Listener ──

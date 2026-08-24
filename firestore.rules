@@ -120,7 +120,17 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if false;
     }
-    
+
+    match /artifacts/{appId}/public/data/market_info/sectors {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /artifacts/{appId}/public/data/market_info/sectors/changelog/{entryId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
     // ===== PUBLIC STATS =====
     match /public_stats/site_stats {
   		allow read: if true;

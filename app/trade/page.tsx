@@ -42,6 +42,7 @@ function MarketScreen() {
   const [isPending, startTransition] = useTransition();
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSector, setSelectedSector] = useState('All');
   const [visibleCount, setVisibleCount] = useState(50);
   const [holidays, setHolidays] = useState<string[]>([]);
 
@@ -72,12 +73,34 @@ function MarketScreen() {
     [normalizedQuery]
   );
 
+  // Sector counts always reflect the full board, not the search-narrowed
+  // subset — the tab strip is a top-level facet, so it shouldn't shuffle or
+  // shrink while someone is typing a search query.
+  const sectorCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const stock of marketInfo?.stocks || []) {
+      if (stock.sector) counts.set(stock.sector, (counts.get(stock.sector) || 0) + 1);
+    }
+    return counts;
+  }, [marketInfo?.stocks]);
+
+  const sortedSectors = useMemo(
+    () => Array.from(sectorCounts.keys()).sort((a, b) => a.localeCompare(b)),
+    [sectorCounts]
+  );
+
+  const handleSectorChange = useCallback((sector: string) => {
+    setSelectedSector(sector);
+    setVisibleCount(50);
+  }, []);
+
   const filteredStocks = useMemo(() => {
-    const all = marketInfo?.stocks || [];
+    let all = marketInfo?.stocks || [];
+    if (selectedSector !== 'All') all = all.filter((s) => s.sector === selectedSector);
     if (!normalizedQuery) return all;
     const upper = normalizedQuery.toUpperCase();
     return all.filter((s) => s.symbol.includes(upper) || companyNameMatches.has(s.symbol));
-  }, [marketInfo?.stocks, normalizedQuery, companyNameMatches]);
+  }, [marketInfo?.stocks, selectedSector, normalizedQuery, companyNameMatches]);
 
   const visibleStocks = useMemo(() => filteredStocks.slice(0, visibleCount), [filteredStocks, visibleCount]);
   const hasMore = filteredStocks.length > visibleCount;
@@ -130,6 +153,46 @@ function MarketScreen() {
         {isPending && <p className="text-[11px] text-blue-500 font-semibold mt-1">Searching…</p>}
       </div>
 
+      {sortedSectors.length > 0 && (
+        <div className="pb-3 -mt-1">
+          <div
+            role="tablist"
+            aria-label="Filter by industry"
+            className="flex gap-2 overflow-x-auto scrollbar-none px-4 sm:px-0"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={selectedSector === 'All'}
+              onClick={() => handleSectorChange('All')}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                selectedSector === 'All'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              All
+            </button>
+            {sortedSectors.map((sector) => (
+              <button
+                key={sector}
+                type="button"
+                role="tab"
+                aria-selected={selectedSector === sector}
+                onClick={() => handleSectorChange(sector)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                  selectedSector === sector
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                {sector} <span className="opacity-60">{sectorCounts.get(sector)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="bg-white dark:bg-[#1A1F26] border-y sm:border sm:rounded-2xl border-gray-200 dark:border-gray-800 overflow-hidden">
         {simulatorLoading ? (
           <StockSkeleton count={10} />
@@ -137,7 +200,9 @@ function MarketScreen() {
           <div className="py-16 px-6 flex flex-col items-center text-center gap-2">
             <Search className="w-8 h-8 opacity-20" />
             <p className="text-sm text-gray-400 dark:text-gray-500">
-              No stocks found matching &ldquo;{searchQuery}&rdquo;
+              {searchQuery
+                ? <>No stocks found matching &ldquo;{searchQuery}&rdquo;{selectedSector !== 'All' && ` in ${selectedSector}`}</>
+                : `No stocks found in ${selectedSector}`}
             </p>
           </div>
         ) : (
