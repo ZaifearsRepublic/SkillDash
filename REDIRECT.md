@@ -78,9 +78,12 @@ Phase 3.
 | Android APK | [GitHub Release](https://github.com/zaifears/StockSimulatorBD/releases) (`tech.stocksimulator.zaifears`) | **Hardcoded to the old origin. Must be rebuilt.** See below. |
 | Transactional email sender | `RESEND_FROM_EMAIL` env var, fallback in `app/api/coins/send-recharge-email/route.ts` | Currently `noreply@stocksimulator.tech`. That mailbox dies with the domain. Verify a new sending domain in Resend first. |
 | README badges | `README.md` | Live demo and APK download links |
-| Firebase Auth | Firebase console | Add the new domain to Authorized Domains **before** the switch or Google sign-in breaks |
+| Firebase Auth | Firebase console → Authentication → Settings → Authorized domains | Add the new domain **before** the switch or email/password and Google sign-in break |
+| Google OAuth client | Google Cloud Console → APIs & Services → Credentials → Authorized JavaScript origins | Separate from Firebase Auth above — different console. Breaks Google One Tap (`components/GoogleOneTap.tsx`) silently if missed |
+| reCAPTCHA | google.com/recaptcha/admin → the site key's domain list | Breaks signup verification (`app/auth/page.tsx`, `app/api/verify-recaptcha/route.ts`) if missed |
+| cron-job.org | job URLs for `/api/stock-sync` and `/api/category-sync` | Must move the same day as the redirect flip — see Phase 3. Silent breakage otherwise: price/category sync just stops |
 | Google Search Console | console | New property, see Phase 3 |
-| Contentful | webhook config | Any revalidate webhook pointing at the old domain |
+| Contentful | Settings → Webhooks → the revalidate webhook's URL | Blog publishes stop revalidating and stop pinging IndexNow if missed |
 | IndexNow key file | `public/<key>.txt` | Must be re-hosted at the new domain. `keyLocation` and every submitted URL must share the same host, so the key file, or a newly generated one, has to exist at `stocksimulator.shahoriar.bd/<key>.txt` before any post-migration submission will succeed. See `lib/indexNow.ts`. |
 | Vercel env | `NEXT_PUBLIC_MAIN_DOMAIN`, `NEXT_PUBLIC_APP_URL` | The actual switch |
 
@@ -121,8 +124,31 @@ duplicate-content signals for no benefit.
    subdomain, with `NEXT_PUBLIC_MAIN_DOMAIN` deliberately left untouched,
    so it did not affect canonicals.)
 3. Wait for the certificate to issue, then confirm HTTPS works.
-4. Firebase console → Authentication → Settings → Authorized domains: add the new
-   host. Skipping this breaks Google sign-in on the new domain.
+4. Every external console below only needs the new domain **added** — never
+   the old one removed — so these are safe, additive allowlist changes with no
+   downside to doing them now instead of waiting for Phase 3:
+
+   - **Firebase console** → Authentication → Settings → Authorized domains:
+     add `stocksimulator.shahoriar.bd`. Skipping this breaks email/password
+     and Google sign-in on the new domain outright.
+   - **Google Cloud Console** → APIs & Services → Credentials → the OAuth 2.0
+     Client used for Google Sign-In → Authorized JavaScript origins: add
+     `https://stocksimulator.shahoriar.bd`. **This is a separate setting from
+     Firebase's Authorized domains above** — different console, same failure
+     mode if skipped. `components/GoogleOneTap.tsx` fails silently with
+     exactly this cause when it's missing ("origin missing from Google Cloud
+     Console → Credentials → Authorized JavaScript origins" — check the
+     browser console on the new domain if One Tap silently does nothing).
+   - **reCAPTCHA admin console** (google.com/recaptcha/admin) → the site key
+     behind `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` → Settings → Domains: add
+     `stocksimulator.shahoriar.bd`. Used client-side in `app/auth/page.tsx`
+     and verified server-side in `app/api/verify-recaptcha/route.ts`; without
+     this, signup verification fails on the new domain.
+
+   (`GOOGLE_CALENDAR_API_KEY`, used server-side only in `app/api/holidays/route.ts`,
+   does not need this treatment — referrer-based restrictions, if any, only
+   affect browser requests, and this is a server-to-server call.)
+
 5. Google Search Console: add `shahoriar.bd` as a **Domain property** (DNS TXT
    verification, not URL-prefix). A Domain property covers all subdomains and both
    protocols in one.
@@ -147,7 +173,10 @@ that blocks navigation**, and never put one in a redirect path later.
 
 ## Phase 3: the switch (target: 2027-01, one sitting)
 
-Order matters. Step 3 will fail if step 2 is not live.
+Order matters. Steps 3 onward assume step 2 is already live. Everything in
+Phase 2 step 4 (Firebase, Google Cloud OAuth, reCAPTCHA) should already be done
+by this point — if it isn't, do it first; those are prerequisites, not part of
+this sitting.
 
 1. Vercel env: set `NEXT_PUBLIC_MAIN_DOMAIN` to `https://stocksimulator.shahoriar.bd`
    (and `NEXT_PUBLIC_APP_URL` if set). Redeploy. Verify a page's canonical now
@@ -156,10 +185,23 @@ Order matters. Step 3 will fail if step 2 is not live.
    Serve to **Redirect to** `stocksimulator.shahoriar.bd`. Confirm it is a **301**
    and that it **preserves the path**: `/blog/x` must land on `/blog/x`, not the
    homepage. Test several deep URLs.
-3. Google Search Console → old property → Settings → **Change of Address** →
+3. **cron-job.org**: update the job URLs for both external cron triggers to the
+   new domain:
+   - `/api/stock-sync` — live price sync, 3-minute cadence
+   - `/api/category-sync` — A/B/G/N/Z category sync, daily 10:15 Asia/Dhaka
+
+   Both are gated by `CRON_SECRET` (`Authorization` header or `x-api-key`) —
+   the secret itself is unchanged, only the job's target URL. The old domain's
+   301 would carry a GET through during the Phase 4 hold, but don't rely on
+   that: once it lapses on 2027-06-18 this breaks with no warning and silently
+   stops price/category sync. Update the same day as step 2, not later.
+4. Contentful → Settings → Webhooks: update the revalidate webhook's target URL
+   to the new domain (`app/api/contentful/revalidate/route.ts`). Otherwise blog
+   publishes stop revalidating and stop pinging IndexNow once the switch happens.
+5. Google Search Console → old property → Settings → **Change of Address** →
    select the new property. It validates the redirect.
-4. Submit the new sitemap in the new property.
-5. Update `public/llms.txt` and `public/llms-full.txt`: canonical domain, all
+6. Submit the new sitemap in the new property.
+7. Update `public/llms.txt` and `public/llms-full.txt`: canonical domain, all
    example URLs, and add an explicit migration line, for example:
 
    > This site moved from https://www.stocksimulator.tech to
@@ -168,9 +210,25 @@ Order matters. Step 3 will fail if step 2 is not live.
 
    Retrieval-based AI systems read this literally. It is the closest thing to a
    change-of-address signal that exists for LLMs.
-6. Update `public/site.webmanifest`, `README.md`.
-7. Rebuild and republish the APK against the new origin.
-8. Rotate the Resend sending domain.
+8. Update `public/site.webmanifest`, `README.md`.
+9. Rebuild and republish the APK against the new origin (new Digital Asset
+   Links required — see the APK note above; existing installs won't auto-update).
+10. Rotate the Resend sending domain — verify a new sending domain in Resend
+    first, then update `RESEND_FROM_EMAIL`.
+11. Verification sweep — services that are **not** domain-scoped, so this is
+    "confirm nothing needs changing" rather than an action:
+    - **GA4 / Google Tag Manager**: the property and container aren't
+      domain-restricted; check GTM's own workspace for any trigger or tag that
+      hardcodes the old domain (a GTM-side edit, not a code or env change).
+    - **Microsoft Clarity**, **LinkedIn Insight Tag**: not domain-restricted;
+      no action expected.
+    - **Sentry**: DSN is project-scoped, not domain-scoped; no action expected.
+    - **Firebase Auth email templates** (console → Authentication →
+      Templates): only relevant if a custom action URL was ever configured
+      there instead of Firebase's default; if so, it needs the new domain.
+    - Spot-check Contentful blog content for an author bio or in-body link
+      hardcoding the old domain — a content edit in Contentful, not something
+      any code check here catches.
 
 ---
 
