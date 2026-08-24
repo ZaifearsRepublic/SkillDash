@@ -540,11 +540,18 @@ button:disabled {
 /* ============================================
    HERO BACKGROUND IMAGE OPTIMIZATION
    ============================================ */
-/* Improve contrast - SAFE FIX */
-.bg-blue-500 { background-color: #1d4ed8 !important; }
-.bg-purple-500 { background-color: #6d28d9 !important; }
-.bg-emerald-500 { background-color: #047857 !important; }
-.bg-orange-500 { background-color: #c2410c !important; }
+/* A "contrast fix" that hijacked the bare .bg-blue-500/.bg-purple-500/
+   .bg-emerald-500/.bg-orange-500 utility classes app-wide with !important —
+   removed 2026-08-24. It never touched what it was written for: the
+   decorative blur blobs on the auth/about-us/stocks/admin hero sections all
+   use Tailwind's opacity-modifier syntax (bg-blue-500/10), which compiles
+   to a distinct selector these bare-class rules never matched. Meanwhile it
+   silently darkened every FULL-opacity use of these four colors everywhere
+   else in the app — every emerald Buy button, several status dots, a
+   password-strength bar — to a shade that doesn't match DESIGN.md's
+   documented tokens (Gain Emerald #10B981 rendered as #047857 instead).
+   Confirmed via computed styles before removing: the blobs' actual on-page
+   color didn't change, because this rule was never the thing rendering it. */
 /* Blob animation for auth page */
 @keyframes blob {
   0%, 100% { transform: translate(0, 0) scale(1); }

@@ -268,6 +268,16 @@ export default async function StockDetailsPage({ params }: StockPageProps) {
           </p>
         </header>
 
+        {/* Two grid rows, not one: the sticky trade sidebar only needs to sit
+            beside the chart/rules/description content — pairing it with
+            those three sections (not all five) in one grid row is what puts
+            Buy/Sell right after "what this stock is" on mobile, while still
+            giving the sidebar a tall row to stick within on desktop (the
+            same mechanism a single wide row always used, just scoped to
+            less content). FAQ and related-listings run full width below,
+            with no sidebar of their own — they're supplementary, not part
+            of the decision path toward placing an order. */}
+        <div className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
           {/* Left column */}
@@ -358,71 +368,15 @@ export default async function StockDetailsPage({ params }: StockPageProps) {
                 </p>
               </div>
             </section>
-
-            {/* FAQ */}
-            <section
-              aria-labelledby="faq-heading"
-              className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1A1F26] p-4 sm:p-6 shadow-sm"
-            >
-              <h2 id="faq-heading" className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-                {stock.symbol} questions people ask
-              </h2>
-              <div className="mt-5 space-y-5">
-                {faqs.map((faq) => (
-                  <div key={faq.q}>
-                    <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-snug">
-                      {faq.q}
-                    </h3>
-                    <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                      {faq.a}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Related symbols */}
-            {related.length > 0 && (
-              <section
-                aria-labelledby="related-heading"
-                className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1A1F26] p-4 sm:p-6 shadow-sm"
-              >
-                <h2 id="related-heading" className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-                  Other DSE {profile.label} listings
-                </h2>
-                <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {related.map((item) => (
-                    <li key={item.symbol}>
-                      <Link
-                        href={stockHref(item.symbol)}
-                        className="group flex items-baseline gap-2.5 rounded-lg px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-[#111418] transition-colors"
-                      >
-                        <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400 flex-shrink-0">
-                          {item.symbol}
-                        </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400 truncate group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">
-                          {item.name}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/stocks"
-                  className="mt-3 inline-flex items-center gap-1.5 py-2.5 text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Browse all DSE listings
-                </Link>
-              </section>
-            )}
           </div>
 
-          {/* Right column — ordered first on mobile so the Buy/Sell panel is
-              reachable without scrolling past the chart, trading rules,
-              description, and related-stocks sections first. On desktop
-              (lg:) it reverts to normal source order as the sticky sidebar
-              next to the chart, where its position already makes sense. */}
-          <div className="order-first lg:order-none lg:sticky lg:top-6 space-y-6">
+          {/* Right column: the sticky Buy/Sell sidebar. Pairs with the chart
+              + rules + description block above (not FAQ/related, which live
+              in their own full-width row further down) — on mobile that
+              means Buy/Sell lands right after "what this stock is", not
+              buried under supplementary content; on desktop it's the sticky
+              sidebar beside that same content, same as before. */}
+          <div className="lg:sticky lg:top-6 space-y-6">
             <StockTradingSection symbol={stock.symbol} fallbackPrice={basePrice} />
 
             <section className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 text-white shadow-lg">
@@ -443,6 +397,68 @@ export default async function StockDetailsPage({ params }: StockPageProps) {
           </div>
 
         </div>
+
+        {/* Full-width row: FAQ and related listings. Supplementary content,
+            not part of the chart-then-description-then-Buy/Sell decision
+            path above, so it doesn't need a sidebar of its own. */}
+        <div className="space-y-6">
+          <section
+            aria-labelledby="faq-heading"
+            className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1A1F26] p-4 sm:p-6 shadow-sm"
+          >
+            <h2 id="faq-heading" className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+              {stock.symbol} questions people ask
+            </h2>
+            <div className="mt-5 space-y-5">
+              {faqs.map((faq) => (
+                <div key={faq.q}>
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-snug">
+                    {faq.q}
+                  </h3>
+                  <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                    {faq.a}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {related.length > 0 && (
+            <section
+              aria-labelledby="related-heading"
+              className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1A1F26] p-4 sm:p-6 shadow-sm"
+            >
+              <h2 id="related-heading" className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+                Other DSE {profile.label} listings
+              </h2>
+              <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {related.map((item) => (
+                  <li key={item.symbol}>
+                    <Link
+                      href={stockHref(item.symbol)}
+                      className="group flex items-baseline gap-2.5 rounded-lg px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-[#111418] transition-colors"
+                    >
+                      <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400 flex-shrink-0">
+                        {item.symbol}
+                      </span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400 truncate group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">
+                        {item.name}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/stocks"
+                className="mt-3 inline-flex items-center gap-1.5 py-2.5 text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Browse all DSE listings
+              </Link>
+            </section>
+          )}
+        </div>
+
+      </div>
       </div>
     </main>
   );

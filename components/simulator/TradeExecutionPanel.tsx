@@ -12,12 +12,14 @@ interface TradeExecutionPanelProps {
   isTraded?: boolean;
   /** Yesterday's closing price, shown when isTraded is false so the price line doesn't just read ৳0.00. */
   lastClose?: number;
-  availableBalance: number; 
-  currentHoldings: number; 
+  availableBalance: number;
+  currentHoldings: number;
   isMarketOpen: boolean;
   isAuthenticated: boolean;
   onExecute: (type: 'BUY' | 'SELL', quantity: number) => Promise<void>;
 }
+
+const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function TradeExecutionPanel({
   symbol,
@@ -34,12 +36,12 @@ export default function TradeExecutionPanel({
   const [submittingType, setSubmittingType] = useState<'BUY' | 'SELL' | null>(null);
 
   // 0.4% standard DSE broker commission
-  const BROKER_FEE_RATE = 0.004; 
+  const BROKER_FEE_RATE = 0.004;
   const qtyNum = parseInt(quantity) || 0;
-  
+
   const grossValue = qtyNum * currentPrice;
   const commission = grossValue * BROKER_FEE_RATE;
-  
+
   const totalBuyCost = grossValue + commission;
   const totalSellRevenue = grossValue - commission;
 
@@ -78,48 +80,51 @@ export default function TradeExecutionPanel({
   };
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+    <form
+      onSubmit={(e) => e.preventDefault()}
+      className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1A1F26] p-4 sm:p-6 shadow-sm"
+    >
       {/* WebMCP Schema Injection */}
       <script type="application/webmcp+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(tradeWebMcpSchema) }} />
-      <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Execute Trade</h3>
-      
+      <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight mb-4">Execute Trade</h3>
+
       {/* ── Price & Holdings ── */}
-      <div className="flex justify-between items-end mb-6 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+      <div className="flex justify-between items-end mb-5 bg-gray-50 dark:bg-[#111418] p-4 rounded-xl border border-gray-200 dark:border-gray-800">
         <div>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Market Price</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Market Price</p>
           {isTraded ? (
-            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">৳{currentPrice.toFixed(2)}</p>
+            <p className="font-mono font-bold text-2xl text-gray-900 dark:text-white tabular-nums">৳{fmt(currentPrice)}</p>
           ) : (
             <div className="flex items-center gap-1.5">
-              <p className="text-lg font-bold text-slate-400 dark:text-slate-500">Not traded today</p>
+              <p className="text-base font-bold text-gray-400 dark:text-gray-500">Not traded today</p>
               <NotTradedInfo lastClose={lastClose} />
             </div>
           )}
         </div>
         {isAuthenticated && (
           <div className="text-right">
-            <p className="text-sm text-slate-500 mb-1">Your Shares</p>
-            <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{currentHoldings}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Your Shares</p>
+            <p className="font-mono font-bold text-lg text-gray-900 dark:text-white tabular-nums">{currentHoldings}</p>
           </div>
         )}
       </div>
 
       {/* ── Contextual Warnings ── */}
       {!isAuthenticated ? (
-        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-lg flex items-center justify-center">
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-lg flex items-center justify-center">
           <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">
             You must log in to trade stocks
           </p>
         </div>
       ) : !isTraded ? (
-        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg flex items-center justify-center gap-1.5">
+        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg flex items-center justify-center gap-1.5">
           <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
             This stock hasn&apos;t traded today
           </p>
           <NotTradedInfo lastClose={lastClose} />
         </div>
       ) : !isMarketOpen ? (
-        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg flex items-center justify-center">
+        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg flex items-center justify-center">
           <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
             Market is currently closed
           </p>
@@ -127,8 +132,8 @@ export default function TradeExecutionPanel({
       ) : null}
 
       {/* ── Stepper Input ── */}
-      <div className="mb-6">
-        <label className="block font-medium text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider text-xs">
+      <div className="mb-5">
+        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
           Quantity
         </label>
         <div className="flex items-center gap-2">
@@ -138,11 +143,11 @@ export default function TradeExecutionPanel({
             title="Decrease quantity"
             onClick={() => setQuantity(String(Math.max(1, qtyNum - 1)))}
             disabled={qtyNum <= 1 || isInputDisabled}
-            className="p-3 sm:p-3.5 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
+            className="p-3 sm:p-3.5 shrink-0 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
           >
-            <Minus className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+            <Minus className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </button>
-          
+
           <input
             name="quantity"
             type="number"
@@ -153,38 +158,50 @@ export default function TradeExecutionPanel({
             onBlur={() => {
               if (!quantity || parseInt(quantity) <= 0) setQuantity('1');
             }}
-            className="flex-1 min-w-0 w-full text-2xl font-bold text-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="flex-1 min-w-0 w-full font-mono text-2xl font-bold text-center tabular-nums bg-gray-50 dark:bg-[#111418] border border-gray-200 dark:border-gray-800 rounded-xl py-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             placeholder="1"
           />
-          
+
           <button
             type="button"
             aria-label="Increase quantity"
             title="Increase quantity"
             onClick={() => setQuantity(String(qtyNum + 1))}
             disabled={isInputDisabled}
-            className="p-3 sm:p-3.5 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
+            className="p-3 sm:p-3.5 shrink-0 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
           >
-            <Plus className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+            <Plus className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </button>
         </div>
       </div>
 
       {/* ── Commission Breakdown ── */}
-      {qtyNum > 0 && isAuthenticated && (
-        <div className="space-y-2 mb-6 text-sm">
-          <div className="flex justify-between text-slate-600 dark:text-slate-400">
-            <span>Gross Value</span>
-            <span>৳{grossValue.toFixed(2)}</span>
+      {/* Shows both buy cost and sell proceeds rather than assuming buy —
+          BUY and SELL are both live below at all times (no mode toggle),
+          so a figure block that only ever reflected buy math would mislead
+          anyone about to sell. Commission itself is amber, matching
+          DESIGN.md's rule that amber is reserved for the commission line
+          and other "this is the simulation talking" moments. */}
+      {qtyNum > 0 && isAuthenticated && isTraded && (
+        <div className="space-y-1.5 mb-5 pt-3 border-t border-gray-200 dark:border-gray-800">
+          <div className="flex justify-between text-xs">
+            <span className="text-gray-500 dark:text-gray-400">৳{fmt(currentPrice)} × {qtyNum}</span>
+            <span className="font-mono text-gray-900 dark:text-white tabular-nums">৳{fmt(grossValue)}</span>
           </div>
-          <div className="flex justify-between text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 pb-2">
-            <span>Broker Fee (0.4%)</span>
-            <span>৳{commission.toFixed(2)}</span>
+          <div className="flex justify-between text-xs">
+            <span className="text-gray-500 dark:text-gray-400">Broker Fee (0.4%)</span>
+            <span className="font-mono text-amber-700 dark:text-amber-400 tabular-nums">৳{fmt(commission)}</span>
           </div>
-          <div className="flex justify-between font-bold pt-1">
-            <span className="text-slate-900 dark:text-slate-100">Total</span>
-            <span className={canBuy ? "text-slate-900 dark:text-slate-100" : "text-red-500"}>
-              ৳{totalBuyCost.toFixed(2)}
+          <div className="flex justify-between items-baseline pt-1.5 border-t border-gray-200 dark:border-gray-800">
+            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Buy total</span>
+            <span className={`font-mono font-bold text-base tabular-nums ${canBuy ? 'text-gray-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'}`}>
+              ৳{fmt(totalBuyCost)}
+            </span>
+          </div>
+          <div className="flex justify-between items-baseline">
+            <span className="text-xs font-semibold text-rose-700 dark:text-rose-400">Sell proceeds</span>
+            <span className={`font-mono font-bold text-base tabular-nums ${canSell ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
+              ৳{fmt(totalSellRevenue)}
             </span>
           </div>
         </div>
@@ -192,7 +209,7 @@ export default function TradeExecutionPanel({
 
       {/* ── Execution Buttons ── */}
       {!isAuthenticated ? (
-        <Link 
+        <Link
           href="/auth"
           className="w-full py-3.5 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition-all active:scale-95 flex items-center justify-center"
         >
@@ -206,18 +223,18 @@ export default function TradeExecutionPanel({
             type="button"
             onClick={() => handleTrade('BUY')}
             disabled={!canBuy || isInputDisabled}
-            className="w-full py-3.5 rounded-xl font-bold text-white bg-green-500 hover:bg-green-600 shadow-sm shadow-green-500/20 disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed transition-all active:scale-95 flex items-center justify-center gap-2"
+            className="w-full py-3.5 rounded-xl font-bold text-white bg-emerald-500 hover:bg-emerald-600 shadow-sm shadow-emerald-500/20 disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed transition-all active:scale-95 flex items-center justify-center gap-2"
           >
             {submittingType === 'BUY' ? '...' : 'BUY'}
           </button>
-          
+
           <button
             name="trade_action"
             value="SELL"
             type="button"
             onClick={() => handleTrade('SELL')}
             disabled={!canSell || isInputDisabled}
-            className="w-full py-3.5 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 shadow-sm shadow-red-500/20 disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed transition-all active:scale-95 flex items-center justify-center gap-2"
+            className="w-full py-3.5 rounded-xl font-bold text-white bg-rose-500 hover:bg-rose-600 shadow-sm shadow-rose-500/20 disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed transition-all active:scale-95 flex items-center justify-center gap-2"
           >
             {submittingType === 'SELL' ? '...' : 'SELL'}
           </button>
