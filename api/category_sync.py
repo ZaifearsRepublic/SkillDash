@@ -1,7 +1,9 @@
 import json
 import ssl
+import time
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler
 
@@ -33,8 +35,15 @@ CATEGORIES = ["A", "B", "G", "N", "Z"]
 # Every category board on a healthy day sums to ~390-400 symbols (see
 # module docstring). A day where the combined total falls far short means
 # DSE's page structure changed or a request failed silently — abort rather
-# than write a partial/wrong map over a previously-good one.
+# than write a partial/wrong map over a previously-good one. (The Next.js
+# route layers a second, stateful check on top of this — see
+# app/api/category-sync/route.ts — that compares against the last known-good
+# count rather than a fixed number.)
 MIN_TOTAL_SYMBOLS = 200
+
+REQUEST_TIMEOUT_SECONDS = 12.0
+MAX_ATTEMPTS_PER_CATEGORY = 3
+RETRY_BACKOFF_SECONDS = 1.5
 
 
 class CategoryTableParser(HTMLParser):
@@ -60,30 +69,79 @@ class CategoryTableParser(HTMLParser):
             self.in_table = False
 
 
-def fetch_category(group: str, ctx: ssl.SSLContext) -> list:
+def fetch_category_once(group: str, ctx: ssl.SSLContext) -> list:
     url = f"https://www.dsebd.org/latest_share_price_scroll_group.php?group={group}"
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, context=ctx, timeout=25.0) as response:
+    with urllib.request.urlopen(req, context=ctx, timeout=REQUEST_TIMEOUT_SECONDS) as response:
         html = response.read().decode("utf-8", errors="ignore")
     parser = CategoryTableParser()
     parser.feed(html)
     return parser.symbols
 
 
+def fetch_category_with_retry(group: str, ctx: ssl.SSLContext) -> tuple:
+    """Returns (group, symbols, error). error is None on success — including
+    a genuinely empty category (DSE can legitimately have 0 symbols in G or
+    N), which is why an empty result on the first clean attempt is NOT
+    retried as if it were a failure."""
+    last_error = None
+    for attempt in range(1, MAX_ATTEMPTS_PER_CATEGORY + 1):
+        try:
+            symbols = fetch_category_once(group, ctx)
+            return (group, symbols, None)
+        except Exception as e:  # noqa: BLE001 — genuinely want to retry on anything
+            last_error = str(e)
+            if attempt < MAX_ATTEMPTS_PER_CATEGORY:
+                time.sleep(RETRY_BACKOFF_SECONDS)
+    return (group, [], last_error)
+
+
+def fetch_all_categories() -> dict:
+    """Fetches all five category boards concurrently (not sequentially) so a
+    single slow DSE response can't push total wall time past Vercel's
+    60s function ceiling (vercel.json) — five sequential 12s-timeout
+    requests with retries could otherwise sum past it on a bad day and get
+    the whole invocation killed mid-run instead of failing cleanly."""
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    categories = {}
+    counts = {}
+    errors = {}
+
+    with ThreadPoolExecutor(max_workers=len(CATEGORIES)) as pool:
+        futures = [pool.submit(fetch_category_with_retry, group, ctx) for group in CATEGORIES]
+        for future in as_completed(futures):
+            group, symbols, error = future.result()
+            counts[group] = len(symbols)
+            if error:
+                errors[group] = error
+            for symbol in symbols:
+                categories[symbol] = group
+
+    return {"categories": categories, "counts": counts, "errors": errors}
+
+
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
+            result = fetch_all_categories()
+            categories = result["categories"]
+            counts = result["counts"]
+            errors = result["errors"]
 
-            categories = {}
-            counts = {}
-            for group in CATEGORIES:
-                symbols = fetch_category(group, ctx)
-                counts[group] = len(symbols)
-                for symbol in symbols:
-                    categories[symbol] = group
+            # A category that raised an exception after every retry is
+            # indistinguishable from "0 symbols" in `counts` alone — surface
+            # it as a hard failure rather than silently treating an
+            # unreachable board the same as a genuinely empty one (which
+            # G/N legitimately are on a normal day).
+            if errors:
+                self.send_error_response(
+                    502,
+                    f"Failed to fetch {len(errors)} of {len(CATEGORIES)} category boards after retries: {errors}",
+                )
+                return
 
             if len(categories) < MIN_TOTAL_SYMBOLS:
                 self.send_error_response(
