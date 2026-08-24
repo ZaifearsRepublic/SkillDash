@@ -120,14 +120,17 @@ function OrderScreen() {
     await executeTrade(symbol, orderType, quantity);
   };
 
+  // Reset the quantity for the next order once one settles — but the
+  // success/error banner itself is left alone here. It used to auto-hide on
+  // a 1.8s timer, which was often shorter than the time it actually took the
+  // trade to round-trip and the message to render, so the banner could
+  // disappear before it had ever been read. It now stays until the user
+  // does something that implies they're done with it (changing the symbol
+  // or BUY/SELL both already call resetTransaction — see selectSymbol and
+  // the order-type toggle above).
   useEffect(() => {
-    if (transactionStatus !== 'success') return;
-    const t = setTimeout(() => {
-      resetTransaction();
-      setQuantityInput('1');
-    }, 1800);
-    return () => clearTimeout(t);
-  }, [transactionStatus, resetTransaction]);
+    if (transactionStatus === 'success') setQuantityInput('1');
+  }, [transactionStatus]);
 
   return (
     <div className="max-w-xl mx-auto px-4 pt-4 pb-6">

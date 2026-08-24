@@ -11,7 +11,7 @@
 // locked and why.
 import React from 'react';
 import Link from 'next/link';
-import { Lock } from 'lucide-react';
+import { Lock, LineChart } from 'lucide-react';
 import { getCompanyName } from '@/lib/dseCompanyNames';
 import NotTradedInfo from '@/components/simulator/trade/NotTradedInfo';
 import type { HoldingMetrics } from '@/lib/utils/portfolio';
@@ -70,6 +70,14 @@ export default function HoldingRow({ holding, marketOpen, onTrade, lastClose }: 
                 {category}
               </span>
             )}
+            <Link
+              href={`/stocks/${symbol.toLowerCase()}`}
+              aria-label={`View ${symbol} chart`}
+              title="View chart"
+              className="flex items-center justify-center w-5 h-5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors shrink-0"
+            >
+              <LineChart className="w-3 h-3" />
+            </Link>
           </div>
           {companyName && (
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{companyName}</p>

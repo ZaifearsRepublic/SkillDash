@@ -80,6 +80,17 @@ export default function TradeModal({
   // Prevent internal clicks from closing the modal
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
 
+  // Backdrop tap closes the sheet — but NOT while a trade is in flight or
+  // its result is still showing. An accidental outside tap (easy to trigger
+  // on a bottom sheet) used to dismiss the whole modal regardless of state,
+  // silently discarding the success/error message before the transaction
+  // status even had a chance to reach 'success'/'error', or the instant it
+  // arrived — the exact "message sometimes gets missed" bug.
+  const handleBackdropClick = () => {
+    if (transactionStatus === 'processing' || transactionStatus === 'success' || transactionStatus === 'error') return;
+    onClose();
+  };
+
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!tradeSummary.isDisabled) {
@@ -113,7 +124,7 @@ export default function TradeModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={handleBackdropClick}>
       
       {/* WebMCP Schema Injection */}
       <script 

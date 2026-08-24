@@ -417,8 +417,12 @@ export default async function StockDetailsPage({ params }: StockPageProps) {
             )}
           </div>
 
-          {/* Right column */}
-          <div className="lg:sticky lg:top-6 space-y-6">
+          {/* Right column — ordered first on mobile so the Buy/Sell panel is
+              reachable without scrolling past the chart, trading rules,
+              description, and related-stocks sections first. On desktop
+              (lg:) it reverts to normal source order as the sticky sidebar
+              next to the chart, where its position already makes sense. */}
+          <div className="order-first lg:order-none lg:sticky lg:top-6 space-y-6">
             <StockTradingSection symbol={stock.symbol} fallbackPrice={basePrice} />
 
             <section className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 text-white shadow-lg">

@@ -115,12 +115,36 @@ const ModernNavbar = () => {
       </nav>
 
       {/* BOTTOM NAVIGATION - Mobile Only (True App-Style) */}
+      {/* The middle Trade item is a raised circular button rather than a plain
+          tab — it's the doorway from the marketing site into the full
+          trading-terminal app shell (components/app/AppShell.tsx), a
+          different kind of destination than Home/Stocks, and should read
+          that way at a glance. */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-[#0B0E11]/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.03)] dark:shadow-none">
-        <div className="flex items-center justify-around h-[68px] px-2">
+        <div className="flex items-stretch justify-around h-[68px] px-2">
           {bottomNavItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
-            
+
+            if (item.name === 'Trade') {
+              return (
+                <div key={item.href} className="w-full flex items-start justify-center">
+                  <Link
+                    href={item.href}
+                    aria-label="Go to the trading floor"
+                    className={`-mt-5 w-14 h-14 rounded-full flex flex-col items-center justify-center gap-0.5 shadow-lg active:scale-95 transition-all ${
+                      active
+                        ? 'bg-blue-700 text-white shadow-blue-600/40'
+                        : 'bg-blue-600 text-white shadow-blue-500/30 hover:bg-blue-700'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" strokeWidth={2.5} />
+                    <span className="text-[10px] font-bold tracking-wide">TRADE</span>
+                  </Link>
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={item.href}
