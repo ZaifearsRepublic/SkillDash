@@ -107,9 +107,19 @@ a legitimate update.
 Do not start this early. Running both domains live for months means managing
 duplicate-content signals for no benefit.
 
-1. Vercel DNS on `shahoriar.bd`: add a CNAME record for `stocksimulator`.
+1. `shahoriar.bd`'s DNS is managed under a **different Vercel account** than
+   this project (confirmed 2026-08-23) — not the same account, so the CNAME
+   can't be added from this project's dashboard. Start from this project's
+   Domains tab (step 2); Vercel will surface the exact CNAME (and possibly a
+   TXT verification record first) to add, then go add that record under the
+   other account's settings for `shahoriar.bd`.
 2. Vercel project → Settings → Domains: add `stocksimulator.shahoriar.bd`.
    Set it to **Serve**, not Redirect. Both domains now serve the same app.
+   Leave "Redirect apex domains to www" unchecked — it only affects an apex
+   domain (`shahoriar.bd` itself), not a subdomain, so it's a no-op here.
+   (A one-off test of this flow ran 2026-08-23 against exactly this
+   subdomain, with `NEXT_PUBLIC_MAIN_DOMAIN` deliberately left untouched,
+   so it did not affect canonicals.)
 3. Wait for the certificate to issue, then confirm HTTPS works.
 4. Firebase console → Authentication → Settings → Authorized domains: add the new
    host. Skipping this breaks Google sign-in on the new domain.
