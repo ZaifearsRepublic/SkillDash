@@ -8,7 +8,7 @@
 // overlay. Trades are still market orders at the live LTP — this simulator
 // has no limit-order book — so the "rate" field is a read-only quote, not an
 // editable price like a real order ticket's would be.
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Minus, Plus, Search, X, ChevronDown, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import AppShell from '@/components/app/AppShell';
@@ -372,14 +372,28 @@ function SymbolPicker({
   onSelect: (symbol: string) => void;
   onClose: () => void;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Deferred rather than a plain `autoFocus`: this overlay opens immediately
+  // on landing here from the bottom nav's ORDER button (showPicker defaults
+  // to true when no symbol is pre-selected), i.e. mid client-side-navigation.
+  // Focusing synchronously on mount pops the mobile keyboard while the route
+  // transition and this fixed overlay's own layout are still settling,
+  // which on some mobile browsers renders the search bar cut off at the top
+  // until the viewport resize catches up. Waiting a frame lets layout
+  // stabilize first.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-white dark:bg-[#0B0E11]">
       <div className="flex items-center gap-2 p-3 border-b border-gray-100 dark:border-gray-800 pt-safe">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
           <input
-            autoFocus
+            ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}

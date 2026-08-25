@@ -10,12 +10,13 @@
 // number we derived ourselves next to real prices would read as the official
 // index. Market breadth (advancing vs declining) is shown instead — it comes
 // straight from the same board data and is honestly ours to compute.
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, Coins } from 'lucide-react';
 import { useSharedSimulator } from '@/contexts/SimulatorContext';
 import { getPortfolioTotals, getMarketBreadth } from '@/lib/utils/portfolio';
+import { formatDhakaClock } from '@/lib/utils/dhakaTime';
 
 const fmtMoney = (n: number, dp = 2) =>
   n.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
@@ -27,11 +28,22 @@ const fmtCompact = (n: number) => {
   return n.toFixed(0);
 };
 
-const mmss = (seconds: number) => {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-};
+/** Ticks its own state once a second so the rest of MarketStrip doesn't
+ * re-render on every tick — isolated on purpose. */
+function LiveClock() {
+  const [time, setTime] = useState(() => formatDhakaClock());
+
+  useEffect(() => {
+    const id = setInterval(() => setTime(formatDhakaClock()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <span className="font-mono opacity-70 tabular-nums" title="Current time, Asia/Dhaka">
+      {time}
+    </span>
+  );
+}
 
 interface Props {
   /** Focuses the market board's search field when the shell is on a screen
@@ -40,7 +52,7 @@ interface Props {
 }
 
 export default function MarketStrip({ onSearchClick }: Props) {
-  const { marketInfo, simulatorState, isMarketOpen, nextUpdateIn } = useSharedSimulator();
+  const { marketInfo, simulatorState, isMarketOpen } = useSharedSimulator();
   const marketOpen = isMarketOpen();
 
   const totals = useMemo(
@@ -81,7 +93,7 @@ export default function MarketStrip({ onSearchClick }: Props) {
               aria-hidden="true"
             />
             {marketOpen ? 'OPEN' : 'CLOSED'}
-            {marketOpen && <span className="font-mono opacity-70">{mmss(nextUpdateIn)}</span>}
+            <LiveClock />
           </div>
 
           <div className="flex-1" />

@@ -84,3 +84,17 @@ export function getDhakaHour(date: Date = new Date()): number {
   const bd = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
   return bd.getHours();
 }
+
+/**
+ * "HH:MM:SS" 24-hour clock in Dhaka local time — the broker-terminal-style
+ * live clock shown in the market strip (see components/app/MarketStrip.tsx).
+ */
+export function formatDhakaClock(date: Date = new Date()): string {
+  return date.toLocaleTimeString('en-US', {
+    timeZone: 'Asia/Dhaka',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+}

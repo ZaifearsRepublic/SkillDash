@@ -118,7 +118,7 @@ function ShellChrome({ children }: { children: ReactNode }) {
         {/* Desktop navigation rail — the tab bar's counterpart above lg */}
         <nav
           aria-label="Primary"
-          className="hidden lg:block fixed top-[84px] left-0 right-0 z-40 bg-white/95 dark:bg-[#0B0E11]/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800"
+          className="hidden lg:block fixed top-[calc(84px+env(safe-area-inset-top))] left-0 right-0 z-40 bg-white/95 dark:bg-[#0B0E11]/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800"
         >
           <div className="max-w-7xl mx-auto px-8">
             <div className="flex items-center gap-1 h-11">
@@ -156,9 +156,15 @@ function ShellChrome({ children }: { children: ReactNode }) {
           </div>
         </nav>
 
-        {/* Top padding clears the two-row strip (84px), plus the desktop rail
+        {/* Top padding clears the two-row strip (84px) plus its own safe-area
+            inset — MarketStrip's pt-safe pushes its actual rendered height
+            past 84px on any notched/edge-to-edge device, so a flat 84px here
+            let the top of every AppShell page's content sit partly behind
+            the fixed header on those devices. Also clears the desktop rail
             above lg. Bottom padding clears the tab bar and its safe area. */}
-        <main className="pt-[84px] lg:pt-[128px] pb-[72px] lg:pb-8">{children}</main>
+        <main className="pt-[calc(84px+env(safe-area-inset-top))] lg:pt-[calc(128px+env(safe-area-inset-top))] pb-[72px] lg:pb-8">
+          {children}
+        </main>
 
         <AppTabBar />
       </div>
