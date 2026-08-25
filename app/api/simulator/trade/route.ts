@@ -18,7 +18,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
-import { isMarketOpenServer } from '@/lib/utils/marketHours';
+import { isMarketOpenCorroborated } from '@/lib/utils/marketHours';
 import { COMMISSION_RATE, moneyAdd, moneySubtract, moneyMultiply, roundMoney } from '@/lib/utils/money';
 
 // Ensure Firebase Admin is initialized with full credentials
@@ -105,13 +105,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Quantity must be a positive integer' }, { status: 400 });
     }
 
-    if (!isMarketOpenServer()) {
-      return NextResponse.json(
-        { success: false, error: 'Market is closed. Orders are only allowed during market hours (10:00 AM - 2:15 PM).' },
-        { status: 400 }
-      );
-    }
-
     const db = getFirestore();
     const appId = process.env.NEXT_PUBLIC_SIMULATOR_APP_ID || 'stocksimulatorbd-dse-v1';
 
@@ -133,7 +126,31 @@ export async function POST(req: NextRequest) {
     if (!marketSnap.exists) {
       return NextResponse.json({ success: false, error: 'Market data not available' }, { status: 503 });
     }
-    const stocks = (marketSnap.data()?.stocks || []) as Array<{ symbol: string; ltp: number; traded?: boolean }>;
+    const marketDoc = marketSnap.data() || {};
+
+    // Market-open decision, made AFTER loading market data on purpose: it
+    // uses DSE's own "Market Status" from the board we scrape, which
+    // outranks our hand-maintained holiday calendar in both directions.
+    // A wrong calendar date once rejected every order for a full session
+    // while DSE traded normally — see lib/utils/marketHours.ts.
+    const marketState = isMarketOpenCorroborated({
+      marketStatus: marketDoc.marketStatus,
+      lastUpdated: marketDoc.lastUpdated,
+    });
+    if (!marketState.open) {
+      console.warn(`[trade] Rejected: market closed (${marketState.reason})`);
+      return NextResponse.json(
+        { success: false, error: 'Market is closed. Orders are only allowed during market hours (10:00 AM - 2:15 PM).' },
+        { status: 400 }
+      );
+    }
+    if (marketState.reason === 'dse-open-overrides-calendar-holiday') {
+      // Loud on purpose: this means bangladeshHolidays.ts has a wrong date
+      // that would otherwise be blocking trading right now, and needs fixing.
+      console.warn('[trade] Holiday calendar says closed but DSE reports Open — trading allowed. Fix lib/bangladeshHolidays.ts.');
+    }
+
+    const stocks = (marketDoc.stocks || []) as Array<{ symbol: string; ltp: number; traded?: boolean }>;
     const stock = stocks.find((s) => s.symbol === symbol);
     if (!stock) {
       return NextResponse.json({ success: false, error: 'Stock not found' }, { status: 400 });

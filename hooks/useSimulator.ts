@@ -20,6 +20,7 @@ import { fetchWithFreshToken } from '@/lib/utils/fetchWithToken';
 // the actual trade cost/proceeds are now computed authoritatively server-side.
 // =====================================================
 import { moneyAdd, moneyMultiply, moneySubtract, roundMoney } from '@/lib/utils/money';
+import { getDseReportedOpen } from '@/lib/utils/marketHours';
 
 export interface Stock {
   symbol: string;
@@ -82,6 +83,10 @@ export interface MarketInfo {
   stocks: Stock[];
   lastUpdated: string;
   totalStocks: number;
+  /** DSE's own session state ("Open" / "Closed" / "Post Close"), scraped off
+   * the board by api/market_sync.py. Absent on documents written before that
+   * was captured; treated as "no opinion", never as closed. */
+  marketStatus?: string | null;
 }
 
 export const useSimulator = () => {
@@ -319,9 +324,27 @@ export const useSimulator = () => {
     
     const dateStr = `${bdTime.getUTCFullYear()}-${String(bdTime.getUTCMonth() + 1).padStart(2, '0')}-${String(bdTime.getUTCDate()).padStart(2, '0')}`;
 
-    if (dayOfWeek === 5 || dayOfWeek === 6 || bangladeshHolidays.includes(dateStr)) return false;
-    return (hour >= 10 && (hour < 14 || (hour === 14 && minute <= 15)));
-  }, [bangladeshHolidays]);
+    if (dayOfWeek === 5 || dayOfWeek === 6) return false;
+
+    const withinHours = hour >= 10 && (hour < 14 || (hour === 14 && minute <= 15));
+    if (!withinHours) return false;
+
+    // DSE's own "Market Status", captured by api/market_sync.py off the same
+    // board we scrape for prices, outranks the holiday calendar whenever it's
+    // present and fresh — mirroring isMarketOpenCorroborated() on the server
+    // (lib/utils/marketHours.ts) so the Buy button and the trade API agree.
+    // They previously disagreed: the client resolved holidays via
+    // /api/holidays (Google Calendar) while the server used the local
+    // hardcoded list, so a bad local date showed an enabled Buy button that
+    // failed on submit with "Market is closed".
+    const dseOpen = getDseReportedOpen({
+      marketStatus: marketInfo?.marketStatus,
+      lastUpdated: marketInfo?.lastUpdated,
+    }, now);
+    if (dseOpen !== null) return dseOpen;
+
+    return !bangladeshHolidays.includes(dateStr);
+  }, [bangladeshHolidays, marketInfo?.marketStatus, marketInfo?.lastUpdated]);
 
   // ── 6. UNIFIED TRADE EXECUTION ENGINE ──
   // Trade math/writes now happen server-side (app/api/simulator/trade) via

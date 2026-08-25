@@ -57,6 +57,11 @@ export async function GET(request: NextRequest) {
   console.log(`[stock-sync] Fetching: ${scrapeUrl}`);
 
   let marketData: unknown[];
+  // DSE's own "Market Status: Open/Closed" as printed on the board we
+  // scrape. null when the scraper couldn't find it (older payload shape, or
+  // a parse miss) — consumers treat null as "no opinion" and fall back to
+  // the holiday calendar. See lib/utils/marketHours.ts.
+  let marketStatus: string | null = null;
 
   try {
     const pythonRes = await fetch(scrapeUrl, {
@@ -78,7 +83,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    marketData = await pythonRes.json();
+    const payload = await pythonRes.json();
+
+    // api/market_sync.py used to return a bare array and now returns
+    // { stocks, marketStatus }. Accept both so the Python function and this
+    // route can never be out of step, in either direction.
+    if (Array.isArray(payload)) {
+      marketData = payload;
+    } else {
+      marketData = payload?.stocks;
+      marketStatus = typeof payload?.marketStatus === 'string' ? payload.marketStatus : null;
+    }
 
   } catch (err: any) {
     console.error('[stock-sync] Scrape failed:', err.message);
@@ -113,13 +128,15 @@ export async function GET(request: NextRequest) {
       stocks:      marketData,
       lastUpdated: new Date().toISOString(),
       totalStocks: marketData.length,
+      marketStatus,
     });
 
-    console.log(`[stock-sync] ✓ Wrote ${marketData.length} stocks to ${appId}`);
+    console.log(`[stock-sync] ✓ Wrote ${marketData.length} stocks to ${appId} (DSE status: ${marketStatus ?? 'unknown'})`);
 
     return NextResponse.json({
       success:     true,
       message:     `Successfully synced ${marketData.length} stocks.`,
+      marketStatus,
       appId,
       timestamp:   new Date().toISOString(),
     });

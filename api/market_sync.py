@@ -1,8 +1,39 @@
 import json
+import re
+import html as html_lib
 import urllib.request
 import ssl
 from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler
+
+# dsebd.org's board prints its own authoritative session state near the top
+# of the page, e.g.:
+#   Tuesday, August 25, 2026  Current Time: 11:19:04 AM (BST)
+#   Market Status: Open
+#
+# This is DSE telling us directly whether it is trading, which is strictly
+# better evidence than our own hardcoded holiday calendar guessing at it.
+# A wrong date in lib/bangladeshHolidays.ts once took the whole trading
+# feature offline for a live session (2026-08-25); capturing this lets the
+# app corroborate the calendar against reality instead of trusting it
+# blindly. See lib/utils/marketHours.ts.
+#
+# Parsed off the tag-stripped text rather than a specific element, because
+# the surrounding markup is incidental while this label has been stable.
+# Returns None when it can't be found, and every consumer treats None as
+# "no opinion" and falls back to the calendar — a parser break must never
+# itself become an outage.
+MARKET_STATUS_RE = re.compile(r'Market\s*Status\s*:\s*([A-Za-z][A-Za-z \-]{0,30})', re.I)
+
+
+def extract_market_status(html_text):
+    text = html_lib.unescape(re.sub(r'<[^>]+>', ' ', html_text))
+    match = MARKET_STATUS_RE.search(text)
+    if not match:
+        return None
+    # Collapse whitespace and drop any trailing words that ran on from the
+    # next element once the tags were stripped.
+    return ' '.join(match.group(1).split()).split('  ')[0].strip() or None
 
 class DSEMarketParser(HTMLParser):
     def __init__(self):
@@ -96,18 +127,29 @@ class handler(BaseHTTPRequestHandler):
             if len(parser.stocks) < 50:
                 self.send_error_response(500, "Scraper returned unusually low results")
                 return
-                
-            self.send_success_response(parser.stocks)
-            
+
+            # Never let a status-parse problem fail the price sync — prices
+            # are the critical payload, the status is a bonus signal.
+            try:
+                market_status = extract_market_status(html)
+            except Exception:
+                market_status = None
+
+            self.send_success_response(parser.stocks, market_status)
+
         except Exception as e:
             self.send_error_response(500, f"Native Mass Sync Error: {str(e)}")
 
-    def send_success_response(self, data):
+    def send_success_response(self, data, market_status=None):
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*') 
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
-        self.wfile.write(json.dumps(data).encode('utf-8'))
+        # Object form, replacing the bare array this used to return. The
+        # Next.js consumer (app/api/stock-sync/route.ts) accepts both shapes
+        # so the two can never be out of step during a rollout.
+        payload = {"stocks": data, "marketStatus": market_status}
+        self.wfile.write(json.dumps(payload).encode('utf-8'))
 
     def send_error_response(self, status, message):
         self.send_response(status)
