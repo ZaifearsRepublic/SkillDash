@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode, type MouseEvent } from 'react';
 import Link from 'next/link';
-import { Users, Clock, UserPlus, Coins, TrendingUp, TrendingDown, Compass, Activity, ArrowRight, MapPin, Radio, ShieldAlert, Wallet, Repeat, Newspaper, LineChart } from 'lucide-react';
+import { Users, Clock, UserPlus, Coins, TrendingUp, TrendingDown, Compass, Activity, ArrowRight, MapPin, Radio, ShieldAlert, ShieldCheck, Wallet, Repeat, Newspaper, LineChart } from 'lucide-react';
 import { BD_GEO_BUCKETS, type GeoBucketKey } from '@/lib/utils/geoBucket';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -74,6 +74,7 @@ interface BalanceIntegrityData {
 export interface SiteAnalyticsData {
   activeRightNow: number;
   visitors: { today: number; last7Days: number; last30Days: number };
+  disclaimerAgreements: { today: number; last7Days: number; last30Days: number };
   avgSessionSeconds: { today: number; last7Days: number };
   registrations: {
     today: number;
@@ -1184,6 +1185,36 @@ export default function SiteAnalyticsSection({
             }
             accent="purple"
             icon={<Icon.UserPlus />}
+          />
+        </div>
+      </div>
+
+      {/* Disclaimer agreements — see components/app/DisclaimerGate.tsx.
+          One per account, ever, so these are first-time agreements on that
+          day, not an active-users count. */}
+      <div>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4" />
+          Disclaimer Agreements
+        </h2>
+        <div className="grid grid-cols-3 gap-4">
+          <StatTile
+            label="Today"
+            value={formatCompact(data.disclaimerAgreements.today)}
+            accent="green"
+            icon={<ShieldCheck className="w-4 h-4" />}
+          />
+          <StatTile
+            label="Last 7 days"
+            value={formatCompact(data.disclaimerAgreements.last7Days)}
+            accent="green"
+            icon={<ShieldCheck className="w-4 h-4" />}
+          />
+          <StatTile
+            label="Last 30 days"
+            value={formatCompact(data.disclaimerAgreements.last30Days)}
+            accent="green"
+            icon={<ShieldCheck className="w-4 h-4" />}
           />
         </div>
       </div>

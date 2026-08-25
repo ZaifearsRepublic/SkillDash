@@ -115,6 +115,17 @@ export async function POST(req: NextRequest) {
     const db = getFirestore();
     const appId = process.env.NEXT_PUBLIC_SIMULATOR_APP_ID || 'stocksimulatorbd-dse-v1';
 
+    // Real enforcement, not just a UI wall (see components/app/DisclaimerGate.tsx):
+    // an account with no recorded agreement to the educational-use-only
+    // disclaimer cannot trade, even if someone bypassed the client-side gate.
+    const userSnap = await db.doc(`users/${uid}`).get();
+    if (!userSnap.exists || !userSnap.data()?.disclaimerAgreedAt) {
+      return NextResponse.json(
+        { success: false, error: 'You must agree to the educational-use disclaimer before trading.' },
+        { status: 403 }
+      );
+    }
+
     // Authoritative price: the same market_info doc the client displays.
     // The request body's price (if any) is never read or trusted.
     const marketRef = db.doc(`artifacts/${appId}/public/data/market_info/latest`);

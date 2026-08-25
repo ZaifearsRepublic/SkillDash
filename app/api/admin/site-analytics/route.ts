@@ -111,6 +111,13 @@ export async function GET(req: NextRequest) {
     const visitorsLast7 = sumField(last7Keys, 'totalSessions');
     const visitorsLast30 = sumField(trendKeys, 'totalSessions');
 
+    // Educational-use disclaimer agreements (see app/api/disclaimer/agree,
+    // components/app/DisclaimerGate.tsx) — one per account, ever, so this is
+    // "how many first-time agreements happened on day X", not active users.
+    const disclaimerAgreedToday = dailyByKey.get(todayKey)?.disclaimerAgreedCount || 0;
+    const disclaimerAgreedLast7 = sumField(last7Keys, 'disclaimerAgreedCount');
+    const disclaimerAgreedLast30 = sumField(trendKeys, 'disclaimerAgreedCount');
+
     const avgSeconds = (keys: string[]): number => {
       const totalSeconds = sumField(keys, 'totalActiveSeconds');
       const completed = sumField(keys, 'completedSessions');
@@ -620,6 +627,11 @@ export async function GET(req: NextRequest) {
         success: true,
         activeRightNow,
         visitors: { today: visitorsToday, last7Days: visitorsLast7, last30Days: visitorsLast30 },
+        disclaimerAgreements: {
+          today: disclaimerAgreedToday,
+          last7Days: disclaimerAgreedLast7,
+          last30Days: disclaimerAgreedLast30,
+        },
         avgSessionSeconds: { today: avgSeconds([todayKey]), last7Days: avgSeconds(last7Keys) },
         registrations: {
           // All four now come from the same source (Firebase Auth unless it

@@ -25,6 +25,7 @@ import { SimulatorProvider } from '@/contexts/SimulatorContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import MarketStrip from './MarketStrip';
 import AppTabBar, { APP_TABS } from './AppTabBar';
+import DisclaimerGate from './DisclaimerGate';
 
 /**
  * Lets whichever screen owns a search field claim the strip's search button.
@@ -87,9 +88,11 @@ export default function AppShell({ children, redirectPath, redirectMessage }: Pr
   }
 
   return (
-    <SimulatorProvider>
-      <ShellChrome>{children}</ShellChrome>
-    </SimulatorProvider>
+    <DisclaimerGate>
+      <SimulatorProvider>
+        <ShellChrome>{children}</ShellChrome>
+      </SimulatorProvider>
+    </DisclaimerGate>
   );
 }
 

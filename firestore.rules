@@ -28,9 +28,13 @@ service cloud.firestore {
     // ===== USERS COLLECTION =====
     match /users/{userId} {
       allow read: if isOwner(userId);
+      // disclaimerAgreedAt is a legal consent timestamp (see
+      // app/api/disclaimer/agree/route.ts) — excluded from client writes the
+      // same way coins/admin/role are, so it can only ever be set by that
+      // Admin SDK route, never spoofed or backdated by the client itself.
       allow write: if isOwner(userId)
-        && !request.resource.data.keys().hasAny(['coins', 'admin', 'welcomeBonusGranted', 'role', 'isGodMode']);
-      
+        && !request.resource.data.keys().hasAny(['coins', 'admin', 'welcomeBonusGranted', 'role', 'isGodMode', 'disclaimerAgreedAt']);
+
       allow read: if isAdmin();
       allow update: if isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys()
