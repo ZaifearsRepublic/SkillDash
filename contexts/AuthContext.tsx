@@ -273,7 +273,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const userDoc = await getDoc(userDocRef);
           const userData = userDoc.exists() ? userDoc.data() : null;
           
-          if (!userDoc.exists()) {
+          // Existence alone isn't proof of a profile: the disclaimer-consent
+          // route (app/api/disclaimer/agree) can create this doc first with
+          // nothing but a timestamp on it. Treat a doc with no createdAt as
+          // still needing its profile, or the account stays nameless forever
+          // and never shows up in registration analytics.
+          if (!userDoc.exists() || !userData?.createdAt) {
             // ✅ NEW USER: Create document (merge:true to avoid overwriting if race with handleSocialSignInResult)
             console.log('🆕 New user detected, creating document...');
             

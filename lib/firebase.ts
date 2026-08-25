@@ -107,9 +107,16 @@ export const getActionCodeSettings = () => ({
 export const handleSocialSignInResult = async (user: any) => {
     const userDocRef = doc(db, 'users', user.uid);
     const docSnap = await getDoc(userDocRef);
-    
-    // Create user doc if it doesn't exist (merge to avoid race with onAuthStateChanged)
-    if (!docSnap.exists()) {
+
+    // Create user doc if it doesn't exist (merge to avoid race with onAuthStateChanged).
+    // "Exists" alone is not enough: app/api/disclaimer/agree/route.ts can
+    // create this document ahead of us (it records consent with a merge
+    // write), leaving a doc that exists but carries no profile at all. Keying
+    // off existence would then skip profile creation permanently, leaving the
+    // account with no name/email/createdAt — which also drops it out of the
+    // registration analytics and admin user lists. `createdAt` is the marker
+    // that a real profile was written.
+    if (!docSnap.exists() || !docSnap.data()?.createdAt) {
         await setDoc(userDocRef, {
             name: user.displayName || user.email?.split('@')[0] || 'User', 
             email: user.email,
@@ -334,15 +341,22 @@ export const signUpWithEmailPasswordAndProfile = async (profileData: SignUpProfi
         provider: 'password',
         createdAt: new Date().toISOString()
     };
+    // merge:true, not a plain overwrite. A full-document write would strip any
+    // server-owned field already on the doc — most importantly the
+    // disclaimerAgreedAt consent timestamp, which
+    // app/api/disclaimer/agree/route.ts can have written first. firestore.rules
+    // now rejects a write that removes a protected field outright, so without
+    // merge this call would simply fail and the user would end up with no
+    // profile at all.
     try {
-        await setDoc(userDocRef, profileDoc);
+        await setDoc(userDocRef, profileDoc, { merge: true });
     } catch (err) {
         // One retry for a transient blip (the common case on the mobile
         // networks this app's users are on) — not a full backoff loop, since
         // the goal is to survive a single dropped packet, not to keep
         // retrying while the user has already navigated away.
         console.warn('Profile doc write failed, retrying once:', err);
-        await setDoc(userDocRef, profileDoc);
+        await setDoc(userDocRef, profileDoc, { merge: true });
     }
 
     await updateProfile(user, { displayName: profileData.name });

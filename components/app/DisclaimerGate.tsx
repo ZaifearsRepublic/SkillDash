@@ -26,31 +26,46 @@ import { fetchWithFreshToken } from '@/lib/utils/fetchWithToken';
 
 type Status = 'loading' | 'pending' | 'agreed';
 
-function useDisclaimerStatus(): Status {
-  const { user } = useAuth();
+function useDisclaimerStatus(uid: string | undefined): Status {
   const [status, setStatus] = useState<Status>('loading');
 
   useEffect(() => {
-    if (!user) return;
-    const db = getFirestore();
-    const ref = doc(db, 'users', user.uid);
-    const unsubscribe = onSnapshot(
+    if (!uid) return;
+
+    // Reset on every uid change. Without this, switching accounts (sign out,
+    // sign in as someone else) would carry the previous user's 'agreed'
+    // straight through, letting the second account skip the gate entirely
+    // until its own snapshot arrived.
+    setStatus('loading');
+
+    const ref = doc(getFirestore(), 'users', uid);
+    return onSnapshot(
       ref,
-      (snap) => setStatus(snap.exists() && snap.data().disclaimerAgreedAt ? 'agreed' : 'pending'),
-      () => setStatus('pending')
+      (snap) => setStatus(snap.exists() && snap.data()?.disclaimerAgreedAt ? 'agreed' : 'pending'),
+      (err) => {
+        // Fail closed: an unreadable profile means we cannot show that this
+        // person has agreed, and the whole point of the gate is that it is
+        // not bypassable. Re-agreeing is harmless — the API is idempotent
+        // and won't double-count the analytics tally.
+        console.warn('Disclaimer status listener error:', err);
+        setStatus('pending');
+      }
     );
-    return unsubscribe;
-  }, [user]);
+  }, [uid]);
 
   return status;
 }
 
 export default function DisclaimerGate({ children }: { children: React.ReactNode }) {
-  const status = useDisclaimerStatus();
+  const { user } = useAuth();
+  const uid = user?.uid;
+  const status = useDisclaimerStatus(uid);
   // Answering "I Agree" flips this immediately for a snappy unlock, ahead of
   // the Firestore listener round-trip (which arrives moments later anyway
-  // and simply confirms the same thing).
-  const [optimisticallyAgreed, setOptimisticallyAgreed] = useState(false);
+  // and simply confirms the same thing). Keyed by uid so it can never carry
+  // over to a different account.
+  const [agreedUid, setAgreedUid] = useState<string | null>(null);
+  const optimisticallyAgreed = Boolean(uid && agreedUid === uid);
 
   if (status === 'agreed' || optimisticallyAgreed) {
     return <>{children}</>;
@@ -64,7 +79,7 @@ export default function DisclaimerGate({ children }: { children: React.ReactNode
     );
   }
 
-  return <DisclaimerModal onAgreed={() => setOptimisticallyAgreed(true)} />;
+  return <DisclaimerModal onAgreed={() => setAgreedUid(uid ?? null)} />;
 }
 
 function DisclaimerModal({ onAgreed }: { onAgreed: () => void }) {

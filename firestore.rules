@@ -17,8 +17,13 @@ service cloud.firestore {
     // a mutable Firestore field (and cost a document read on every rule
     // evaluation that referenced it). A custom claim can only be set with
     // service-account credentials, so no client write can forge one.
+    // .get('admin', false) rather than .admin — reading a claim that isn't
+    // present throws ("Property admin is undefined on object"), and a rule
+    // that throws is a rule that can't be reasoned about. Verified in the
+    // emulator: every ordinary non-admin write was logging an evaluation
+    // error here before this.
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.admin == true;
+      return isAuthenticated() && request.auth.token.get('admin', false) == true;
     }
     
     function hasRequiredFields(fields) {
@@ -27,18 +32,42 @@ service cloud.firestore {
     
     // ===== USERS COLLECTION =====
     match /users/{userId} {
-      allow read: if isOwner(userId);
-      // disclaimerAgreedAt is a legal consent timestamp (see
-      // app/api/disclaimer/agree/route.ts) — excluded from client writes the
-      // same way coins/admin/role are, so it can only ever be set by that
-      // Admin SDK route, never spoofed or backdated by the client itself.
-      allow write: if isOwner(userId)
-        && !request.resource.data.keys().hasAny(['coins', 'admin', 'welcomeBonusGranted', 'role', 'isGodMode', 'disclaimerAgreedAt']);
+      // Server-only fields: the gating currency, privilege flags, and the
+      // educational-use consent timestamp written by
+      // app/api/disclaimer/agree/route.ts. The client may never set, change,
+      // or REMOVE any of these.
+      function protectedUserFields() {
+        return ['coins', 'admin', 'welcomeBonusGranted', 'role', 'isGodMode', 'disclaimerAgreedAt'];
+      }
 
-      allow read: if isAdmin();
+      allow read: if isOwner(userId) || isAdmin();
+
+      allow create: if isOwner(userId)
+        && !request.resource.data.keys().hasAny(protectedUserFields());
+
+      // Judged on what actually CHANGED, not on what the finished document
+      // happens to contain.
+      //
+      // This previously used `request.resource.data.keys().hasAny(...)` for
+      // all writes. On an update, request.resource.data is the whole
+      // post-write document — untouched fields included — so that condition
+      // was true for every user who had a `coins` field, i.e. everyone. Net
+      // effect, confirmed in the Firestore emulator: EVERY client update to
+      // a user document was denied, silently breaking updateUserProfile().
+      //
+      // The same bug had a second face. A full-document setDoc() (no merge)
+      // was ALLOWED, because the replacement document doesn't list the
+      // protected keys — so a client could erase their own coins or wipe
+      // their recorded consent. diff().affectedKeys() covers additions,
+      // changes and removals, which closes both directions at once.
+      allow update: if isOwner(userId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(protectedUserFields());
+
       allow update: if isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['coins', 'welcomeBonusGranted', 'lastCoinUpdate', 'lastCoinAction']);
+
+      allow delete: if false;
     }
     
     // ===== COIN TRANSACTIONS =====

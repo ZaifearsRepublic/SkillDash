@@ -49,7 +49,29 @@ export async function POST(req: NextRequest) {
       }
 
       const nowIso = new Date().toISOString();
-      transaction.set(userRef, { disclaimerAgreedAt: nowIso }, { merge: true });
+
+      // If this request is what brings the user document into existence — a
+      // real possibility, since the client can reach the gate before its own
+      // profile write has landed — seed the identity fields too. A document
+      // holding nothing but a consent timestamp would look "already created"
+      // to the profile-creation paths in lib/firebase.ts and AuthContext,
+      // which would then skip it and leave the account permanently without a
+      // name, email or createdAt (and therefore missing from registration
+      // analytics and the admin user lists). Everything here comes from the
+      // verified ID token, never from the request body.
+      const profileSeed =
+        userSnap.exists && userSnap.data()?.createdAt
+          ? {}
+          : {
+              name: decodedToken.name || decodedToken.email?.split('@')[0] || 'User',
+              email: decodedToken.email ?? null,
+              displayName: decodedToken.name ?? null,
+              photoURL: decodedToken.picture ?? null,
+              provider: decodedToken.firebase?.sign_in_provider ?? 'unknown',
+              createdAt: nowIso,
+            };
+
+      transaction.set(userRef, { ...profileSeed, disclaimerAgreedAt: nowIso }, { merge: true });
       transaction.set(dailyRef, { disclaimerAgreedCount: FieldValue.increment(1) }, { merge: true });
       return nowIso;
     });
