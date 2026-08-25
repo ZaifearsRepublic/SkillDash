@@ -28,7 +28,37 @@ const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 /**
  * Comprehensive Bangladesh Public Holidays
  * Sources: Bangladesh Government, DSE Trading Calendar
- * Note: Islamic holidays are approximate (lunar calendar varies by 1-2 days)
+ *
+ * ⚠️ THIS LIST CAN TAKE TRADING DOWN. Read before editing.
+ *
+ * These dates are not merely informational. lib/utils/marketHours.ts's
+ * isMarketOpenServer() — the authoritative gate in the trade API — treats
+ * this dataset as the single source of truth, with no network dependency
+ * and no cross-check against whether DSE is actually trading. A date that
+ * is wrong in the "extra holiday" direction silently blocks EVERY order for
+ * that entire session.
+ *
+ * That is not hypothetical: 2026-08-25 was entered as Eid-e-Milad-un-Nabi
+ * by projecting "last year minus ~11 days" off 2025-09-05. DSE traded
+ * normally that day (384 of 395 symbols with executed trades, ~50k trades
+ * on its live board) while this app rejected every order with "Market is
+ * closed". The real date was 2026-08-26. Two more entries — Ashura and
+ * Durga Puja — were found misdated onto trading days in the same audit.
+ *
+ * Rules for editing:
+ *  - NEVER add a projected/estimated date for a lunar (islamic) holiday.
+ *    They are fixed by moon sighting and confirmed only shortly beforehand.
+ *  - Only add a date you can source from DSE's own published trading
+ *    calendar or the government gazette.
+ *  - A missing holiday is a much cheaper mistake than a wrong extra one:
+ *    it lets people trade on a stale board, rather than taking the core
+ *    feature offline for a day.
+ *
+ * Note also that the CLIENT reaches these dates through /api/holidays,
+ * which prefers the Google Calendar API and only falls back to this file —
+ * so the client and the server can disagree. When they do, the user sees an
+ * enabled Buy button that fails on submit with "Market is closed", which is
+ * exactly how the 2026-08-25 outage surfaced.
  */
 const BD_HOLIDAYS: Record<number, Holiday[]> = {
   2024: [
@@ -80,24 +110,22 @@ const BD_HOLIDAYS: Record<number, Holiday[]> = {
     { date: '2026-05-31', name: 'Buddha Purnima', localName: 'বুদ্ধ পূর্ণিমা', type: 'religious' },
     { date: '2026-05-27', name: 'Eid ul-Adha', localName: 'ঈদুল আযহা', type: 'islamic' },
     { date: '2026-05-28', name: 'Eid ul-Adha Holiday', localName: 'ঈদুল আযহা ছুটি', type: 'islamic' },
-    { date: '2026-06-25', name: 'Ashura', localName: 'আশুরা', type: 'islamic' },
+    // Ashura was listed as 2026-06-25 (a Thursday, a trading day). The
+    // authoritative calendar puts it on 2026-06-26 — a Friday, already a
+    // weekend here. The wrong date would have blocked a full trading
+    // session exactly like 2026-08-25 did; see the note at the top of this
+    // file.
+    { date: '2026-06-26', name: 'Ashura', localName: 'আশুরা', type: 'islamic' },
     { date: '2026-08-15', name: 'National Mourning Day', localName: 'জাতীয় শোক দিবস', type: 'national' },
+    // Corrected from 2026-08-25, which was a mechanical "last year minus
+    // ~11 days" projection off 2025-09-05. DSE traded normally on the 25th.
+    { date: '2026-08-26', name: 'Eid-e-Milad-un-Nabi', localName: 'ঈদে মিলাদুন্নবী', type: 'islamic' },
     { date: '2026-09-04', name: 'Janmashtami', localName: 'জন্মাষ্টমী', type: 'religious' },
-    // Eid-e-Milad-un-Nabi 2026 is deliberately NOT listed. It had been
-    // entered as 2026-08-25 — a mechanical "last year minus ~11 days"
-    // projection from 2025-09-05 — but DSE traded normally that day
-    // (verified against dsebd.org's live board: 384 of 395 symbols with
-    // executed trades, ~50k trades, while this list was reporting the
-    // market closed). That wrong date took the whole trading feature down
-    // for a full session, because isMarketOpenServer() treats this list as
-    // authoritative.
-    //
-    // Do NOT re-add a projected date for this holiday. Lunar-calendar
-    // holidays are fixed by moon sighting and are only confirmed by the
-    // government/DSE shortly beforehand, so a guess here is an outage
-    // waiting to happen. Add it only once DSE publishes its actual holiday
-    // calendar for the date.
-    { date: '2026-09-20', name: 'Durga Puja', localName: 'দুর্গাপূজা', type: 'religious' },
+    // Durga Puja was listed as 2026-09-20 — a Sunday, which is a normal DSE
+    // trading day — and is actually a month later. Another blocked-session
+    // waiting to happen.
+    { date: '2026-10-20', name: 'Mahanabami', localName: 'মহানবমী', type: 'religious' },
+    { date: '2026-10-21', name: 'Durga Puja', localName: 'দুর্গাপূজা', type: 'religious' },
     { date: '2026-12-16', name: 'Victory Day', localName: 'বিজয় দিবস', type: 'national' },
     { date: '2026-12-25', name: 'Christmas', localName: 'বড়দিন', type: 'religious' },
   ],
