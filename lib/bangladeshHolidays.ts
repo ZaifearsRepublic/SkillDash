@@ -83,7 +83,20 @@ const BD_HOLIDAYS: Record<number, Holiday[]> = {
     { date: '2026-06-25', name: 'Ashura', localName: 'আশুরা', type: 'islamic' },
     { date: '2026-08-15', name: 'National Mourning Day', localName: 'জাতীয় শোক দিবস', type: 'national' },
     { date: '2026-09-04', name: 'Janmashtami', localName: 'জন্মাষ্টমী', type: 'religious' },
-    { date: '2026-08-25', name: 'Eid-e-Milad-un-Nabi', localName: 'ঈদে মিলাদুন্নবী', type: 'islamic' },
+    // Eid-e-Milad-un-Nabi 2026 is deliberately NOT listed. It had been
+    // entered as 2026-08-25 — a mechanical "last year minus ~11 days"
+    // projection from 2025-09-05 — but DSE traded normally that day
+    // (verified against dsebd.org's live board: 384 of 395 symbols with
+    // executed trades, ~50k trades, while this list was reporting the
+    // market closed). That wrong date took the whole trading feature down
+    // for a full session, because isMarketOpenServer() treats this list as
+    // authoritative.
+    //
+    // Do NOT re-add a projected date for this holiday. Lunar-calendar
+    // holidays are fixed by moon sighting and are only confirmed by the
+    // government/DSE shortly beforehand, so a guess here is an outage
+    // waiting to happen. Add it only once DSE publishes its actual holiday
+    // calendar for the date.
     { date: '2026-09-20', name: 'Durga Puja', localName: 'দুর্গাপূজা', type: 'religious' },
     { date: '2026-12-16', name: 'Victory Day', localName: 'বিজয় দিবস', type: 'national' },
     { date: '2026-12-25', name: 'Christmas', localName: 'বড়দিন', type: 'religious' },
