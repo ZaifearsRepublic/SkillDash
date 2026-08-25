@@ -144,7 +144,7 @@ export const metadata: Metadata = {
   category: 'finance',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'StockSimulatorBD',
   },
   other: {

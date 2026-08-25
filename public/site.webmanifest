@@ -5,8 +5,8 @@
   "description": "Practice trading Dhaka Stock Exchange stocks risk-free with virtual currency.",
   "lang": "en",
   "dir": "ltr",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "https://www.stocksimulator.tech/",
+  "scope": "https://www.stocksimulator.tech/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "launch_handler": {
