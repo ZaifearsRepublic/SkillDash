@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { auth, db } from '@/lib/firebase';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { Home, Loader2, Plus, Copy, Check, Ban, Search, Gift } from 'lucide-react';
+import { fetchWithFreshToken } from '@/lib/utils/fetchWithToken';
 
 interface PromoCode {
   id: string; // = code
@@ -159,10 +160,9 @@ function CodeRow({ code, expired }: { code: PromoCode; expired: boolean }) {
     if (!confirm(`Disable ${code.code}? This can't be undone, but it doesn't affect codes that are already used.`)) return;
     setDisabling(true);
     try {
-      const token = await auth.currentUser?.getIdToken(true);
-      const res = await fetch('/api/admin/promo-codes', {
+      const res = await fetchWithFreshToken('/api/admin/promo-codes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'disable', code: code.code }),
       });
       const data = await res.json();

@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     const db = getFirestore();
 
     if (action === 'generate') {
-      const amount = Number(body.amount);
+      const amount = Math.floor(Number(body.amount));
       const quantity = Number(body.quantity) || 1;
       const expiresInDays = body.expiresInDays != null ? Number(body.expiresInDays) : null;
       const customCode: string | undefined = body.customCode;

@@ -26,12 +26,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { moneyAdd, roundMoney } from '@/lib/utils/money';
+import { checkPersistentRateLimit } from '@/lib/utils/persistentRateLimit';
 
 // Ensure Firebase Admin is initialized with full credentials
 import '@/lib/coinManagerServer';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+// 5 attempts per minute per uid — generous enough for any real user
+// (one attempt is all you need if your code is right), tight enough to
+// stop a script guessing random codes and paying for the Firestore reads.
+const REDEEM_MAX_ATTEMPTS = 5;
+const REDEEM_WINDOW_MS = 60_000;
 
 // Matches app/api/simulator/trade/route.ts's SANE_BALANCE_CAP. Admin SDK
 // writes bypass firestore.rules entirely, so every privileged balance
@@ -80,6 +87,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid or expired token' }, { status: 401 });
     }
     const uid = decodedToken.uid;
+
+    // Rate-limit: 5 attempts per uid per minute. Keyed by uid so shared-IP
+    // carrier-NAT (common in BD) doesn't punish unrelated users, and a single
+    // account can't burn Firestore reads by cycling through guessed codes.
+    const allowed = await checkPersistentRateLimit(`promo-redeem:${uid}`, {
+      maxRequests: REDEEM_MAX_ATTEMPTS,
+      windowMs: REDEEM_WINDOW_MS,
+    });
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Too many attempts. Wait a minute and try again.' },
+        { status: 429 }
+      );
+    }
 
     let body: any;
     try {
