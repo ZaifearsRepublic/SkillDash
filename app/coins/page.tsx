@@ -22,9 +22,10 @@ import Image from 'next/image';
 import { getFirestore, collection, query, where, orderBy, addDoc, onSnapshot } from 'firebase/firestore';
 import {
   Gift, TrendingUp, Copy, CheckCircle2, XCircle, Clock, Plus, Minus,
-  Send, AlertCircle, ArrowRight, Zap, Check,
+  Send, AlertCircle, ArrowRight, Zap, Check, Ticket, Loader2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { fetchWithFreshToken } from '@/lib/utils/fetchWithToken';
 
 const BKASH_NUMBER = '01865333143';
 const PRICE_PER_10K_COINS = 10; // 10 BDT = 10,000 Coins
@@ -55,6 +56,11 @@ function FundsScreen() {
   const [requests, setRequests] = useState<any[]>([]);
   const [copied, setCopied] = useState(false);
 
+  const [promoCode, setPromoCode] = useState('');
+  const [promoSubmitting, setPromoSubmitting] = useState(false);
+  const [promoError, setPromoError] = useState('');
+  const [promoSuccess, setPromoSuccess] = useState('');
+
   const coinsToReceive = Math.floor(rechargeAmount / PRICE_PER_10K_COINS) * COINS_PER_10_BDT;
 
   useEffect(() => {
@@ -72,6 +78,38 @@ function FundsScreen() {
     );
     return () => unsubscribe();
   }, [user]);
+
+  const handleRedeemPromo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = promoCode.trim();
+    if (!code) {
+      setPromoError('Enter a code');
+      return;
+    }
+
+    setPromoSubmitting(true);
+    setPromoError('');
+    setPromoSuccess('');
+
+    try {
+      const res = await fetchWithFreshToken('/api/simulator/promo-redeem', {
+        method: 'POST',
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to redeem code');
+
+      // No local balance update needed — the shared simulator/state
+      // listener (contexts/SimulatorContext) picks up the server's credit
+      // on its own, same as every other balance-changing action in the app.
+      setPromoSuccess(data.message || 'Code redeemed!');
+      setPromoCode('');
+    } catch (err: any) {
+      setPromoError(err.message || 'Failed to redeem code');
+    } finally {
+      setPromoSubmitting(false);
+    }
+  };
 
   const handleBuyMoreClick = () => {
     setShowRechargeForm(true);
@@ -178,6 +216,47 @@ function FundsScreen() {
             Recharge
           </button>
         </div>
+      </div>
+
+      {/* Promo code redemption — single-use codes credited server-side via
+          app/api/simulator/promo-redeem, one redemption allowed per account. */}
+      <div className="bg-white dark:bg-[#1A1F26] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 mb-4">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 shrink-0 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+            <Ticket className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <h2 className="text-sm font-bold text-gray-900 dark:text-white">Have a promo code?</h2>
+        </div>
+        <form onSubmit={handleRedeemPromo} className="flex items-center gap-2">
+          <input
+            type="text"
+            value={promoCode}
+            onChange={(e) => {
+              setPromoCode(e.target.value.toUpperCase());
+              if (promoError) setPromoError('');
+            }}
+            placeholder="Enter code"
+            className="flex-1 h-11 px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#111418] text-sm font-mono font-bold uppercase tracking-wider"
+          />
+          <button
+            type="submit"
+            disabled={promoSubmitting || !promoCode.trim()}
+            className="shrink-0 h-11 px-5 rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white text-sm font-bold transition-all active:scale-95 flex items-center gap-1.5"
+          >
+            {promoSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            Redeem
+          </button>
+        </form>
+        {promoError && (
+          <p className="mt-2.5 text-xs text-rose-600 dark:text-rose-400 bg-rose-500/10 rounded-lg px-3 py-2 flex items-center gap-1.5">
+            <XCircle className="w-3.5 h-3.5 shrink-0" /> {promoError}
+          </p>
+        )}
+        {promoSuccess && (
+          <p className="mt-2.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded-lg px-3 py-2 flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> {promoSuccess}
+          </p>
+        )}
       </div>
 
       <div id="recharge-section" className="scroll-mt-24">

@@ -11,7 +11,7 @@ import { fetchWithToken } from '@/lib/utils/fetchWithToken';
 import SiteAnalyticsSection, { SiteAnalyticsData } from '@/components/admin/SiteAnalyticsSection';
 import {
   Users, Receipt, Banknote, Clock, CheckCircle2, XCircle, Zap,
-  Home, Database, Link2, ShieldAlert, ArrowRight,
+  Home, Database, Link2, ShieldAlert, ArrowRight, Gift,
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -143,6 +143,13 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex items-center gap-3">
+              <Link
+                href="/admin/promo-codes"
+                className="inline-flex items-center justify-center gap-2 bg-white dark:bg-[#1A1F26] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300"
+              >
+                <Gift className="w-4 h-4" />
+                Promo Codes
+              </Link>
               <Link
                 href="/admin/recharge"
                 className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 shadow-lg shadow-blue-500/30 transform hover:-translate-y-1"

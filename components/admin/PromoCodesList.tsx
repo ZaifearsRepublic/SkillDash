@@ -1,0 +1,350 @@
+'use client';
+
+// components/admin/PromoCodesList.tsx
+// Admin panel for generating and managing promo_codes/{CODE} documents.
+// Structural sibling of RechargeList.tsx, but simpler: no server-side
+// pagination (promo codes are a much smaller collection than recharge
+// requests) and a single page with client-side status tabs instead of
+// separate /admin/promo-codes/{status} routes.
+//
+// Reads the collection directly via onSnapshot — firestore.rules grants
+// admins read access to promo_codes for exactly this — but every write
+// (generate, disable) goes through app/api/admin/promo-codes, since that's
+// the only path allowed to write this collection at all.
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { auth, db } from '@/lib/firebase';
+import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { Home, Loader2, Plus, Copy, Check, Ban, Search, Gift } from 'lucide-react';
+
+interface PromoCode {
+  id: string; // = code
+  code: string;
+  amount: number;
+  status: 'active' | 'used' | 'disabled';
+  redeemed: boolean;
+  redeemedBy: string | null;
+  redeemedAt: string | null;
+  expiresAt: string | null;
+  createdBy: string;
+  createdAt: string;
+}
+
+type Tab = 'all' | 'active' | 'used' | 'disabled' | 'expired';
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'active', label: 'Active' },
+  { key: 'used', label: 'Used' },
+  { key: 'disabled', label: 'Disabled' },
+  { key: 'expired', label: 'Expired' },
+];
+
+const isExpired = (c: PromoCode) => !!c.expiresAt && new Date(c.expiresAt).getTime() < Date.now();
+
+export default function PromoCodesList() {
+  const [codes, setCodes] = useState<PromoCode[]>([]);
+  const [tab, setTab] = useState<Tab>('all');
+  const [search, setSearch] = useState('');
+  const [showGenerate, setShowGenerate] = useState(false);
+
+  useEffect(() => {
+    const q = query(collection(db, 'promo_codes'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(
+      q,
+      (snap) => setCodes(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as PromoCode)),
+      (err) => console.error('Error loading promo codes:', err)
+    );
+    return () => unsubscribe();
+  }, []);
+
+  const counts = useMemo(() => {
+    const c = { all: codes.length, active: 0, used: 0, disabled: 0, expired: 0 };
+    for (const code of codes) {
+      if (code.status === 'used') c.used++;
+      else if (code.status === 'disabled') c.disabled++;
+      else if (isExpired(code)) c.expired++;
+      else c.active++;
+    }
+    return c;
+  }, [codes]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toUpperCase();
+    return codes.filter((c) => {
+      if (q && !c.code.includes(q)) return false;
+      if (tab === 'all') return true;
+      if (tab === 'expired') return isExpired(c) && c.status === 'active';
+      if (tab === 'active') return c.status === 'active' && !isExpired(c);
+      return c.status === tab;
+    });
+  }, [codes, tab, search]);
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-black">
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-3">
+            <Link href="/admin" className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+              <Home className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Gift className="w-5 h-5 text-blue-500" /> Promo Codes
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Single-use codes that credit trading balance</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowGenerate(true)}
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-500/30"
+          >
+            <Plus className="w-4 h-4" /> Generate
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-900/50 p-1 rounded-xl mb-4 overflow-x-auto">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`shrink-0 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                tab === t.key
+                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm border border-gray-200 dark:border-gray-700'
+                  : 'text-gray-500 dark:text-gray-400'
+              }`}
+            >
+              {t.label} <span className="opacity-60">{counts[t.key]}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by code…"
+            className="w-full h-11 pl-9 pr-3 bg-white dark:bg-[#1A1F26] border border-gray-200 dark:border-gray-800 rounded-xl text-sm font-mono uppercase"
+          />
+        </div>
+
+        <div className="bg-white dark:bg-[#1A1F26] border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
+          {filtered.length === 0 ? (
+            <div className="py-16 text-center text-sm text-gray-400">No codes match this view.</div>
+          ) : (
+            filtered.map((code) => <CodeRow key={code.id} code={code} expired={isExpired(code)} />)
+          )}
+        </div>
+      </div>
+
+      {showGenerate && <GenerateModal onClose={() => setShowGenerate(false)} />}
+    </div>
+  );
+}
+
+function CodeRow({ code, expired }: { code: PromoCode; expired: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const [disabling, setDisabling] = useState(false);
+
+  const copy = () => {
+    navigator.clipboard.writeText(code.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  const disable = async () => {
+    if (!confirm(`Disable ${code.code}? This can't be undone, but it doesn't affect codes that are already used.`)) return;
+    setDisabling(true);
+    try {
+      const token = await auth.currentUser?.getIdToken(true);
+      const res = await fetch('/api/admin/promo-codes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'disable', code: code.code }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to disable code');
+    } catch (err: any) {
+      alert(err.message || 'Failed to disable code');
+    } finally {
+      setDisabling(false);
+    }
+  };
+
+  const badge =
+    code.status === 'used'
+      ? { label: 'USED', cls: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800' }
+      : code.status === 'disabled'
+        ? { label: 'DISABLED', cls: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700' }
+        : expired
+          ? { label: 'EXPIRED', cls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800' }
+          : { label: 'ACTIVE', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' };
+
+  return (
+    <div className="p-4 flex items-center justify-between gap-3">
+      <div className="min-w-0 flex items-center gap-3">
+        <button onClick={copy} className="shrink-0 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors">
+          {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+        </button>
+        <div className="min-w-0">
+          <div className="font-mono font-bold text-sm text-gray-900 dark:text-white tracking-wider">{code.code}</div>
+          <div className="text-[11px] text-gray-400 dark:text-gray-500">
+            ৳{code.amount.toLocaleString()}
+            {code.redeemedBy && <span className="ml-2 font-mono">→ {code.redeemedBy.slice(0, 10)}…</span>}
+            {code.expiresAt && !code.redeemed && <span className="ml-2">expires {new Date(code.expiresAt).toLocaleDateString()}</span>}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <span className={`px-2 py-1 rounded-full text-[10px] font-bold border ${badge.cls}`}>{badge.label}</span>
+        {code.status === 'active' && (
+          <button
+            onClick={disable}
+            disabled={disabling}
+            title="Disable this code"
+            className="p-2 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors disabled:opacity-50"
+          >
+            {disabling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GenerateModal({ onClose }: { onClose: () => void }) {
+  const [amount, setAmount] = useState(5000);
+  const [quantity, setQuantity] = useState(1);
+  const [expiresInDays, setExpiresInDays] = useState<string>('');
+  const [customCode, setCustomCode] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [created, setCreated] = useState<string[] | null>(null);
+
+  const submit = async () => {
+    setSubmitting(true);
+    setError('');
+    try {
+      const token = await auth.currentUser?.getIdToken(true);
+      const res = await fetch('/api/admin/promo-codes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          action: 'generate',
+          amount,
+          quantity: customCode.trim() ? 1 : quantity,
+          expiresInDays: expiresInDays.trim() ? Number(expiresInDays) : undefined,
+          customCode: customCode.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to generate codes');
+      setCreated(data.codes);
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate codes');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
+      <div
+        className="w-full sm:max-w-md bg-white dark:bg-[#1A1F26] rounded-t-2xl sm:rounded-2xl border border-gray-200 dark:border-gray-800 p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {created ? (
+          <>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1">
+              {created.length} code{created.length === 1 ? '' : 's'} generated
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+              Copy these now to share — they stay visible in the list too, but this is the easiest place to grab them all at once.
+            </p>
+            <div className="max-h-60 overflow-y-auto space-y-1.5 mb-4">
+              {created.map((c) => (
+                <div key={c} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 font-mono font-bold text-sm tracking-wider">
+                  {c}
+                  <button
+                    onClick={() => navigator.clipboard.writeText(c)}
+                    className="p-1.5 rounded bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  >
+                    <Copy className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => navigator.clipboard.writeText(created.join('\n'))}
+              className="w-full mb-2 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-bold"
+            >
+              Copy all
+            </button>
+            <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold">
+              Done
+            </button>
+          </>
+        ) : (
+          <>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4">Generate Promo Codes</h2>
+
+            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">Amount per code</label>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(Number(e.target.value))}
+              className="w-full h-11 px-3 mb-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#111418] font-mono font-bold"
+            />
+
+            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
+              Quantity {customCode.trim() && <span className="normal-case font-normal text-gray-400">(fixed at 1 for a custom code)</span>}
+            </label>
+            <input
+              type="number"
+              value={customCode.trim() ? 1 : quantity}
+              onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+              disabled={!!customCode.trim()}
+              className="w-full h-11 px-3 mb-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#111418] font-mono font-bold disabled:opacity-50"
+            />
+
+            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">Expires in (days, optional)</label>
+            <input
+              type="number"
+              value={expiresInDays}
+              onChange={(e) => setExpiresInDays(e.target.value)}
+              placeholder="Never expires"
+              className="w-full h-11 px-3 mb-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#111418] font-mono"
+            />
+
+            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">Custom code (optional)</label>
+            <input
+              type="text"
+              value={customCode}
+              onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
+              placeholder="Leave blank to auto-generate random codes"
+              className="w-full h-11 px-3 mb-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#111418] font-mono uppercase"
+            />
+
+            {error && <p className="text-xs text-rose-600 dark:text-rose-400 bg-rose-500/10 rounded-lg px-3 py-2 mb-4">{error}</p>}
+
+            <div className="flex gap-2">
+              <button onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-bold">
+                Cancel
+              </button>
+              <button
+                onClick={submit}
+                disabled={submitting || amount <= 0}
+                className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Generate
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

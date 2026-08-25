@@ -37,7 +37,7 @@ service cloud.firestore {
       // app/api/disclaimer/agree/route.ts. The client may never set, change,
       // or REMOVE any of these.
       function protectedUserFields() {
-        return ['coins', 'admin', 'welcomeBonusGranted', 'role', 'isGodMode', 'disclaimerAgreedAt'];
+        return ['coins', 'admin', 'welcomeBonusGranted', 'role', 'isGodMode', 'disclaimerAgreedAt', 'promoCodeRedeemedAt'];
       }
 
       allow read: if isOwner(userId) || isAdmin();
@@ -70,6 +70,20 @@ service cloud.firestore {
       allow delete: if false;
     }
     
+    // ===== PROMO CODES =====
+    // Single-use codes redeemable for a trading-balance credit (see
+    // app/api/simulator/promo-redeem/route.ts and
+    // app/api/admin/promo-codes/route.ts). Both generation and redemption go
+    // through those Admin SDK routes, which bypass these rules entirely — the
+    // rule below only matters for denying any DIRECT client write, and for
+    // letting the admin panel list codes without a server round-trip.
+    // Regular (non-admin) users get no read access at all: nothing here lets
+    // a client enumerate or peek at an unredeemed code.
+    match /promo_codes/{code} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // ===== COIN TRANSACTIONS =====
     match /coinTransactions/{transactionId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
