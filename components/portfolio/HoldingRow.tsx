@@ -36,7 +36,7 @@ interface Props {
 export default function HoldingRow({ holding, marketOpen, onTrade, lastClose }: Props) {
   const {
     symbol, quantity, saleable, locked, avgCost, cost,
-    ltp, marketValue, pnl, pnlPercent, dayPnl, dayChangePercent, traded, category,
+    ltp, marketValue, pnl, pnlPercent, dayPnl, dayChangePercent, traded, category, sector,
   } = holding;
 
   const companyName = getCompanyName(symbol);
@@ -79,8 +79,12 @@ export default function HoldingRow({ holding, marketOpen, onTrade, lastClose }: 
               <LineChart className="w-3 h-3" />
             </Link>
           </div>
-          {companyName && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{companyName}</p>
+          {(companyName || sector) && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+              {companyName}
+              {companyName && sector && <span className="text-gray-300 dark:text-gray-600"> · </span>}
+              {sector}
+            </p>
           )}
         </div>
 

@@ -8,7 +8,7 @@
 // getPortfolioInsights for the exact math and its data-availability caveats.
 import React from 'react';
 import Link from 'next/link';
-import { PieChart, Landmark, TrendingUp, TrendingDown, Receipt } from 'lucide-react';
+import { PieChart, Building2, Landmark, TrendingUp, TrendingDown, Receipt } from 'lucide-react';
 import type { PortfolioInsights as Insights } from '@/lib/utils/portfolio';
 
 const fmt = (n: number, dp = 2) =>
@@ -22,8 +22,20 @@ const CATEGORY_COLOR: Record<string, string> = {
   Other: 'bg-gray-400',
 };
 
+// Sector names come from lankabd.com (~21 possible values, not a fixed small
+// set like category), so there's no single canonical color per name — cycle
+// a fixed palette by rank order instead. "Other" (no sector data yet) always
+// gets the same neutral gray regardless of rank.
+const SECTOR_PALETTE = [
+  'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500',
+  'bg-purple-500', 'bg-cyan-500', 'bg-orange-500', 'bg-teal-500',
+];
+
 export default function PortfolioInsights({ insights }: { insights: Insights }) {
-  const { totalPnl, realizedGainLoss, topHolding, categoryBreakdown, lifetimeCommission, bestMoverToday, worstMoverToday } = insights;
+  const {
+    totalPnl, realizedGainLoss, topHolding, categoryBreakdown, sectorBreakdown,
+    lifetimeCommission, bestMoverToday, worstMoverToday,
+  } = insights;
 
   return (
     <div className="space-y-3">
@@ -122,6 +134,41 @@ export default function PortfolioInsights({ insights }: { insights: Insights }) 
               hard will move your whole portfolio with it.
             </p>
           )}
+        </div>
+      )}
+
+      {/* Industry exposure — same shape as Diversification, grouped by
+          sector instead of DSE market category */}
+      {sectorBreakdown.length > 0 && (
+        <div className="bg-white dark:bg-[#1A1F26] border sm:rounded-2xl border-gray-200 dark:border-gray-800 p-4">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2.5">
+            <Building2 className="w-3 h-3" /> Industry Exposure
+          </div>
+
+          <div className="flex h-2 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 mb-2.5">
+            {sectorBreakdown.map((s, i) => (
+              <span
+                key={s.sector}
+                className={s.sector === 'Other' ? 'bg-gray-400' : SECTOR_PALETTE[i % SECTOR_PALETTE.length]}
+                style={{ flexGrow: s.value }}
+                title={`${s.sector}: ${s.percent.toFixed(1)}%`}
+              />
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            {sectorBreakdown.map((s, i) => (
+              <div key={s.sector} className="flex items-center gap-1.5 text-xs min-w-0">
+                <span
+                  className={`w-2 h-2 rounded-full shrink-0 ${s.sector === 'Other' ? 'bg-gray-400' : SECTOR_PALETTE[i % SECTOR_PALETTE.length]}`}
+                />
+                <span className="font-semibold text-gray-600 dark:text-gray-300 truncate max-w-[150px]" title={s.sector}>
+                  {s.sector}
+                </span>
+                <span className="font-mono text-gray-400 dark:text-gray-500 shrink-0">{s.percent.toFixed(1)}%</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

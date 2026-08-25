@@ -103,6 +103,7 @@ export interface HoldingMetrics {
   dayChangePercent: number;
   traded: boolean;
   category?: string;
+  sector?: string;
 }
 
 export function getHoldingMetrics(
@@ -132,6 +133,7 @@ export function getHoldingMetrics(
     dayChangePercent: stock && stock.traded !== false ? stock.changePercent : 0,
     traded: stock?.traded !== false,
     category: stock?.category,
+    sector: stock?.sector,
   };
 }
 
@@ -194,6 +196,8 @@ export interface PortfolioInsights {
   topHolding: { symbol: string; percent: number } | null;
   /** Holdings value grouped by DSE market category (A/B/N/Z), as a percent of total. */
   categoryBreakdown: { category: string; percent: number; value: number }[];
+  /** Holdings value grouped by industry sector (see api/lanka_sector_sync.py), as a percent of total. */
+  sectorBreakdown: { sector: string; percent: number; value: number }[];
   /** Sum of every commission paid across all executed trades — the real cost of activity. */
   lifetimeCommission: number;
   bestMoverToday: { symbol: string; dayPnl: number } | null;
@@ -233,6 +237,19 @@ export function getPortfolioInsights(
     }))
     .sort((a, b) => b.value - a.value);
 
+  const bySector = new Map<string, number>();
+  for (const h of holdings) {
+    const key = h.sector || 'Other';
+    bySector.set(key, (bySector.get(key) || 0) + h.marketValue);
+  }
+  const sectorBreakdown = Array.from(bySector.entries())
+    .map(([sector, value]) => ({
+      sector,
+      value: roundMoney(value),
+      percent: currentValue > 0 ? roundMoney((value / currentValue) * 100) : 0,
+    }))
+    .sort((a, b) => b.value - a.value);
+
   const lifetimeCommission = roundMoney(trades.reduce((sum, t) => moneyAdd(sum, t.commission || 0), 0));
 
   let bestMoverToday: PortfolioInsights['bestMoverToday'] = null;
@@ -252,6 +269,7 @@ export function getPortfolioInsights(
     realizedGainLoss: roundMoney(realizedGainLoss),
     topHolding,
     categoryBreakdown,
+    sectorBreakdown,
     lifetimeCommission,
     bestMoverToday,
     worstMoverToday,
