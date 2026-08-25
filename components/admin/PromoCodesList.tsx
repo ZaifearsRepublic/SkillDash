@@ -82,8 +82,8 @@ export default function PromoCodesList() {
   }, [codes, tab, search]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="min-h-screen pt-24 pb-12 px-4 bg-gray-50/50 dark:bg-[#090E17]">
+      <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between gap-3 mb-6">
           <div className="flex items-center gap-3">
             <Link href="/admin" className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
