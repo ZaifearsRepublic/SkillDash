@@ -145,6 +145,25 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  // Right at market open, yesterday's lastUpdated is always many hours old —
+  // that's normal (overnight gap), not an outage. Give the primary a grace
+  // window to complete its first cycle of the day before judging staleness,
+  // so this route's cron (running on the same ~3-minute cadence as
+  // stock-sync, ticking at the same moments) doesn't false-alarm every
+  // single trading morning at 10:00.
+  const MARKET_OPEN_GRACE_MS = 10 * 60 * 1000;
+  const bdNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+  const minutesIntoTradingDay = bdNow.getUTCHours() * 60 + bdNow.getUTCMinutes() - 10 * 60;
+  const withinOpenGrace = minutesIntoTradingDay >= 0 && minutesIntoTradingDay * 60 * 1000 < MARKET_OPEN_GRACE_MS;
+  if (withinOpenGrace) {
+    return NextResponse.json({
+      success: true,
+      action: 'skipped-market-just-opened',
+      isStale,
+      marketOpen: true,
+    });
+  }
+
   // ── Primary healthy ──────────────────────────────────────────────────────
   if (!isStale) {
     if (status.active) {
