@@ -2,13 +2,9 @@
 // Send email notification to admin when a coin recharge request is submitted
 
 import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
 import { SITE_URL } from '@/lib/siteUrl';
+import { sendAdminAlertEmail } from '@/lib/resendAdmin';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-// Admin email from environment
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'niqqahigga1@gmail.com';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || SITE_URL;
 
 interface EmailData {
@@ -61,17 +57,7 @@ export async function POST(request: NextRequest) {
 
     const { requestId, userName, userEmail, amount, coins, transactionId, bkashNumber, createdAt } = emailData;
 
-    // Use the actual domain, or fallback to Resend's testing email if env var is missing
-    const senderEmail = process.env.RESEND_FROM_EMAIL || 'StockSimulatorBD <noreply@stocksimulator.tech>';
-
-    // Safely parse CC emails if they exist
-    const ccEmails = process.env.ADMIN_EMAIL_CC ? process.env.ADMIN_EMAIL_CC.split(',').map(e => e.trim()) : undefined;
-
-    // Send email via Resend
-    const emailResponse = await resend.emails.send({
-      from: senderEmail,
-      to: ADMIN_EMAIL,
-      ...(ccEmails && ccEmails.length > 0 && { cc: ccEmails }),
+    const emailResponse = await sendAdminAlertEmail({
       subject: `💰 New Coin Recharge Request - ${coins.toLocaleString()} coins from ${userName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -126,7 +112,7 @@ export async function POST(request: NextRequest) {
       `,
     });
 
-    if (emailResponse.error) {
+    if (!emailResponse.success) {
       console.error('❌ Email sending failed:', emailResponse.error);
       return NextResponse.json(
         { success: false, error: 'Failed to send notification email' },
@@ -134,12 +120,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`✅ Email sent to ${ADMIN_EMAIL} for request ${requestId}`);
+    console.log(`✅ Email sent for request ${requestId}`);
 
     return NextResponse.json({
       success: true,
       message: 'Email notification sent successfully',
-      emailId: emailResponse.data?.id,
+      emailId: emailResponse.emailId,
     });
 
   } catch (error: any) {

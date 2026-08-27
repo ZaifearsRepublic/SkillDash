@@ -11,6 +11,9 @@
     },
     "api/lanka_sector_sync.py": {
       "maxDuration": 60
+    },
+    "api/lanka_price_sync.py": {
+      "maxDuration": 60
     }
   },
   "headers": [
