@@ -195,7 +195,7 @@ function FundsScreen() {
       <h1 className="text-lg font-extrabold text-gray-900 dark:text-white mb-4">Funds</h1>
 
       {/* Balance card */}
-      <div className="bg-white dark:bg-[#1A1F26] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 mb-4">
+      <div className="bg-white dark:bg-[#1A1F26] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-5 mb-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 shrink-0 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 rounded-xl flex items-center justify-center border border-amber-200/50 dark:border-amber-700/50">
@@ -220,7 +220,7 @@ function FundsScreen() {
 
       {/* Promo code redemption — single-use codes credited server-side via
           app/api/simulator/promo-redeem, one redemption allowed per account. */}
-      <div className="bg-white dark:bg-[#1A1F26] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 mb-4">
+      <div className="bg-white dark:bg-[#1A1F26] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-5 mb-4">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-8 h-8 shrink-0 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
             <Ticket className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -261,7 +261,7 @@ function FundsScreen() {
 
       <div id="recharge-section" className="scroll-mt-24">
         {showRechargeForm && (
-          <div className="bg-white dark:bg-[#1A1F26] rounded-2xl p-5 border-2 border-blue-100 dark:border-blue-900/50 mb-4">
+          <div className="bg-white dark:bg-[#1A1F26] rounded-2xl p-5 border-2 border-blue-100 dark:border-blue-900/50 shadow-sm mb-4">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center border border-blue-100 dark:border-blue-800/50">
@@ -404,7 +404,7 @@ function FundsScreen() {
         )}
 
         {requests.length > 0 && (
-          <div className="bg-white dark:bg-[#1A1F26] rounded-2xl p-4 border border-gray-200 dark:border-gray-800 mb-4">
+          <div className="bg-white dark:bg-[#1A1F26] rounded-2xl p-4 border border-gray-200 dark:border-gray-800 shadow-sm mb-4">
             <h2 className="text-sm font-bold mb-3 text-gray-900 dark:text-white flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-gray-400" /> Recent Requests
             </h2>
@@ -438,14 +438,14 @@ function FundsScreen() {
         )}
 
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-white dark:bg-[#1A1F26] rounded-xl p-4 border border-gray-200 dark:border-gray-800 text-center">
+          <div className="bg-white dark:bg-[#1A1F26] rounded-xl p-4 border border-gray-200 dark:border-gray-800 shadow-sm text-center">
             <div className="w-9 h-9 mx-auto bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mb-2 border border-blue-100 dark:border-blue-800/50">
               <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
             <p className="text-xs font-bold text-gray-900 dark:text-white mb-1">Grow by Trading</p>
             <p className="text-[11px] text-gray-500 dark:text-gray-400">Profitable trades grow your balance.</p>
           </div>
-          <div className="bg-white dark:bg-[#1A1F26] rounded-xl p-4 border border-gray-200 dark:border-gray-800 text-center">
+          <div className="bg-white dark:bg-[#1A1F26] rounded-xl p-4 border border-gray-200 dark:border-gray-800 shadow-sm text-center">
             <div className="w-9 h-9 mx-auto bg-emerald-50 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center mb-2 border border-emerald-100 dark:border-emerald-800/50">
               <Gift className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
