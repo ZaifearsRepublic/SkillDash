@@ -18,7 +18,7 @@ import { getAllUserBalances } from '@/lib/utils/simulatorBalances';
 import { BD_GEO_BUCKETS } from '@/lib/utils/geoBucket';
 
 // Ensure Firebase Admin is initialized with full credentials (side effect of import).
-import '@/lib/coinManagerServer';
+import '@/lib/firebaseAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

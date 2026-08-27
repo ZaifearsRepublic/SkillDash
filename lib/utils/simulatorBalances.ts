@@ -4,11 +4,11 @@
  * earned by trading, stored at
  * `artifacts/{appId}/users/{uid}/simulator/state.balance`.
  *
- * This is deliberately NOT `users/{uid}.coins`, which is a separate, older
- * currency (see lib/coinManagerServer.ts) used to gate premium/AI features —
- * a holdover from an earlier shared codebase. Anything about "coins in
- * circulation" or "top coin holders" for THIS app means the trading balance,
- * so every admin-analytics read of "coins" should go through this helper.
+ * `users/{uid}.coins` — a separate, older gating currency inherited from an
+ * earlier shared codebase — was removed; this trading balance is now the
+ * only currency in the app. Anything about "coins in circulation" or "top
+ * coin holders" means this balance, so every admin-analytics read of
+ * "coins" should go through this helper.
  *
  * Uses a collectionGroup query across every user's `simulator` subcollection
  * (which only ever holds one doc, "state") rather than `orderBy`, so it needs

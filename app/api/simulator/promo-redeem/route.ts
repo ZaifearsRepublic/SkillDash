@@ -29,7 +29,7 @@ import { moneyAdd, roundMoney } from '@/lib/utils/money';
 import { checkPersistentRateLimit } from '@/lib/utils/persistentRateLimit';
 
 // Ensure Firebase Admin is initialized with full credentials
-import '@/lib/coinManagerServer';
+import '@/lib/firebaseAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -22,7 +22,7 @@ import { isMarketOpenCorroborated } from '@/lib/utils/marketHours';
 import { COMMISSION_RATE, moneyAdd, moneySubtract, moneyMultiply, roundMoney } from '@/lib/utils/money';
 
 // Ensure Firebase Admin is initialized with full credentials
-import '@/lib/coinManagerServer';
+import '@/lib/firebaseAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

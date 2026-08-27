@@ -13,7 +13,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { verifyAdminAccess } from '@/lib/utils/adminVerification';
 
 // Ensure Firebase Admin is initialized with full credentials
-import '@/lib/coinManagerServer';
+import '@/lib/firebaseAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

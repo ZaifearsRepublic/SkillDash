@@ -12,7 +12,7 @@ import { submitToIndexNow } from '@/lib/indexNow';
 import sitemap from '@/app/sitemap';
 
 // Ensure Firebase Admin is initialized with full credentials
-import '@/lib/coinManagerServer';
+import '@/lib/firebaseAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

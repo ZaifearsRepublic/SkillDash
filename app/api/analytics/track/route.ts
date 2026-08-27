@@ -23,7 +23,7 @@ import { getDhakaDateKey, getDhakaHour } from '@/lib/utils/dhakaTime';
 import { bucketGeoHeaders } from '@/lib/utils/geoBucket';
 
 // Ensure Firebase Admin is initialized with full credentials (side effect of import).
-import '@/lib/coinManagerServer';
+import '@/lib/firebaseAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

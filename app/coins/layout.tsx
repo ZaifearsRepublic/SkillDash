@@ -4,11 +4,11 @@ import { absoluteUrl } from '@/lib/siteUrl';
 
 export const metadata: Metadata = {
   title: 'Coins - Your Trading Balance | Stock Simulator BD',
-  description: 'View your Coin balance, recharge via bKash, and start trading on the DSE simulator. 10 BDT = 10,000 Coins.',
+  description: 'View your Coin balance, recharge via bKash, and start trading on the DSE simulator. 20 BDT = 10,000 Coins.',
   keywords: ['Coins', 'trading balance', 'DSE simulator', 'virtual trading', 'Bangladesh stock exchange', 'bKash recharge'],
   openGraph: {
     title: 'Coins - Your Trading Balance | Stock Simulator BD',
-    description: 'View your Coin balance, recharge via bKash, and trade DSE stocks. 10 BDT = 10,000 Coins.',
+    description: 'View your Coin balance, recharge via bKash, and trade DSE stocks. 20 BDT = 10,000 Coins.',
     url: absoluteUrl('/coins'),
     type: 'website',
     images: [

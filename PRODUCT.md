@@ -37,14 +37,11 @@ Success is nerve, not engagement: a user who practices here should approach thei
 
 ## Capabilities and Constraints
 
-**Two separate currencies. They are not interchangeable.**
-
-- `users/{uid}.coins` — legacy gating currency for "premium"-style features, funded by signup/daily/referral bonuses. Not the trading balance.
-- `artifacts/{appId}/users/{uid}/simulator/state.balance` — the real BDT-denominated trading balance. This is the one users mean when they say "my balance."
+**One currency.** `artifacts/{appId}/users/{uid}/simulator/state.balance` is the real BDT-denominated trading balance — the only one, and the one users mean when they say "my balance" or "my coins." A separate legacy `users/{uid}.coins` gating currency existed early on for "premium"-style features and was removed entirely (code and data) as unused.
 
 **Simulation rules currently enforced:** live DSE prices during market hours; T+1 settlement per purchase lot; 0.4% commission (`COMMISSION_RATE = 0.004`); market-hours and holiday gating on both client and server; a 100,000,000 sane-balance cap re-checked by hand on every privileged write path because Admin SDK writes bypass Firestore rules entirely.
 
-**Virtual economy:** new verified accounts receive 10,000 free coins. Recharge is 10 BDT per 10,000 coins, minimum 20 BDT, maximum 5,000 BDT per request, in multiples of 10, subject to admin approval. Paying is a **practice-realism device**, not a business model: running out of virtual capital is meant to carry weight so practice feels consequential. Revenue is incidental. Future work should **not** design pricing pages, upsell funnels, or conversion-optimized paywalls around it.
+**Virtual economy:** new verified accounts receive 10,000 free coins. Recharge is 20 BDT per 10,000 coins (500 coins per taka), minimum 20 BDT, maximum 5,000 BDT per request, in multiples of 20, subject to admin approval. Paying is a **practice-realism device**, not a business model: running out of virtual capital is meant to carry weight so practice feels consequential. Revenue is incidental. Future work should **not** design pricing pages, upsell funnels, or conversion-optimized paywalls around it.
 
 **Coverage:** all currently tradeable DSE-listed companies (~300+), each with a symbol page carrying candlestick history.
 

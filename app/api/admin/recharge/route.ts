@@ -6,8 +6,7 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { verifyAdminAccess } from '@/lib/utils/adminVerification';
 
 // Ensure Firebase Admin is initialized with full credentials
-// coinManagerServer initializes the app on import
-import '@/lib/coinManagerServer';
+import '@/lib/firebaseAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,7 +16,7 @@ export const dynamic = 'force-dynamic';
 // single source of truth for how many coins a recharge is worth — see the
 // comment inside the transaction below for why the credited amount is
 // recomputed from this rate instead of trusted from client input.
-const PRICE_PER_10K_COINS = 10; // 10 BDT = 10,000 coins
+const PRICE_PER_10K_COINS = 20; // 20 BDT = 10,000 coins (500 coins per taka)
 const COINS_PER_10_BDT = 10000;
 
 function coinsForAmount(amountBdt: number): number {
@@ -101,7 +100,7 @@ export async function POST(req: NextRequest) {
 
     // Cap maximum coins per request (safety valve — mirrors the max BDT
     // amount firestore.rules allows on recharge_requests.amount)
-    const MAX_COINS_PER_REQUEST = 5_000_000; // 5M coins = 5,000 BDT
+    const MAX_COINS_PER_REQUEST = 2_500_000; // 2.5M coins = 5,000 BDT at 500 coins/taka
 
     const appId = process.env.NEXT_PUBLIC_SIMULATOR_APP_ID || 'stocksimulatorbd-dse-v1';
     const simulatorStateRef = db.doc(`artifacts/${appId}/users/${userId}/simulator/state`);

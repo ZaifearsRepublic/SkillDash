@@ -36,7 +36,7 @@ components/
   simulator/trade/               TradeModal.tsx
   shared/                       Footer.tsx etc.
 lib/
-  coinManagerServer.ts          legacy `users.coins` gating currency (NOT the trading balance)
+  firebaseAdmin.ts              Firebase Admin SDK init — side-effect import shared by every server route
   utils/                        money.ts, marketHours.ts, dhakaTime.ts, geoBucket.ts,
                                  persistentRateLimit.ts, simulatorBalances.ts, fetchWithToken.ts,
                                  adminVerification.ts
@@ -45,12 +45,13 @@ lib/
 firestore.rules
 ```
 
-## Two currencies — don't confuse them
+## One currency
 
-- **`users/{uid}.coins`** — legacy currency (`lib/coinManagerServer.ts`), gates "premium"/AI-analysis-style features via signup/daily/referral bonuses. **Not the trading currency.**
-- **`artifacts/{appId}/users/{uid}/simulator/state.balance`** — the real BDT-equivalent trading currency. `appId` = `process.env.NEXT_PUBLIC_SIMULATOR_APP_ID || 'stocksimulatorbd-dse-v1'`. Credited by bKash recharge approval, spent/earned by trading.
+`artifacts/{appId}/users/{uid}/simulator/state.balance` is the only currency in the app — the real BDT-equivalent trading balance. `appId` = `process.env.NEXT_PUBLIC_SIMULATOR_APP_ID || 'stocksimulatorbd-dse-v1'`. Credited by bKash recharge approval (`app/api/admin/recharge/route.ts`) and the welcome bonus (`app/api/auth/grant-social-bonus/route.ts`), spent/earned by trading.
 
-Any analytics or admin "coins" feature must read the second one — use `lib/utils/simulatorBalances.ts`'s `getAllUserBalances()`, not `users.coins`.
+A separate legacy `users/{uid}.coins` gating currency (`lib/coinManagerServer.ts`, `lib/coinManager.ts`, `lib/coinBatching.ts`) used to exist for "premium"/AI-analysis-style features. It was never wired to any live feature — no AI-analysis feature exists, and its own signup/welcome-bonus grant path was superseded by `grant-social-bonus` crediting the balance above directly. Removed entirely (code, API routes, Firestore field, and the `firestore.rules` protection for it) as dead weight. Any analytics or admin "coins" feature reads `simulator/state.balance` — use `lib/utils/simulatorBalances.ts`'s `getAllUserBalances()`.
+
+**Recharge pricing:** 20 BDT = 10,000 coins (500 coins per taka), minimum 20 BDT, maximum 5,000 BDT per request, amount must be a multiple of 20. The rate is duplicated in three places that must move together: `app/coins/page.tsx` (`PRICE_PER_10K_COINS`, client display/validation), `app/api/admin/recharge/route.ts` (`PRICE_PER_10K_COINS`/`coinsForAmount()`, the authoritative credit computed server-side from the request's `amount` field — never trusts the client-submitted `coins` field), and `firestore.rules`' `recharge_requests` create validation (`amount % 20 == 0`, `coins == (amount / 20) * 10000`).
 
 ## Trading is fully server-side
 
@@ -65,7 +66,7 @@ This exists because of a real incident: `firestore.rules` used to allow direct c
 
 ## Admin API pattern
 
-- Admin-gated route: `verifyAdminAccess(req)` from `lib/utils/adminVerification.ts` (Firebase custom claim `admin===true`, falls back to `users/{uid}.role==='admin'`). Also `import '@/lib/coinManagerServer'` for its Admin-SDK-init side effect, plus `export const runtime='nodejs'; export const dynamic='force-dynamic';`.
+- Admin-gated route: `verifyAdminAccess(req)` from `lib/utils/adminVerification.ts` (Firebase custom claim `admin===true`, falls back to `users/{uid}.role==='admin'`). Also `import '@/lib/firebaseAdmin'` for its Admin-SDK-init side effect, plus `export const runtime='nodejs'; export const dynamic='force-dynamic';`.
 - Non-admin authenticated route (e.g. the trade route, `grant-social-bonus`): manual Bearer-token extraction + `getAuth().verifyIdToken()` — no shared helper exists for this yet, both routes duplicate the ~10-line block.
 - Client → server auth: `fetchWithToken` / `fetchWithFreshToken` (`lib/utils/fetchWithToken.ts`) auto-attach a fresh Firebase ID token and retry once on 401.
 
@@ -86,7 +87,7 @@ This exists because of a real incident: `firestore.rules` used to allow direct c
 ## Branches & deployment
 
 - `main` is the real branch; `preview` exists for `preview.stocksimulator.tech` but has drifted behind `main` before (missed several security-relevant commits) — check `git log main..preview` / `preview..main` before assuming preview reflects current code.
-- Vercel auto-deploys on push. **`firestore.rules` does not** — changes need a manual `firebase deploy --only firestore:rules` from someone with the Firebase CLI logged in; this repo's Claude Code sessions haven't had `firebase` CLI available.
+- Vercel auto-deploys on push. **`firestore.rules` does not** — changes need a manual `firebase deploy --only firestore:rules` from someone with the Firebase CLI logged in. On the user's Windows machine, a global `firebase` CLI (WinGet install) is already logged in and defaulted to this project (`.firebaserc` → `skilldash-c588d`) — confirmed working 2026-08-27 (`firebase deploy --only firestore:rules` succeeded from a Claude Code session there). Don't assume this on other machines/environments.
 - `preview.stocksimulator.tech` previously had Vercel Deployment Protection (SSO gate) enabled, which silently 302'd every API call including chart data — if "X doesn't work on preview but works on prod" comes up again, check that setting first before assuming a code bug.
 
 ## Stock market category (A/B/G/N/Z)
@@ -115,7 +116,7 @@ This exists because of a real incident: `firestore.rules` used to allow direct c
 
 ## Known stale/unused (as of this writing)
 
-- `@google/generative-ai`, `groq-sdk`, `@perplexity-ai/perplexity_ai`, `@ai-sdk/perplexity` are installed dependencies **not imported anywhere in the app**. No AI-analysis feature currently exists despite `coinManagerServer.ts` having an `'ai_analysis'`-flavored gating concept in its history.
+- `@google/generative-ai`, `groq-sdk`, `@perplexity-ai/perplexity_ai`, `@ai-sdk/perplexity` are installed dependencies **not imported anywhere in the app**. No AI-analysis feature currently exists despite the now-removed legacy `coinManagerServer.ts` having had an `'ai_analysis'`-flavored gating concept in its history.
 - `firestore.rules` has a `short_links/{code}` collection with rules, but there's no app route or component that reads/writes it — the URL-shortener feature referenced in old docs isn't actually implemented.
 - No Capacitor dependency exists despite the Android APK — it's a Trusted Web Activity built externally via [PWABuilder](https://www.pwabuilder.com/), not something this repo's build produces. Distributed as a GitHub Release asset (not `/public` — see README's Download section), package id `tech.stocksimulator.zaifears`. The signing keystore lives outside this repo entirely (gitignored, never committed) — whoever owns it is the only one who can publish an update under this exact package id.
 - `app/debug` and `app/api/debug-info` were removed (dead, non-functional, unlinked) in a prior cleanup — don't recreate a `/debug` route without gating it behind real admin auth on both the page and the API.

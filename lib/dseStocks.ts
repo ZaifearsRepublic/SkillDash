@@ -34,7 +34,7 @@ function toStock(symbol: string): DseStock {
 async function fetchLiveSymbols(): Promise<string[] | null> {
   try {
     // Side-effect import initialises Firebase Admin with the service account.
-    await import('./coinManagerServer');
+    await import('./firebaseAdmin');
     const { getFirestore } = await import('firebase-admin/firestore');
 
     const snap = await getFirestore()

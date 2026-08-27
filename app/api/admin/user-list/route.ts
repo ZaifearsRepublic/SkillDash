@@ -11,7 +11,7 @@ import { dhakaDateKeyToUtcMidnightISO, getDhakaDateKey } from '@/lib/utils/dhaka
 import { getAllUserBalances } from '@/lib/utils/simulatorBalances';
 
 // Ensure Firebase Admin is initialized with full credentials
-import '@/lib/coinManagerServer';
+import '@/lib/firebaseAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

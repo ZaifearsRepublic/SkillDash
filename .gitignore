@@ -152,6 +152,9 @@ signing-key-info.txt
 
 __pycache__/
 *.py[cod]
+
+# One-off migration backups (contain real user data — never commit)
+scripts/legacy-coins-backup-*.json
 # Local agent tooling (vendored skills, hook state, editor launch config)
 .agents/
 .claude/

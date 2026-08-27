@@ -28,7 +28,7 @@ import { useRouter } from 'next/navigation';
 import { fetchWithFreshToken } from '@/lib/utils/fetchWithToken';
 
 const BKASH_NUMBER = '01865333143';
-const PRICE_PER_10K_COINS = 10; // 10 BDT = 10,000 Coins
+const PRICE_PER_10K_COINS = 20; // 20 BDT = 10,000 Coins (500 coins per taka)
 const MIN_RECHARGE_BDT = 20;
 const MAX_RECHARGE_BDT = 5000;
 const COINS_PER_10_BDT = 10000;
@@ -309,7 +309,7 @@ function FundsScreen() {
                   Amount in BDT
                 </label>
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {[20, 50, 100, 200].map((amt) => (
+                  {[20, 40, 100, 200].map((amt) => (
                     <button
                       key={amt}
                       type="button"
