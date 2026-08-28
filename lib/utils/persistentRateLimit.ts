@@ -17,15 +17,11 @@
  *   MAX_REQUESTS   – max requests per window per identifier (default 10)
  */
 
-import * as admin from 'firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
-import { initializeApp, getApps } from 'firebase-admin/app';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 
-// ── Firebase Admin singleton ──────────────────────────────────
-function getAdminApp() {
-  if (getApps().length > 0) return getApps()[0];
-  return initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID });
-}
+// Ensure Firebase Admin is initialized with full credentials, regardless of
+// which route imports this module first.
+import '@/lib/firebaseAdmin';
 
 const WINDOW_MS    = 60 * 1000; // 1 minute
 const MAX_REQUESTS = 10;        // per window
@@ -93,7 +89,7 @@ export async function checkPersistentRateLimit(
 
   // ── Gate 2: Firestore atomic transaction ──
   try {
-    const db  = admin.firestore(getAdminApp());
+    const db  = getFirestore();
     const ref = db.collection('rate_limits').doc(identifier);
 
     const allowed = await db.runTransaction(async (t) => {
@@ -134,7 +130,7 @@ export async function checkPersistentRateLimit(
  */
 export async function cleanupOldRateLimitEntries(): Promise<void> {
   try {
-    const db   = admin.firestore(getAdminApp());
+    const db   = getFirestore();
     const now  = Date.now();
 
     const snap = await db
@@ -160,7 +156,7 @@ export async function cleanupOldRateLimitEntries(): Promise<void> {
  */
 export async function resetRateLimitForIdentifier(identifier: string): Promise<void> {
   try {
-    const db = admin.firestore(getAdminApp());
+    const db = getFirestore();
     await db.collection('rate_limits').doc(identifier).delete();
     cache.clear();
     console.log(`✅ Rate limit reset for ${identifier}`);
@@ -177,7 +173,7 @@ export async function getRateLimitStats(
   identifier: string
 ): Promise<{ count: number; remaining: number; resetAt: number } | null> {
   try {
-    const db  = admin.firestore(getAdminApp());
+    const db  = getFirestore();
     const doc = await db.collection('rate_limits').doc(identifier).get();
 
     if (!doc.exists) return null;
