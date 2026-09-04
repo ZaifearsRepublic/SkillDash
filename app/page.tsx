@@ -158,14 +158,14 @@ export default function HomePage() {
           <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[300px] bg-blue-600/10 dark:bg-blue-600/15 blur-[120px] rounded-full" />
         </div>
 
-        <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <h1 className="animate-rise text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight !leading-[1.1]">
-            Every rule of the Dhaka Stock Exchange.{' '}
-            <span className="text-blue-600 dark:text-blue-400">None of the risk.</span>
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <h1 className="animate-rise text-3xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight !leading-[1.15] sm:!leading-[1.1]">
+            Dhaka Stock Exchange Paper Trading Simulator.{' '}
+            <span className="block sm:inline text-blue-600 dark:text-blue-400">All the rules, zero risk.</span>
           </h1>
 
           <p
-            className="animate-rise mt-5 sm:mt-6 text-base sm:text-lg text-gray-600 dark:text-gray-400 leading-relaxed"
+            className="animate-rise mt-5 sm:mt-6 text-base sm:text-lg text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mx-auto"
             style={{ animationDelay: '90ms' }}
           >
             StockSimulatorBD is a free paper trading simulator for the Dhaka Stock Exchange.
