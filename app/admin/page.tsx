@@ -11,7 +11,7 @@ import { fetchWithToken } from '@/lib/utils/fetchWithToken';
 import SiteAnalyticsSection, { SiteAnalyticsData } from '@/components/admin/SiteAnalyticsSection';
 import {
   Users, Receipt, Banknote, Clock, CheckCircle2, XCircle, Zap,
-  Home, Database, Link2, ShieldAlert, ArrowRight, Gift,
+  Home, Database, Link2, ShieldAlert, ArrowRight, Gift, Vote,
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -22,7 +22,8 @@ export default function AdminDashboard() {
     pendingRequests: 0,
     approvedRequests: 0,
     rejectedRequests: 0,
-    totalRequests: 0
+    totalRequests: 0,
+    surveyResponses: 0,
   });
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -46,12 +47,13 @@ export default function AdminDashboard() {
         setIsAdminMode(adminMode);
 
         // Get all users count
-        const [usersSnapshot, rechargeSnapshot, pendingSnapshot, approvedSnapshot, rejectedSnapshot] = await Promise.all([
+        const [usersSnapshot, rechargeSnapshot, pendingSnapshot, approvedSnapshot, rejectedSnapshot, surveySnapshot] = await Promise.all([
           getCountFromServer(collection(db, 'users')),
           getCountFromServer(collection(db, 'recharge_requests')),
           getCountFromServer(query(collection(db, 'recharge_requests'), where('status', '==', 'pending'))),
           getCountFromServer(query(collection(db, 'recharge_requests'), where('status', '==', 'approved'))),
-          getCountFromServer(query(collection(db, 'recharge_requests'), where('status', '==', 'rejected')))
+          getCountFromServer(query(collection(db, 'recharge_requests'), where('status', '==', 'rejected'))),
+          getCountFromServer(collection(db, 'survey_responses')).catch(() => ({ data: () => ({ count: 0 }) }))
         ]);
 
         const totalUsers = usersSnapshot.data().count;
@@ -62,7 +64,8 @@ export default function AdminDashboard() {
           pendingRequests: pendingSnapshot.data().count,
           approvedRequests: approvedSnapshot.data().count,
           rejectedRequests: rejectedSnapshot.data().count,
-          totalRequests: rechargeSnapshot.data().count
+          totalRequests: rechargeSnapshot.data().count,
+          surveyResponses: surveySnapshot.data().count,
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -143,6 +146,18 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex items-center gap-3">
+              <Link
+                href="/admin/survey"
+                className="inline-flex items-center justify-center gap-2 bg-white dark:bg-[#1A1F26] border border-blue-200 dark:border-blue-900/60 text-blue-700 dark:text-blue-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300"
+              >
+                <Vote className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                Domain Poll
+                {stats.surveyResponses > 0 && (
+                  <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1">
+                    {stats.surveyResponses}
+                  </span>
+                )}
+              </Link>
               <Link
                 href="/admin/promo-codes"
                 className="inline-flex items-center justify-center gap-2 bg-white dark:bg-[#1A1F26] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300"

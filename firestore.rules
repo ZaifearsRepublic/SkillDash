@@ -38,7 +38,7 @@ service cloud.firestore {
       // app/api/disclaimer/agree/route.ts. The client may never set, change,
       // or REMOVE any of these.
       function protectedUserFields() {
-        return ['admin', 'welcomeBonusGranted', 'role', 'isGodMode', 'disclaimerAgreedAt', 'promoCodeRedeemedAt'];
+        return ['admin', 'welcomeBonusGranted', 'role', 'isGodMode', 'disclaimerAgreedAt', 'promoCodeRedeemedAt', 'tradeSurveyCompletedAt'];
       }
 
       allow read: if isOwner(userId) || isAdmin();
@@ -81,6 +81,15 @@ service cloud.firestore {
     // Regular (non-admin) users get no read access at all: nothing here lets
     // a client enumerate or peek at an unredeemed code.
     match /promo_codes/{code} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // ===== SURVEY RESPONSES =====
+    // Responses to the /trade domain & experience questionnaire.
+    // Writes are server-only through app/api/survey/trade-questionnaire (Admin SDK).
+    // Admins can read the collection directly or via API.
+    match /survey_responses/{responseId} {
       allow read: if isAdmin();
       allow write: if false;
     }

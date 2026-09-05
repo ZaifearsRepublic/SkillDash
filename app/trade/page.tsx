@@ -17,6 +17,10 @@ import MarketRow from '@/components/market/MarketRow';
 import StockRow from '@/components/simulator/trade/StockRow';
 import StockSkeleton from '@/components/simulator/trade/StockSkeleton';
 import TradeModal from '@/components/simulator/trade/TradeModal';
+import TradeQuestionnaireModal from '@/components/simulator/trade/TradeQuestionnaireModal';
+import { useAuth } from '@/contexts/AuthContext';
+import { db } from '@/lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 const MarketCalendar = dynamic(() => import('@/components/simulator/MarketCalendar'), {
   ssr: false,
@@ -32,10 +36,53 @@ export default function TradePage() {
 }
 
 function MarketScreen() {
+  const { user } = useAuth();
   const {
     marketInfo, simulatorState, loading: simulatorLoading, isMarketOpen,
     executeTrade, transactionStatus, transactionMessage, resetTransaction,
   } = useSharedSimulator();
+
+  const [showSurvey, setShowSurvey] = useState(false);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setShowSurvey(false);
+      return;
+    }
+
+    const cachedKey = `ssbd_trade_survey_done_${user.uid}`;
+    if (typeof window !== 'undefined' && localStorage.getItem(cachedKey) === 'true') {
+      setShowSurvey(false);
+      return;
+    }
+
+    const userRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(
+      userRef,
+      (snap) => {
+        if (snap.exists() && snap.data()?.tradeSurveyCompletedAt) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(cachedKey, 'true');
+          }
+          setShowSurvey(false);
+        } else {
+          setShowSurvey(true);
+        }
+      },
+      (err) => {
+        console.warn('Trade survey status listener error:', err);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user?.uid]);
+
+  const handleSurveySuccess = useCallback(() => {
+    if (user?.uid && typeof window !== 'undefined') {
+      localStorage.setItem(`ssbd_trade_survey_done_${user.uid}`, 'true');
+    }
+    setShowSurvey(false);
+  }, [user?.uid]);
 
   const modal = useTradeModal(executeTrade);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -328,6 +375,10 @@ function MarketScreen() {
           transactionMessage={transactionMessage}
           resetTransaction={resetTransaction}
         />
+      )}
+
+      {showSurvey && (
+        <TradeQuestionnaireModal onSuccess={handleSurveySuccess} />
       )}
     </div>
   );
