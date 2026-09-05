@@ -9,7 +9,6 @@ import SparkEffectInitializer from '@/components/SparkEffectInitializer'
 import SentryInitializer from '@/components/SentryInitializer'
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
 import IOSInstallGuide from '@/components/iOSInstallGuide'
-import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/react"
 import ServiceWorkerCleanup from '@/components/ServiceWorkerCleanup'
 import Script from 'next/script'
@@ -366,7 +365,6 @@ export default function RootLayout({
           </div>
         </AuthProvider>
         
-        <SpeedInsights />
         <Analytics />
       </body>
     </html>
