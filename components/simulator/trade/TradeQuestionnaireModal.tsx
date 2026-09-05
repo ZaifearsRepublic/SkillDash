@@ -8,7 +8,7 @@
 import React, { useState } from 'react';
 import { Star, HelpCircle, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { fetchWithFreshToken } from '@/lib/utils/fetchWithToken';
-import { VALID_DOMAIN_CHOICES, DomainChoiceId } from '@/app/api/survey/trade-questionnaire/route';
+import { VALID_DOMAIN_CHOICES, DomainChoiceId } from '@/lib/surveyConstants';
 
 interface Props {
   onSuccess: () => void;

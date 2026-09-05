@@ -20,7 +20,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { fetchWithFreshToken } from '@/lib/utils/fetchWithToken';
-import { VALID_DOMAIN_CHOICES } from '@/app/api/survey/trade-questionnaire/route';
+import { VALID_DOMAIN_CHOICES } from '@/lib/surveyConstants';
 
 interface SurveyResponse {
   id: string;

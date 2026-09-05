@@ -17,25 +17,7 @@ import '@/lib/firebaseAdmin';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export const VALID_DOMAIN_CHOICES = [
-  {
-    id: 'shahoriar_bd',
-    labelEn: 'We can use https://stocksimulator.shahoriar.bd/ domain',
-    labelBn: 'আমরা https://stocksimulator.shahoriar.bd/ ডোমেইন ব্যবহার করতে পারি',
-  },
-  {
-    id: 'beg_crowdfund',
-    labelEn: 'Beg on the internet for money',
-    labelBn: 'ইন্টারনেটে মানুষের কাছে সাহায্য/অর্থ চাওয়া যেতে পারে',
-  },
-  {
-    id: 'vercel_app',
-    labelEn: 'Use http://stocksimulatorbd.vercel.app/',
-    labelBn: 'http://stocksimulatorbd.vercel.app/ ব্যবহার করা যেতে পারে',
-  },
-] as const;
-
-export type DomainChoiceId = typeof VALID_DOMAIN_CHOICES[number]['id'];
+import { VALID_DOMAIN_CHOICES, DomainChoiceId } from '@/lib/surveyConstants';
 
 export async function POST(req: NextRequest) {
   try {
