@@ -18,7 +18,7 @@ export const revalidate = 3600;
  * substantive edit. Blog posts are exempt: they carry a real per-entry date
  * from Contentful.
  */
-const MARKETING_UPDATED = new Date('2026-08-22T00:00:00Z'); // /, /about-us
+const MARKETING_UPDATED = new Date('2026-09-05T00:00:00Z'); // /, /about-us
 const DIRECTORY_UPDATED = new Date('2026-08-22T00:00:00Z'); // /stocks, /blog index
 const STOCK_TEMPLATE_UPDATED = new Date('2026-08-22T00:00:00Z'); // /stocks/[symbol]
 
